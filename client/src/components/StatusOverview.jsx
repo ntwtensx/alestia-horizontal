@@ -16,8 +16,10 @@ export default function StatusOverview({ status }) {
       </div>
 
       <div className="cafe-card">
-        <div className="stat-label">🧁 โทนบรรยากาศร้าน</div>
-        <div className="stat-value">Aesthetic Pastel</div>
+        <div className="stat-label">🍃 ฐานข้อมูล MongoDB</div>
+        <div className="stat-value">
+          {status?.dbConnected ? 'เชื่อมต่อแล้ว 🍵' : 'ยังไม่เชื่อมต่อ ⚠️'}
+        </div>
       </div>
     </section>
   );

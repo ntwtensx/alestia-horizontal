@@ -3,10 +3,13 @@
   "version": "1.0.0",
   "description": "Alestia - Barista & Server Manager Bot for Horizontal",
   "main": "src/index.js",
+  "engines": {
+    "node": ">=20.0.0"
+  },
   "scripts": {
     "start": "node src/index.js",
     "dev": "node --watch src/index.js",
-    "build": "npm install --prefix client && npm run build --prefix client"
+    "build": "npm install --include=dev --prefix client && npm run build --prefix client"
   },
   "dependencies": {
     "cors": "^2.8.5",
