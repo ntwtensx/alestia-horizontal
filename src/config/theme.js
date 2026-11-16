@@ -3,6 +3,11 @@ module.exports = {
   serverName: 'Horizontal',
   roleTitle: 'Barista & Server Concierge ☕',
 
+  // โดเมนหน้าเว็บจริงบน Koyeb ของโปรเจกต์
+  publicUrl: (
+    process.env.PUBLIC_URL || 'https://cheerful-sande-ntwtensx-49047ca7.apps.mistral.run'
+  ).replace(/\/+$/, ''),
+
   // ตั้งค่าระบบลงทะเบียน ยศ และห้องประจำคาเฟ่ Horizontal
   discordConfig: {
     guildId: process.env.GUILD_ID || '995310629562875984',

@@ -53,11 +53,17 @@ module.exports = {
       console.error('❌ [Alestia] ไม่สามารถลงทะเบียน Slash Commands ได้:', error);
     }
 
-    // 2. ซิงก์รายชื่อสมาชิกในเซิร์ฟเวอร์ Horizontal และเชื่อมปุ่มรับบัตรสมาชิกที่ข้อความเป้าหมาย
+    // 2. ซิงก์รายชื่อสมาชิกในเซิร์ฟเวอร์ Horizontal และอัปเดตปุ่มรับบัตรสมาชิกที่ข้อความเป้าหมาย
     try {
-      const { guildId, registerChannelId, registerMessageId, registerButtonEmoji, registerButtonLabel } = theme.discordConfig;
-      const guild = client.guilds.cache.get(guildId) || client.guilds.cache.first();
+      const {
+        guildId,
+        registerChannelId,
+        registerMessageId,
+        registerButtonEmoji,
+        registerButtonLabel
+      } = theme.discordConfig;
 
+      const guild = client.guilds.cache.get(guildId) || client.guilds.cache.first();
       if (guild) {
         await guild.members.fetch().catch(() => null);
         console.log(`👥 [Alestia] ซิงก์รายชื่อสมาชิกเซิร์ฟเวอร์ ${guild.name} เข้าสู่ระบบเรียบร้อย!`);
@@ -68,15 +74,17 @@ module.exports = {
         const targetMsg = await channel.messages.fetch(registerMessageId).catch(() => null);
 
         if (targetMsg && targetMsg.author.id === client.user.id) {
-          const registerBtn = new ButtonBuilder()
-            .setCustomId('alestia_open_register')
+          const registerLinkBtn = new ButtonBuilder()
             .setLabel(registerButtonLabel)
             .setEmoji(registerButtonEmoji)
-            .setStyle(ButtonStyle.Primary);
+            .setStyle(ButtonStyle.Link)
+            .setURL(`${theme.publicUrl}/register`);
 
-          const row = new ActionRowBuilder().addComponents(registerBtn);
+          const row = new ActionRowBuilder().addComponents(registerLinkBtn);
           await targetMsg.edit({ components: [row] });
-          console.log(`🪪 [Alestia] ติดตั้งปุ่ม "${registerButtonLabel}" บนข้อความ ${registerMessageId} เรียบร้อยแล้ว!`);
+          console.log(
+            `🪪 [Alestia] อัปเดตปุ่ม "${registerButtonLabel}" บนข้อความ ${registerMessageId} ไปยัง ${theme.publicUrl}/register เรียบร้อย!`
+          );
         } else if (targetMsg) {
           console.log(`ℹ️ [Alestia] พบข้อความ ${registerMessageId} แล้ว พร้อมดักจับการกดปุ่มรับบัตรสมาชิก!`);
         }

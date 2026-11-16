@@ -20,8 +20,7 @@ module.exports = {
         interaction.customId.toLowerCase().includes('member');
 
       if (isTargetRegisterMsg || isRegisterCustomId) {
-        const baseUrl = (process.env.PUBLIC_URL || `http://localhost:${process.env.PORT || 8000}`).replace(/\/+$/, '');
-        const personalRegisterUrl = `${baseUrl}/register?id=${interaction.user.id}`;
+        const personalRegisterUrl = `${theme.publicUrl}/register?id=${interaction.user.id}`;
 
         const embed = new EmbedBuilder()
           .setColor(theme.colors.pastelPink)
@@ -39,7 +38,7 @@ module.exports = {
           .setTimestamp();
 
         const linkBtn = new ButtonBuilder()
-          .setLabel(`${registerButtonLabel} (เปิดหน้าเว็บลงทะเบียน)`)
+          .setLabel(registerButtonLabel)
           .setEmoji(registerButtonEmoji)
           .setStyle(ButtonStyle.Link)
           .setURL(personalRegisterUrl);

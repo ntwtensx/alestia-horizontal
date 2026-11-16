@@ -26,21 +26,23 @@ module.exports = {
 
   async execute(interaction, client) {
     const mode = interaction.options.getString('mode');
-    const { registerChannelId, registerMessageId, registerButtonEmoji, registerButtonLabel } = theme.discordConfig;
-    const baseUrl = (process.env.PUBLIC_URL || `http://localhost:${process.env.PORT || 8000}`).replace(/\/+$/, '');
+    const { registerChannelId, registerMessageId, registerButtonEmoji, registerButtonLabel } =
+      theme.discordConfig;
 
-    const interactiveBtn = new ButtonBuilder()
-      .setCustomId('alestia_open_register')
+    // ปุ่มที่ 1: กดแล้วเปิดหน้าเว็บ /register ทันทีในคลิกเดียว
+    const directLinkBtn = new ButtonBuilder()
       .setLabel(registerButtonLabel)
       .setEmoji(registerButtonEmoji)
-      .setStyle(ButtonStyle.Primary);
-
-    const directLinkBtn = new ButtonBuilder()
-      .setLabel('เปิดหน้าเว็บ /register ทันที')
       .setStyle(ButtonStyle.Link)
-      .setURL(`${baseUrl}/register`);
+      .setURL(`${theme.publicUrl}/register`);
 
-    const row = new ActionRowBuilder().addComponents(interactiveBtn, directLinkBtn);
+    // ปุ่มที่ 2: กดแล้วบอทส่งลิงก์ที่กรอกเลข Discord ID ของคนกดให้อัตโนมัติ
+    const autoIdBtn = new ButtonBuilder()
+      .setCustomId('alestia_open_register')
+      .setLabel('รับลิงก์กรอก ID อัตโนมัติ')
+      .setStyle(ButtonStyle.Secondary);
+
+    const row = new ActionRowBuilder().addComponents(directLinkBtn, autoIdBtn);
 
     if (mode === 'edit_target') {
       try {
@@ -48,12 +50,12 @@ module.exports = {
         const msg = await channel.messages.fetch(registerMessageId);
         await msg.edit({ components: [row] });
         return interaction.reply({
-          content: `✅ อัปเดตปุ่ม **${registerButtonLabel}** บนข้อความ \`${registerMessageId}\` เรียบร้อยแล้วค่ะ!`,
+          content: `✅ อัปเดตปุ่ม **${registerButtonLabel}** บนข้อความ \`${registerMessageId}\` ให้ชี้ไปที่ \`${theme.publicUrl}/register\` เรียบร้อยแล้วค่ะ!`,
           ephemeral: true
         });
       } catch (err) {
         return interaction.reply({
-          content: `⚠️ ไม่สามารถแก้ไขข้อความ \`${registerMessageId}\` ได้ (ข้อความนั้นอาจไม่ได้ถูกส่งโดยบอทตัวนี้ค่ะ แนะนำให้เลือกโหมด **"ส่งการ์ดพร้อมปุ่มรับบัตรสมาชิกใบใหม่"** แทนนะคะ)`,
+          content: `⚠️ ไม่สามารถแก้ไขข้อความ \`${registerMessageId}\` ได้ (หากข้อความเดิมถูกสร้างโดยบอทตัวอื่นระบบจะแตะไม่ได้ แนะนำให้เลือกโหมด **"ส่งการ์ดพร้อมปุ่มรับบัตรสมาชิกใบใหม่"** แทนนะคะ)`,
           ephemeral: true
         });
       }
@@ -74,7 +76,7 @@ module.exports = {
 
     await interaction.channel.send({ embeds: [embed], components: [row] });
     return interaction.reply({
-      content: '🌸 ส่งการ์ดรับบัตรสมาชิกในห้องนี้เรียบร้อยแล้วค่ะ!',
+      content: `🌸 ส่งการ์ดรับบัตรสมาชิกที่เชื่อมกับ \`${theme.publicUrl}/register\` เรียบร้อยแล้วค่ะ!`,
       ephemeral: true
     });
   }
