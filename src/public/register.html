@@ -9,224 +9,285 @@
   <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&family=Outfit:wght@500;600;700&display=swap" rel="stylesheet">
   <style>
     :root {
-      --espresso: #4A3728; --rosewood: #AA817E; --cream: #FFFDF9;
-      --sage: #8F9779; --pink: #FFD1DC; --pink-dark: #F39EB0;
-      --gold: #F5B041; --radius-lg: 26px; --radius-md: 16px;
+      --espresso: #4A3228; --rosewood: #B56576; --cream: #FFFDF9;
+      --sakura: #FFCAD4; --sakura-deep: #F4978E; --matcha: #CBE8BA;
+      --lavender: #E5D4FF; --peach: #FFE5B4; --radius-lg: 26px;
       --spring: cubic-bezier(0.34, 1.56, 0.64, 1);
     }
     * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+    @keyframes auroraMove { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
+    @keyframes floatUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes popIn { 0% { transform: scale(0.92); } 60% { transform: scale(1.04); } 100% { transform: scale(1); } }
+    @keyframes pulseGlow { 0%, 100% { box-shadow: 0 0 0 0 rgba(244,151,142,0.55); } 50% { box-shadow: 0 0 0 8px rgba(244,151,142,0); } }
+
     body {
       font-family: 'Kanit', 'Outfit', sans-serif; color: var(--espresso);
-      background: #FDFBF7 radial-gradient(at 15% 15%, rgba(255,209,220,0.5) 0px, transparent 50%),
-                  radial-gradient(at 85% 25%, rgba(226,209,249,0.45) 0px, transparent 50%),
-                  radial-gradient(at 50% 85%, rgba(252,206,171,0.4) 0px, transparent 55%);
-      background-attachment: fixed; min-height: 100dvh; padding: clamp(14px,3vw,26px) clamp(12px,3vw,20px) 70px; overflow-x: hidden;
+      background: linear-gradient(-45deg, #FFDDE4, #F3E5AB, #E0F4DE, #E6D7FF, #FFD1DC);
+      background-size: 350% 350%; animation: auroraMove 16s ease infinite;
+      min-height: 100dvh; padding: clamp(14px,3vw,26px) clamp(12px,3vw,20px) 70px; overflow-x: hidden;
     }
     #fxCanvas { position: fixed; inset: 0; pointer-events: none; z-index: 1; }
     .page-shell { max-width: 1180px; margin: 0 auto; position: relative; z-index: 2; }
-    @keyframes floatUp { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: translateY(0); } }
-    @keyframes pulseGlow { 0%, 100% { box-shadow: 0 0 0 0 rgba(243,158,176,0.4); } 50% { box-shadow: 0 0 0 8px rgba(243,158,176,0); } }
-    @keyframes popIn { 0% { transform: scale(0.92); } 60% { transform: scale(1.04); } 100% { transform: scale(1); } }
 
     .glass-panel {
-      background: rgba(255,252,248,0.82); backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px);
-      border: 1.5px solid rgba(170,129,126,0.28); border-radius: var(--radius-lg);
-      box-shadow: 0 16px 36px rgba(74,55,40,0.08); animation: floatUp 0.55s var(--spring) both;
+      background: linear-gradient(145deg, rgba(255,248,246,0.92) 0%, rgba(255,240,245,0.86) 100%);
+      backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px);
+      border: 2px solid rgba(244,151,142,0.42); border-radius: var(--radius-lg);
+      box-shadow: 0 18px 40px rgba(181,101,118,0.14); animation: floatUp 0.55s var(--spring) both;
     }
-    .top-nav { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 22px; margin-bottom: 24px; }
+    .top-nav {
+      display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between;
+      gap: 12px; padding: 14px 22px; margin-bottom: 24px;
+      background: linear-gradient(135deg, rgba(255,230,238,0.95), rgba(242,230,255,0.92), rgba(255,242,220,0.95));
+    }
     .brand { display: flex; align-items: center; gap: 12px; }
-    .brand-orb { width: 44px; height: 44px; border-radius: 14px; background: linear-gradient(135deg, var(--espresso), var(--rosewood)); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 1.35rem; box-shadow: 0 8px 18px rgba(74,55,40,0.22); }
-    .brand h1 { font-size: clamp(1.05rem, 2.2vw, 1.25rem); font-weight: 700; }
-    .brand p { font-size: 0.8rem; color: #7A6352; }
+    .brand-orb {
+      width: 46px; height: 46px; border-radius: 15px;
+      background: linear-gradient(135deg, #FF8DA1, #B56576); color: #fff;
+      display: flex; align-items: center; justify-content: center; font-size: 1.4rem;
+      box-shadow: 0 8px 18px rgba(181,101,118,0.35);
+    }
+    .brand h1 { font-size: clamp(1.05rem, 2.2vw, 1.25rem); font-weight: 700; color: #5A2E38; }
+    .brand p { font-size: 0.8rem; color: #8C5361; }
 
-    .portal-grid { display: grid; grid-template-columns: minmax(320px, 0.92fr) minmax(340px, 1.38fr); gap: 24px; align-items: start; }
+    .portal-grid { display: grid; grid-template-columns: minmax(330px, 0.96fr) minmax(350px, 1.34fr); gap: 24px; align-items: start; }
     .sticky-col { position: sticky; top: 20px; }
 
-    /* บัตรสมาชิกจำลอง 3D */
+    /* บัตรสมาชิกจำลองสีพาสเทลสดใส */
     .id-card {
       padding: 24px 20px; text-align: center; position: relative; overflow: hidden;
-      background: linear-gradient(145deg, rgba(255,255,255,0.95) 0%, rgba(255,244,236,0.88) 100%);
-      border: 2px solid rgba(170,129,126,0.38); border-radius: var(--radius-lg);
-      box-shadow: 0 20px 44px -12px rgba(74,55,40,0.16); transition: transform 0.18s ease-out;
+      background: linear-gradient(160deg, #FFF5F7 0%, #FFF0E5 50%, #F3EAFF 100%);
+      border: 2.5px solid rgba(244,151,142,0.55); border-radius: var(--radius-lg);
+      box-shadow: 0 22px 46px -10px rgba(181,101,118,0.22); transition: transform 0.18s ease-out;
     }
-    .id-card-aura { position: absolute; top: -25%; left: 50%; transform: translateX(-50%); width: 240px; height: 240px; border-radius: 50%; background: radial-gradient(circle, var(--role-color, #AA817E) 0%, transparent 70%); opacity: 0.3; filter: blur(28px); pointer-events: none; }
+    .id-card-aura {
+      position: absolute; top: -20%; left: 50%; transform: translateX(-50%);
+      width: 260px; height: 260px; border-radius: 50%;
+      background: radial-gradient(circle, var(--role-color, #FF8DA1) 0%, transparent 70%);
+      opacity: 0.42; filter: blur(26px); pointer-events: none;
+    }
     .badge-row { display: flex; justify-content: space-between; gap: 8px; margin-bottom: 12px; position: relative; z-index: 2; }
-    .pill { font-size: 0.74rem; font-weight: 600; padding: 4px 11px; border-radius: 999px; background: rgba(252,206,171,0.45); border: 1px solid rgba(170,129,126,0.3); }
-    .pill.ready { background: rgba(46,125,50,0.15); color: #1B5E20; border-color: rgba(46,125,50,0.4); }
-    .pill.locked { background: var(--espresso); color: var(--cream); }
+    .pill { font-size: 0.74rem; font-weight: 700; padding: 5px 12px; border-radius: 999px; background: #FFE5B4; color: #6E4720; border: 1px solid #F5C77E; }
+    .pill.ready { background: linear-gradient(135deg, #D4F5C7, #B8E8A3); color: #1B5E20; border-color: #8FD19E; }
+    .pill.locked { background: linear-gradient(135deg, #5A2E38, #8C5361); color: #FFFDF9; border: none; }
 
-    .avatar-wrap { width: 108px; height: 108px; margin: 4px auto 10px; position: relative; z-index: 2; }
-    .avatar-wrap img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; border: 4px solid #fff; box-shadow: 0 10px 24px rgba(74,55,40,0.18); transition: transform 0.35s var(--spring); }
+    .avatar-wrap { width: 112px; height: 112px; margin: 4px auto 10px; position: relative; z-index: 2; }
+    .avatar-wrap img {
+      width: 100%; height: 100%; border-radius: 50%; object-fit: cover;
+      border: 4px solid #FFCAD4; box-shadow: 0 10px 24px rgba(181,101,118,0.28);
+      transition: transform 0.35s var(--spring); background: #fff;
+    }
     .avatar-wrap:hover img { transform: scale(1.06) rotate(-2deg); }
-    .server-name { font-size: 1.28rem; font-weight: 700; position: relative; z-index: 2; }
-    .discord-tag { font-size: 0.82rem; color: #7A6352; margin-bottom: 10px; position: relative; z-index: 2; }
+    .server-name { font-size: 1.28rem; font-weight: 700; color: #4A2530; position: relative; z-index: 2; }
+    .discord-tag { font-size: 0.82rem; color: #8C5361; margin-bottom: 10px; position: relative; z-index: 2; }
 
     .not-me-btn {
-      display: inline-flex; align-items: center; gap: 6px; padding: 6px 14px; border-radius: 999px;
+      display: inline-flex; align-items: center; gap: 6px; padding: 7px 15px; border-radius: 999px;
       font-family: inherit; font-size: 0.78rem; font-weight: 600; cursor: pointer;
-      background: #FFF0F5; color: var(--espresso); border: 1.5px solid var(--pink-dark);
-      margin-bottom: 14px; position: relative; z-index: 2; transition: all 0.2s var(--spring);
+      background: linear-gradient(135deg, #FFD1DC, #FFE5EC); color: #5A2E38;
+      border: 1.5px solid #F4978E; margin-bottom: 14px; position: relative; z-index: 2;
+      box-shadow: 0 4px 12px rgba(244,151,142,0.25); transition: all 0.2s var(--spring);
     }
-    .not-me-btn:hover { transform: scale(1.05); background: var(--pink); }
+    .not-me-btn:hover { transform: scale(1.05); background: #FFBAC8; }
 
     .live-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; position: relative; z-index: 2; }
-    .live-box { background: rgba(255,255,255,0.78); border: 1px solid rgba(170,129,126,0.28); border-radius: 14px; padding: 9px 10px; }
-    .live-label { font-size: 0.72rem; color: #7A6352; }
-    .live-val { font-size: 0.96rem; font-weight: 700; word-break: break-word; }
+    .live-box { border-radius: 16px; padding: 10px 12px; border: 1.5px solid rgba(244,151,142,0.35); }
+    .live-box.nick-theme { background: linear-gradient(135deg, #FFF0F5, #FFE4EC); }
+    .live-box.bday-theme { background: linear-gradient(135deg, #F3EAFF, #E8DAFF); border-color: rgba(180,140,240,0.4); }
+    .live-label { font-size: 0.73rem; font-weight: 600; color: #7A4957; }
+    .live-val { font-size: 0.98rem; font-weight: 700; color: #4A2530; word-break: break-word; }
     .live-val.pop { animation: popIn 0.35s var(--spring); }
 
-    .showcase-box { background: rgba(255,251,246,0.9); border: 1.5px dashed rgba(170,129,126,0.42); border-radius: 16px; padding: 12px; text-align: left; position: relative; z-index: 2; }
-    .showcase-title { font-size: 0.75rem; font-weight: 700; color: #7A6352; margin-bottom: 8px; text-align: center; }
-    .showcase-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 6px 8px; border-radius: 10px; background: #fff; margin-bottom: 6px; font-size: 0.8rem; }
+    /* กรอบแสดงชื่อเมนูเต็มทุกตัวอักษร */
+    .showcase-box {
+      background: linear-gradient(145deg, rgba(255,255,255,0.88), rgba(255,243,232,0.92));
+      border: 2px dashed #F4978E; border-radius: 18px; padding: 12px;
+      text-align: left; position: relative; z-index: 2;
+    }
+    .showcase-title { font-size: 0.78rem; font-weight: 700; color: #8C5361; margin-bottom: 8px; text-align: center; }
+    .showcase-row {
+      display: flex; align-items: flex-start; justify-content: space-between; gap: 10px;
+      padding: 8px 10px; border-radius: 12px; margin-bottom: 6px; font-size: 0.82rem;
+      background: linear-gradient(90deg, #FFF9FB, #FFFDF9); border: 1px solid rgba(244,151,142,0.28);
+    }
     .showcase-row:last-child { margin-bottom: 0; }
-    .s-name { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 155px; }
+    .s-label { font-weight: 700; color: #7A4957; white-space: nowrap; flex-shrink: 0; }
+    .s-name {
+      font-weight: 700; color: var(--espresso); text-align: right;
+      white-space: normal; word-break: break-word; line-height: 1.4; flex: 1;
+    }
 
-    /* กล่อง "ไม่ใช่ฉัน" (เฉพาะผู้ไม่มียศสมาชิก) */
+    /* ลิ้นชัก "ไม่ใช่ฉัน" */
     .not-me-drawer { display: none; margin-top: 14px; padding: 16px; }
     .not-me-drawer.open { display: block; animation: floatUp 0.35s var(--spring); }
-    .search-box { width: 100%; padding: 9px 14px; border-radius: 999px; border: 1.5px solid rgba(170,129,126,0.35); font-family: inherit; font-size: 0.86rem; outline: none; margin: 8px 0; }
+    .search-box { width: 100%; padding: 9px 14px; border-radius: 999px; border: 1.5px solid #F4978E; background: #FFFDF9; font-family: inherit; font-size: 0.86rem; outline: none; margin: 8px 0; }
     .member-scroll { max-height: 200px; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; }
-    .member-item { display: flex; align-items: center; justify-content: space-between; padding: 7px 10px; border-radius: 12px; background: rgba(255,255,255,0.75); border: 1px solid rgba(170,129,126,0.22); cursor: pointer; transition: all 0.18s ease; }
-    .member-item:hover { background: #fff; transform: translateX(4px); }
-    .member-item.selected { background: #FFF0F5; border-color: var(--espresso); }
+    .member-item { display: flex; align-items: center; justify-content: space-between; padding: 7px 10px; border-radius: 12px; background: #FFF9FB; border: 1px solid rgba(244,151,142,0.3); cursor: pointer; transition: all 0.18s ease; }
+    .member-item:hover { background: #FFE8EE; transform: translateX(4px); }
+    .member-item.selected { background: #FFD1DC; border-color: #B56576; }
     .m-left { display: flex; align-items: center; gap: 9px; min-width: 0; }
     .m-left img { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; }
     .m-name { font-size: 0.84rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
     /* ฟอร์มฝั่งขวา */
     .form-panel { padding: clamp(20px,3vw,28px); }
-    .sec-title { display: flex; align-items: center; justify-content: space-between; font-size: 0.92rem; font-weight: 700; margin-bottom: 8px; }
-    .sec-hint { font-size: 0.75rem; font-weight: 400; color: #7A6352; }
+    .sec-title { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px; font-size: 0.96rem; font-weight: 700; color: #5A2E38; margin-bottom: 9px; }
+    .sec-hint { font-size: 0.76rem; font-weight: 500; color: #8C5361; }
     .field-block { margin-bottom: 22px; }
-    .text-input { width: 100%; padding: 12px 16px; border-radius: 14px; border: 1.5px solid rgba(170,129,126,0.35); background: #fff; font-family: inherit; font-size: 0.96rem; color: var(--espresso); outline: none; transition: all 0.2s ease; }
-    .text-input:focus { border-color: var(--espresso); box-shadow: 0 0 0 4px rgba(170,129,126,0.15); }
+    .text-input {
+      width: 100%; padding: 12px 16px; border-radius: 14px; border: 1.5px solid #F4978E;
+      background: #FFFDF9; font-family: inherit; font-size: 0.96rem; color: var(--espresso);
+      outline: none; transition: all 0.2s ease; box-shadow: inset 0 2px 5px rgba(244,151,142,0.08);
+    }
+    .text-input:focus { background: #fff; border-color: #B56576; box-shadow: 0 0 0 4px rgba(244,151,142,0.22); }
 
-    /* ปฏิทินของจริง (Realistic Calendar Widget) */
+    /* ปฏิทินวันเกิดสีพาสเทล */
     .real-calendar {
-      background: #fff; border-radius: 20px; border: 1.5px solid rgba(170,129,126,0.32);
-      box-shadow: 0 10px 26px rgba(74,55,40,0.07); overflow: hidden;
+      background: linear-gradient(180deg, #FFFDF9 0%, #FFF5F8 100%);
+      border-radius: 20px; border: 2px solid rgba(244,151,142,0.45);
+      box-shadow: 0 10px 26px rgba(181,101,118,0.1); overflow: hidden;
     }
     .cal-top-bar {
-      background: linear-gradient(135deg, var(--espresso), #6E5239); color: var(--cream);
-      padding: 12px 16px; display: flex; align-items: center; justify-content: space-between;
+      background: linear-gradient(135deg, #FF9AA2, #B56576, #9B72AA); color: #fff;
+      padding: 11px 16px; display: flex; align-items: center; justify-content: space-between;
     }
     .cal-nav-btn {
-      width: 34px; height: 34px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.25);
-      background: rgba(255,255,255,0.12); color: #fff; font-size: 1rem; cursor: pointer;
+      width: 34px; height: 34px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.4);
+      background: rgba(255,255,255,0.2); color: #fff; font-size: 1rem; cursor: pointer;
       display: flex; align-items: center; justify-content: center; transition: all 0.18s ease;
     }
-    .cal-nav-btn:hover { background: rgba(255,255,255,0.28); transform: scale(1.06); }
+    .cal-nav-btn:hover { background: rgba(255,255,255,0.38); transform: scale(1.06); }
     .cal-month-select {
-      background: rgba(255,255,255,0.15); color: #fff; border: 1px solid rgba(255,255,255,0.3);
-      padding: 5px 12px; border-radius: 10px; font-family: inherit; font-size: 0.95rem; font-weight: 700; cursor: pointer; outline: none;
+      background: rgba(255,255,255,0.22); color: #fff; border: 1px solid rgba(255,255,255,0.45);
+      padding: 5px 14px; border-radius: 10px; font-family: inherit; font-size: 0.95rem; font-weight: 700; cursor: pointer; outline: none;
     }
-    .cal-month-select option { color: var(--espresso); background: #fff; }
+    .cal-month-select option { color: var(--espresso); background: #FFFDF9; }
     .cal-weekdays {
       display: grid; grid-template-columns: repeat(7, 1fr); text-align: center;
-      background: #FAF3ECE8; padding: 8px 10px; font-size: 0.76rem; font-weight: 700; color: #7A6352;
-      border-bottom: 1px solid rgba(170,129,126,0.2);
+      background: #FFE8EE; padding: 8px 10px; font-size: 0.76rem; font-weight: 700; color: #7A4957;
+      border-bottom: 1px solid rgba(244,151,142,0.3);
     }
-    .cal-weekdays span:first-child { color: #C0392B; }
-    .cal-weekdays span:last-child { color: #2980B9; }
-    .cal-days-body {
-      display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; padding: 12px;
-      transition: opacity 0.2s ease, transform 0.2s ease;
-    }
+    .cal-weekdays span:first-child { color: #D9534F; }
+    .cal-weekdays span:last-child { color: #6C5CE7; }
+    .cal-days-body { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; padding: 12px; transition: opacity 0.2s ease, transform 0.2s ease; }
     .cal-cell {
-      aspect-ratio: 1; max-height: 42px; border-radius: 12px; border: 1px solid transparent;
-      background: #FDFBF7; color: var(--espresso); font-family: inherit; font-weight: 600; font-size: 0.88rem;
+      aspect-ratio: 1; max-height: 40px; border-radius: 12px; border: 1px solid rgba(244,151,142,0.22);
+      background: #FFF9FB; color: var(--espresso); font-family: inherit; font-weight: 600; font-size: 0.88rem;
       display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.18s var(--spring);
     }
-    .cal-cell.empty { background: transparent; pointer-events: none; }
-    .cal-cell:not(.empty):hover { background: #FFF0F5; border-color: var(--pink-dark); transform: translateY(-2px); }
+    .cal-cell.empty { background: transparent; border: none; pointer-events: none; }
+    .cal-cell:not(.empty):hover { background: #FFD1DC; border-color: #F4978E; transform: translateY(-2px); }
     .cal-cell.selected {
-      background: linear-gradient(135deg, #FF8DA1, #FFB7B2); color: #3D1E1E;
-      border-color: #E06C78; font-weight: 700; transform: scale(1.08);
-      box-shadow: 0 6px 14px rgba(224,108,120,0.35);
+      background: linear-gradient(135deg, #FF758F, #FF9EBB); color: #fff;
+      border-color: #D6456B; font-weight: 700; transform: scale(1.08);
+      box-shadow: 0 6px 14px rgba(214,69,107,0.35);
     }
 
-    /* ช่องวางเมนู Drag & Drop */
+    /* ช่องวางเมนู Drag & Drop แสดงชื่อเต็ม */
     .drop-slots-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 14px; }
     .drop-slot {
-      padding: 12px; border-radius: 16px; background: rgba(255,255,255,0.8);
-      border: 2px dashed rgba(170,129,126,0.4); min-height: 92px;
+      padding: 11px 12px; border-radius: 16px;
+      background: linear-gradient(145deg, #FFFDF9, #FFF0F5);
+      border: 2px dashed #F4978E; min-height: 94px;
       display: flex; flex-direction: column; justify-content: space-between;
-      cursor: pointer; transition: all 0.22s var(--spring); position: relative;
+      cursor: pointer; transition: all 0.22s var(--spring);
     }
-    .drop-slot.active-target { border-style: solid; border-color: var(--espresso); background: #FFF9F5; }
-    .drop-slot.drag-over {
-      border-style: solid; border-color: #E06C78; background: #FFF0F5;
-      transform: scale(1.04); animation: pulseGlow 1s infinite;
-    }
+    .drop-slot[data-slot="liked1"] { background: linear-gradient(145deg, #FFFDF9, #F2F9EE); border-color: #98C989; }
+    .drop-slot[data-slot="liked2"] { background: linear-gradient(145deg, #FFFDF9, #F5EEFF); border-color: #BFA2EC; }
+    .drop-slot.active-target { border-style: solid; border-width: 2.5px; box-shadow: 0 6px 16px rgba(181,101,118,0.16); transform: translateY(-2px); }
+    .drop-slot.drag-over { border-style: solid; border-color: #FF5D8F; background: #FFE0E9; transform: scale(1.04); animation: pulseGlow 1s infinite; }
     .drop-slot.just-dropped { animation: popIn 0.4s var(--spring); }
-    .slot-head { display: flex; align-items: center; justify-content: space-between; font-size: 0.78rem; font-weight: 700; color: #6E5849; }
-    .slot-clear { background: none; border: none; font-size: 0.75rem; color: #A94442; cursor: pointer; display: none; }
+    .slot-head { display: flex; align-items: center; justify-content: space-between; font-size: 0.78rem; font-weight: 700; color: #5A2E38; padding-bottom: 5px; border-bottom: 1px dashed rgba(181,101,118,0.22); }
+    .slot-clear { background: none; border: none; font-size: 0.72rem; color: #C0392B; font-weight: 700; cursor: pointer; display: none; }
     .drop-slot.has-val .slot-clear { display: inline; }
-    .slot-body { font-size: 0.84rem; font-weight: 700; color: var(--espresso); margin-top: 6px; word-break: break-word; }
-    .slot-placeholder { font-size: 0.76rem; font-weight: 400; color: #9A8272; }
+    .slot-body { font-size: 0.82rem; font-weight: 700; color: var(--espresso); margin-top: 6px; white-space: normal; word-break: break-word; line-height: 1.35; }
+    .slot-placeholder { font-size: 0.75rem; font-weight: 400; color: #9E7B86; }
 
-    /* สมุดเมนูลากวาง */
-    .catalog-box { background: rgba(255,255,255,0.82); border: 1.5px solid rgba(170,129,126,0.3); border-radius: 18px; padding: 14px; }
-    .cat-tabs { display: flex; flex-wrap: wrap; gap: 6px; margin: 10px 0; }
-    .cat-tab { padding: 6px 12px; border-radius: 999px; border: 1px solid rgba(170,129,126,0.28); background: #fff; font-family: inherit; font-size: 0.78rem; font-weight: 600; cursor: pointer; transition: all 0.18s ease; }
-    .cat-tab.active { background: var(--espresso); color: var(--cream); }
-    .menu-grid { max-height: 230px; overflow-y: auto; display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 8px; padding-right: 4px; }
+    /* สมุดเมนู: รวมช่องค้นหา + ฟิลเตอร์ขนาดเล็กลง + เส้นคั่น */
+    .catalog-box {
+      background: linear-gradient(160deg, #FFF9FB 0%, #FFF3E8 50%, #F4EEFF 100%);
+      border: 2px solid rgba(244,151,142,0.45); border-radius: 18px; padding: 12px;
+    }
+    .catalog-toolbar {
+      display: flex; flex-wrap: wrap; align-items: center; gap: 8px;
+      background: rgba(255,255,255,0.85); padding: 7px 10px; border-radius: 14px;
+      border: 1.5px solid rgba(244,151,142,0.35);
+    }
+    .toolbar-search {
+      flex: 1; min-width: 150px; border: none; background: transparent;
+      font-family: inherit; font-size: 0.82rem; color: var(--espresso); outline: none;
+    }
+    .toolbar-divider { width: 1.5px; height: 20px; background: rgba(181,101,118,0.32); flex-shrink: 0; }
+    .cat-tabs { display: flex; flex-wrap: wrap; align-items: center; gap: 5px; }
+    .cat-tab {
+      padding: 4px 10px; border-radius: 999px; border: 1px solid rgba(244,151,142,0.4);
+      background: #FFF0F5; color: #5A2E38; font-family: inherit; font-size: 0.72rem;
+      font-weight: 600; cursor: pointer; transition: all 0.16s ease;
+    }
+    .cat-tab:hover { background: #FFD1DC; }
+    .cat-tab.active { background: linear-gradient(135deg, #B56576, #7A4957); color: #fff; border-color: transparent; }
+
+    .catalog-section-divider {
+      display: flex; align-items: center; gap: 10px; margin: 10px 0 8px;
+      font-size: 0.72rem; font-weight: 700; color: #8C5361;
+    }
+    .catalog-section-divider::before, .catalog-section-divider::after {
+      content: ''; flex: 1; height: 1px; background: linear-gradient(90deg, transparent, rgba(181,101,118,0.4), transparent);
+    }
+
+    .menu-grid { max-height: 235px; overflow-y: auto; display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 7px; padding-right: 4px; }
     .menu-chip {
-      display: flex; align-items: center; justify-content: space-between; gap: 6px;
-      padding: 9px 11px; border-radius: 12px; border: 1px solid rgba(170,129,126,0.26);
-      background: #fff; font-family: inherit; font-size: 0.8rem; cursor: grab;
+      display: flex; align-items: center; justify-content: space-between; gap: 8px;
+      padding: 8px 11px; border-radius: 12px; border: 1px solid rgba(244,151,142,0.35);
+      background: rgba(255,255,255,0.92); font-family: inherit; font-size: 0.79rem; cursor: grab;
       user-select: none; -webkit-user-select: none; touch-action: pan-y;
       transition: transform 0.16s var(--spring), box-shadow 0.16s ease, background 0.16s ease;
     }
-    .menu-chip:hover { background: #FFF6F0; transform: translateY(-2px); box-shadow: 0 6px 14px rgba(74,55,40,0.08); }
+    .menu-chip:hover { background: #FFE8EE; transform: translateY(-2px); box-shadow: 0 5px 12px rgba(181,101,118,0.14); }
     .menu-chip:active { cursor: grabbing; transform: scale(0.97); }
     .menu-chip.dragging-source { opacity: 0.4; transform: scale(0.95); }
-    .m-chip-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 600; }
+    .m-chip-name { font-weight: 600; color: var(--espresso); line-height: 1.3; word-break: break-word; }
+    .chip-v-sep { width: 1px; align-self: stretch; background: rgba(181,101,118,0.22); margin: 0 2px; flex-shrink: 0; }
 
-    /* ตัวลอยตอนลาก (Floating Drag Ghost) */
     .drag-ghost {
       position: fixed; z-index: 9999; pointer-events: none;
-      padding: 9px 14px; border-radius: 999px; background: var(--espresso); color: #fff;
-      font-family: inherit; font-size: 0.84rem; font-weight: 700;
-      box-shadow: 0 14px 28px rgba(74,55,40,0.35); transform: translate(-50%, -120%) scale(1.06);
+      padding: 8px 14px; border-radius: 999px; background: linear-gradient(135deg, #B56576, #5A2E38); color: #fff;
+      font-family: inherit; font-size: 0.82rem; font-weight: 700;
+      box-shadow: 0 14px 28px rgba(90,46,56,0.38); transform: translate(-50%, -120%) scale(1.06);
       display: flex; align-items: center; gap: 8px; white-space: nowrap;
     }
 
-    .tier-pill { font-size: 0.66rem; font-weight: 700; padding: 2px 7px; border-radius: 999px; flex-shrink: 0; }
-    .tier-SSR { background: linear-gradient(135deg, #FFD700, #FFA500); color: #4A2E00; }
+    .tier-pill { font-size: 0.65rem; font-weight: 700; padding: 2px 7px; border-radius: 999px; flex-shrink: 0; }
+    .tier-SSR { background: linear-gradient(135deg, #FFD700, #FF9AA2); color: #4A2530; }
     .tier-SR { background: linear-gradient(135deg, #E2D1F9, #C3A6FF); color: #3B1E6D; }
     .tier-R { background: linear-gradient(135deg, #C1E1C1, #8FD19E); color: #1B4D20; }
-    .tier-C { background: #EFE6DD; color: #5C4B51; }
+    .tier-C { background: #FFE5EC; color: #7A4957; }
     .tier-MYSTERY { background: linear-gradient(90deg, #FFB7B2, #FFDAC1, #B5EAD7, #C7CEEA); color: #4A354B; }
 
     /* รหัส PIN 4 หลัก */
     .pin-wrap { display: flex; align-items: center; gap: 12px; }
-    .pin-input-4 {
-      letter-spacing: 0.55em; font-weight: 700; text-align: center; font-size: 1.25rem; max-width: 220px;
-    }
+    .pin-input-4 { letter-spacing: 0.55em; font-weight: 700; text-align: center; font-size: 1.25rem; max-width: 220px; }
     .pin-dots { display: flex; gap: 8px; }
-    .pin-dot { width: 12px; height: 12px; border-radius: 50%; background: rgba(170,129,126,0.3); transition: all 0.2s var(--spring); }
-    .pin-dot.filled { background: var(--espresso); transform: scale(1.2); }
+    .pin-dot { width: 12px; height: 12px; border-radius: 50%; background: rgba(181,101,118,0.28); transition: all 0.2s var(--spring); }
+    .pin-dot.filled { background: #D6456B; transform: scale(1.25); box-shadow: 0 0 8px rgba(214,69,107,0.5); }
 
     .submit-btn {
       width: 100%; min-height: 52px; border: none; border-radius: 16px;
-      background: linear-gradient(135deg, var(--espresso) 0%, #6E5239 100%); color: var(--cream);
+      background: linear-gradient(135deg, #FF758F 0%, #B56576 50%, #6D597A 100%); color: #fff;
       font-family: inherit; font-size: 1.02rem; font-weight: 700; cursor: pointer;
-      box-shadow: 0 12px 28px -8px rgba(74,55,40,0.4); transition: all 0.22s var(--spring);
+      box-shadow: 0 12px 28px -6px rgba(181,101,118,0.45); transition: all 0.22s var(--spring);
     }
-    .submit-btn:hover:not(:disabled) { transform: translateY(-2px) scale(1.01); }
+    .submit-btn:hover:not(:disabled) { transform: translateY(-2px) scale(1.01); filter: brightness(1.05); }
     .submit-btn:disabled { opacity: 0.6; cursor: not-allowed; }
     .toast { display: none; margin-top: 14px; padding: 12px 16px; border-radius: 14px; font-size: 0.9rem; font-weight: 600; animation: floatUp 0.3s var(--spring); }
-    .toast.ok { display: block; background: rgba(46,125,50,0.14); color: #1B5E20; border: 1.5px solid rgba(46,125,50,0.4); }
-    .toast.err { display: block; background: rgba(198,40,40,0.12); color: #B71C1C; border: 1.5px solid rgba(198,40,40,0.35); }
+    .toast.ok { display: block; background: rgba(46,125,50,0.16); color: #1B5E20; border: 1.5px solid rgba(46,125,50,0.4); }
+    .toast.err { display: block; background: rgba(198,40,40,0.14); color: #B71C1C; border: 1.5px solid rgba(198,40,40,0.35); }
 
-    @media (max-width: 920px) {
-      .portal-grid { grid-template-columns: 1fr; }
-      .sticky-col { position: static; }
-    }
+    @media (max-width: 920px) { .portal-grid { grid-template-columns: 1fr; } .sticky-col { position: static; } }
     @media (max-width: 640px) {
       .drop-slots-grid { grid-template-columns: 1fr; }
-      .text-input, .search-box { font-size: 16px; }
+      .toolbar-divider { display: none; }
+      .text-input, .search-box, .toolbar-search { font-size: 16px; }
     }
   </style>
 </head>
@@ -236,16 +297,16 @@
   <div class="page-shell">
     <nav class="top-nav glass-panel">
       <div class="brand">
-        <div class="brand-orb">☕</div>
+        <div class="brand-orb">🌸</div>
         <div>
-          <h1>Horizontal Cafe • Member Registration</h1>
-          <p>ระบบลงทะเบียนบัตรสมาชิกอัตโนมัติ (เฉพาะผู้ที่ยังไม่มีบัตรสมาชิก)</p>
+          <h1>Horizontal Cafe • Aesthetic Member Card</h1>
+          <p>ลงทะเบียนบัตรสมาชิกคาเฟ่พาสเทล (เฉพาะผู้ที่ยังไม่มีบัตรสมาชิก)</p>
         </div>
       </div>
     </nav>
 
     <div class="portal-grid">
-      <!-- คอลัมน์ซ้าย: บัตรสมาชิกของฉัน + ปุ่ม "ไม่ใช่ฉัน" -->
+      <!-- คอลัมน์ซ้าย: บัตรสมาชิกแสดงชื่อเมนูครบเต็มทุกตัวอักษร -->
       <div class="sticky-col">
         <div id="idCard" class="id-card">
           <div class="id-card-aura"></div>
@@ -265,25 +326,24 @@
           </button>
 
           <div class="live-grid">
-            <div class="live-box">
+            <div class="live-box nick-theme">
               <div class="live-label">🏷️ ชื่อเล่นประจำคาเฟ่</div>
               <div id="liveNickTxt" class="live-val">รอตั้งชื่อเล่น...</div>
             </div>
-            <div class="live-box">
+            <div class="live-box bday-theme">
               <div class="live-label">🎂 วันเกิดสมาชิก</div>
               <div id="liveBdayTxt" class="live-val">เลือกในปฏิทิน</div>
             </div>
           </div>
 
           <div class="showcase-box">
-            <div class="showcase-title">☕ เมนูประจำตัว 3 ลำดับบนบัตรสมาชิก</div>
-            <div class="showcase-row"><span>⭐ เมนูโปรด</span><span id="cardFavTxt" class="s-name">🍵 รอลากเมนูมาวาง</span></div>
-            <div class="showcase-row"><span>💖 เมนูที่ชอบ</span><span id="cardLike1Txt" class="s-name">🍵 รอลากเมนูมาวาง</span></div>
-            <div class="showcase-row"><span>🎲 อาจจะสั่ง</span><span id="cardLike2Txt" class="s-name">🍵 รอลากเมนูมาวาง</span></div>
+            <div class="showcase-title">🍹 เครื่องดื่มประจำตัวบนบัตรสมาชิก</div>
+            <div class="showcase-row"><span class="s-label">⭐ เมนูโปรด</span><span id="cardFavTxt" class="s-name">🍵 รอลากเมนูมาวาง</span></div>
+            <div class="showcase-row"><span class="s-label">💖 เมนูที่ชอบ</span><span id="cardLike1Txt" class="s-name">🍵 รอลากเมนูมาวาง</span></div>
+            <div class="showcase-row"><span class="s-label">🎲 อาจจะสั่ง</span><span id="cardLike2Txt" class="s-name">🍵 รอลากเมนูมาวาง</span></div>
           </div>
         </div>
 
-        <!-- ลิ้นชัก "ไม่ใช่ฉัน" แสดงเฉพาะผู้ไม่มียศ 995343114854211654 -->
         <div id="notMeDrawer" class="not-me-drawer glass-panel">
           <div class="sec-title">
             <span>🔍 เลือกบัญชีของคุณ (เฉพาะผู้ยังไม่มียศสมาชิก)</span>
@@ -294,23 +354,21 @@
         </div>
       </div>
 
-      <!-- คอลัมน์ขวา: ฟอร์มลงทะเบียน ปฏิทินจริง & ลากวางเมนู -->
+      <!-- คอลัมน์ขวา: แบบฟอร์มหัวข้ออิโมจิ -->
       <div class="form-panel glass-panel">
         <form id="regForm" autocomplete="off">
-          <!-- 1. ชื่อเล่น -->
           <div class="field-block">
             <label class="sec-title">
-              <span>1️⃣ ตั้งชื่อเล่นประจำคาเฟ่</span>
+              <span>🏷️ ตั้งชื่อเล่นประจำคาเฟ่</span>
               <span class="sec-hint">แสดงสดบนบัตรสมาชิก (1–35 ตัวอักษร)</span>
             </label>
             <input type="text" id="nickInput" class="text-input" maxlength="35" placeholder="เช่น เอ, มาย, เมฆ..." required />
           </div>
 
-          <!-- 2. ปฏิทินวันเกิดเสมือนจริง -->
           <div class="field-block">
             <label class="sec-title">
-              <span>2️⃣ เลือกวันเกิดของคุณ</span>
-              <span id="bdayPillTxt" class="sec-hint" style="font-weight:700;color:var(--espresso);">🎂 ยังไม่ได้เลือกวันเกิด</span>
+              <span>🎂 เลือกวันเกิดของคุณ</span>
+              <span id="bdayPillTxt" class="sec-hint" style="font-weight:700;color:#B56576;">🌸 ยังไม่ได้เลือกวันเกิด</span>
             </label>
             <div class="real-calendar">
               <div class="cal-top-bar">
@@ -325,50 +383,54 @@
             </div>
           </div>
 
-          <!-- 3. ลากเมนูคาเฟ่ไปวางในช่อง -->
           <div class="field-block">
             <label class="sec-title">
-              <span>3️⃣ เมนูประจำตัว (กดค้างที่เมนูด้านล่างแล้วลากมาวางในช่องได้เลย!)</span>
-              <span class="sec-hint">รองรับทั้งการลากวางและคลิกเลือก</span>
+              <span>🍹 เลือกเครื่องดื่มประจำตัว (กดค้างแล้วลากมาวางในช่องได้เลย)</span>
+              <span class="sec-hint">เลือกได้เฉพาะหมวดเครื่องดื่ม</span>
             </label>
 
             <div class="drop-slots-grid">
               <div class="drop-slot active-target" data-slot="favorite">
                 <div class="slot-head">
-                  <span>⭐ 1. เมนูโปรด</span>
+                  <span>⭐ เมนูโปรด</span>
                   <button type="button" class="slot-clear" data-clear="favorite">✕ ล้าง</button>
                 </div>
-                <div id="slotFavBody" class="slot-body"><span class="slot-placeholder">ลากเมนูมาวางที่นี่...</span></div>
+                <div id="slotFavBody" class="slot-body"><span class="slot-placeholder">ลากเครื่องดื่มมาวาง...</span></div>
               </div>
 
               <div class="drop-slot" data-slot="liked1">
                 <div class="slot-head">
-                  <span>💖 2. เมนูที่ชอบ</span>
+                  <span>💖 เมนูที่ชอบ</span>
                   <button type="button" class="slot-clear" data-clear="liked1">✕ ล้าง</button>
                 </div>
-                <div id="slotLike1Body" class="slot-body"><span class="slot-placeholder">ลากเมนูมาวางที่นี่...</span></div>
+                <div id="slotLike1Body" class="slot-body"><span class="slot-placeholder">ลากเครื่องดื่มมาวาง...</span></div>
               </div>
 
               <div class="drop-slot" data-slot="liked2">
                 <div class="slot-head">
-                  <span>🎲 3. อาจจะสั่ง</span>
+                  <span>🎲 เมนูที่อาจจะสั่ง</span>
                   <button type="button" class="slot-clear" data-clear="liked2">✕ ล้าง</button>
                 </div>
-                <div id="slotLike2Body" class="slot-body"><span class="slot-placeholder">ลากเมนูมาวางที่นี่...</span></div>
+                <div id="slotLike2Body" class="slot-body"><span class="slot-placeholder">ลากเครื่องดื่มมาวาง...</span></div>
               </div>
             </div>
 
             <div class="catalog-box">
-              <input type="text" id="menuSearch" class="search-box" style="margin-top:0;" placeholder="🔍 ค้นหาจาก 150 เมนู (เช่น ลาเต้, มัทฉะ, ครัวซองต์, SSR)..." />
-              <div id="catTabs" class="cat-tabs"></div>
+              <!-- แถบรวมช่องค้นหา + ที่คั่น + ปุ่มฟิลเตอร์ขนาดกะทัดรัด -->
+              <div class="catalog-toolbar">
+                <input type="text" id="menuSearch" class="toolbar-search" placeholder="🔍 ค้นหาชื่อเครื่องดื่ม หรือระดับ SSR, SR..." />
+                <div class="toolbar-divider"></div>
+                <div id="catTabs" class="cat-tabs"></div>
+              </div>
+
+              <div class="catalog-section-divider">✨ รายการเครื่องดื่มคาเฟ่ (กดค้างเพื่อลาก หรือคลิกเลือก) ✨</div>
               <div id="menuGrid" class="menu-grid"></div>
             </div>
           </div>
 
-          <!-- 4. รหัส PIN 4 หลัก -->
           <div class="field-block">
             <label class="sec-title">
-              <span>4️⃣ ตั้งรหัส PIN 4 หลัก (รับยศกุญแจนิรภัย)</span>
+              <span>🔐 ตั้งรหัส PIN 4 หลัก (รับยศกุญแจนิรภัย)</span>
               <span class="sec-hint">ตัวเลข 4 หลักเท่านั้น</span>
             </label>
             <div class="pin-wrap">
@@ -405,6 +467,7 @@
         { num: 12, name: 'ธันวาคม', days: 31, offset: 3 }
       ];
 
+      const DRINK_CAT_IDS = new Set(['create_one', 'coffee', 'tea', 'other_drink']);
       let eligibleMembers = [];
       let categories = [];
       const menuMap = new Map();
@@ -433,20 +496,12 @@
         regForm: $('regForm'), submitBtn: $('submitBtn'), toastBox: $('toastBox')
       };
 
-      function popAnim(el) {
-        el.classList.remove('pop');
-        void el.offsetWidth;
-        el.classList.add('pop');
-      }
-
-      function showToast(text, ok = true) {
-        els.toastBox.textContent = text;
-        els.toastBox.className = 'toast ' + (ok ? 'ok' : 'err');
-      }
+      function popAnim(el) { el.classList.remove('pop'); void el.offsetWidth; el.classList.add('pop'); }
+      function showToast(text, ok = true) { els.toastBox.textContent = text; els.toastBox.className = 'toast ' + (ok ? 'ok' : 'err'); }
 
       function updateCardUI() {
         if (currentUser) {
-          els.idCard.style.setProperty('--role-color', currentUser.roleColor || '#AA817E');
+          els.idCard.style.setProperty('--role-color', currentUser.roleColor || '#FF8DA1');
           els.avatarImg.src = currentUser.avatarUrl || 'https://cdn.discordapp.com/embed/avatars/0.png';
           els.serverNameTxt.textContent = currentUser.displayName;
           els.discordTagTxt.textContent = '@' + currentUser.username;
@@ -463,9 +518,7 @@
           }
         }
 
-        const nick = els.nickInput.value.trim();
-        els.liveNickTxt.textContent = nick || 'รอตั้งชื่อเล่น...';
-
+        els.liveNickTxt.textContent = els.nickInput.value.trim() || 'รอตั้งชื่อเล่น...';
         const mObj = MONTHS.find(m => m.num === Number(curMonth)) || MONTHS[0];
         if (curDay) {
           const bTxt = `${curDay} ${mObj.name}`;
@@ -473,7 +526,7 @@
           els.bdayPillTxt.textContent = `🎂 ${bTxt}`;
         } else {
           els.liveBdayTxt.textContent = 'เลือกในปฏิทิน';
-          els.bdayPillTxt.textContent = '🎂 ยังไม่ได้เลือกวันเกิด';
+          els.bdayPillTxt.textContent = '🌸 ยังไม่ได้เลือกวันเกิด';
         }
 
         const renderSlot = (slotKey, bodyEl, cardEl) => {
@@ -481,15 +534,15 @@
           const slotWrap = document.querySelector(`.drop-slot[data-slot="${slotKey}"]`);
           if (!val) {
             slotWrap.classList.remove('has-val');
-            bodyEl.innerHTML = '<span class="slot-placeholder">ลากเมนูมาวางที่นี่...</span>';
+            bodyEl.innerHTML = '<span class="slot-placeholder">ลากเครื่องดื่มมาวาง...</span>';
             cardEl.textContent = '🍵 รอลากเมนูมาวาง';
             return;
           }
           slotWrap.classList.add('has-val');
-          const info = menuMap.get(val) || { icon: '☕', tierCode: 'C' };
+          const info = menuMap.get(val) || { icon: '🍹', tierCode: 'C' };
           const tClass = info.tierCode === '?' ? 'MYSTERY' : info.tierCode;
           bodyEl.innerHTML = `${info.icon} ${val} <span class="tier-pill tier-${tClass}">${info.tierCode}</span>`;
-          cardEl.textContent = `${info.icon} ${val}`;
+          cardEl.innerHTML = `${info.icon} ${val} <span class="tier-pill tier-${tClass}">${info.tierCode}</span>`;
         };
 
         renderSlot('favorite', els.slotFavBody, els.cardFavTxt);
@@ -502,30 +555,17 @@
         Array.from(els.pinDots.children).forEach((dot, i) => dot.classList.toggle('filled', i < pinLen));
       }
 
-      // ปฏิทินเสมือนจริง
       function initCalendar() {
         els.monthSelect.innerHTML = MONTHS.map(m => `<option value="${m.num}">📅 เดือน${m.name}</option>`).join('');
-        els.monthSelect.addEventListener('change', (e) => {
-          curMonth = Number(e.target.value);
-          renderCalendarDays();
-        });
-        els.prevMonthBtn.addEventListener('click', () => {
-          curMonth = curMonth === 1 ? 12 : curMonth - 1;
-          els.monthSelect.value = curMonth;
-          renderCalendarDays();
-        });
-        els.nextMonthBtn.addEventListener('click', () => {
-          curMonth = curMonth === 12 ? 1 : curMonth + 1;
-          els.monthSelect.value = curMonth;
-          renderCalendarDays();
-        });
+        els.monthSelect.addEventListener('change', (e) => { curMonth = Number(e.target.value); renderCalendarDays(); });
+        els.prevMonthBtn.addEventListener('click', () => { curMonth = curMonth === 1 ? 12 : curMonth - 1; els.monthSelect.value = curMonth; renderCalendarDays(); });
+        els.nextMonthBtn.addEventListener('click', () => { curMonth = curMonth === 12 ? 1 : curMonth + 1; els.monthSelect.value = curMonth; renderCalendarDays(); });
         renderCalendarDays();
       }
 
       function renderCalendarDays() {
         const mObj = MONTHS.find(m => m.num === Number(curMonth)) || MONTHS[0];
         if (curDay && curDay > mObj.days) curDay = mObj.days;
-
         els.calDaysGrid.style.opacity = '0.3';
         els.calDaysGrid.style.transform = 'translateY(4px)';
 
@@ -552,18 +592,13 @@
           els.calDaysGrid.style.opacity = '1';
           els.calDaysGrid.style.transform = 'translateY(0)';
           updateCardUI();
-        }, 90);
+        }, 80);
       }
 
-      // ระบบกำหนดเมนูลงช่อง + อนิเมชั่นเด้ง
       function assignMenuToSlot(slotKey, menuName) {
         slots[slotKey] = menuName;
         const slotEl = document.querySelector(`.drop-slot[data-slot="${slotKey}"]`);
-        if (slotEl) {
-          slotEl.classList.remove('just-dropped');
-          void slotEl.offsetWidth;
-          slotEl.classList.add('just-dropped');
-        }
+        if (slotEl) { slotEl.classList.remove('just-dropped'); void slotEl.offsetWidth; slotEl.classList.add('just-dropped'); }
         if (slotKey === 'favorite' && !slots.liked1) setActiveSlot('liked1');
         else if (slotKey === 'liked1' && !slots.liked2) setActiveSlot('liked2');
         updateCardUI();
@@ -571,18 +606,11 @@
 
       function setActiveSlot(slotKey) {
         activeSlot = slotKey;
-        document.querySelectorAll('.drop-slot').forEach(el => {
-          el.classList.toggle('active-target', el.dataset.slot === slotKey);
-        });
+        document.querySelectorAll('.drop-slot').forEach(el => el.classList.toggle('active-target', el.dataset.slot === slotKey));
       }
 
-      // ระบบกดค้างแล้วลาก (Pointer Drag & Drop รองรับทั้ง PC และมือถือ)
       function attachDragBehavior(chipEl, item) {
-        let ghost = null;
-        let startX = 0, startY = 0;
-        let isDragging = false;
-        let holdTimer = null;
-
+        let ghost = null, startX = 0, startY = 0, isDragging = false, holdTimer = null;
         const clearDrag = () => {
           clearTimeout(holdTimer);
           if (ghost) { ghost.remove(); ghost = null; }
@@ -592,54 +620,37 @@
 
         chipEl.addEventListener('pointerdown', (e) => {
           if (e.button && e.button !== 0) return;
-          startX = e.clientX; startY = e.clientY;
-          isDragging = false;
+          startX = e.clientX; startY = e.clientY; isDragging = false;
 
           const startGhost = () => {
             isDragging = true;
             chipEl.classList.add('dragging-source');
             ghost = document.createElement('div');
             ghost.className = 'drag-ghost';
-            ghost.innerHTML = `<span>${item.icon || '☕'}</span><span>${item.name}</span>`;
-            ghost.style.left = `${startX}px`;
-            ghost.style.top = `${startY}px`;
+            ghost.innerHTML = `<span>${item.icon || '🍹'}</span><span>${item.name}</span>`;
+            ghost.style.left = `${startX}px`; ghost.style.top = `${startY}px`;
             document.body.appendChild(ghost);
           };
 
-          if (e.pointerType === 'mouse') {
-            holdTimer = setTimeout(startGhost, 90);
-          } else {
-            holdTimer = setTimeout(startGhost, 200);
-          }
+          holdTimer = setTimeout(startGhost, e.pointerType === 'mouse' ? 85 : 190);
 
           const onMove = (ev) => {
-            const dx = Math.abs(ev.clientX - startX);
-            const dy = Math.abs(ev.clientY - startY);
-            if (!isDragging && e.pointerType === 'mouse' && (dx > 5 || dy > 5)) {
-              clearTimeout(holdTimer);
-              startGhost();
-            }
+            const dx = Math.abs(ev.clientX - startX), dy = Math.abs(ev.clientY - startY);
+            if (!isDragging && e.pointerType === 'mouse' && (dx > 5 || dy > 5)) { clearTimeout(holdTimer); startGhost(); }
             if (!isDragging || !ghost) return;
             ev.preventDefault();
-            ghost.style.left = `${ev.clientX}px`;
-            ghost.style.top = `${ev.clientY}px`;
-
+            ghost.style.left = `${ev.clientX}px`; ghost.style.top = `${ev.clientY}px`;
             const targetEl = document.elementFromPoint(ev.clientX, ev.clientY)?.closest('.drop-slot');
-            document.querySelectorAll('.drop-slot').forEach(s => {
-              s.classList.toggle('drag-over', s === targetEl);
-            });
+            document.querySelectorAll('.drop-slot').forEach(s => s.classList.toggle('drag-over', s === targetEl));
           };
 
           const onUp = (ev) => {
             window.removeEventListener('pointermove', onMove);
             window.removeEventListener('pointerup', onUp);
             window.removeEventListener('pointercancel', onUp);
-
             if (isDragging) {
               const dropTarget = document.elementFromPoint(ev.clientX, ev.clientY)?.closest('.drop-slot');
-              if (dropTarget && dropTarget.dataset.slot) {
-                assignMenuToSlot(dropTarget.dataset.slot, item.name);
-              }
+              if (dropTarget?.dataset.slot) assignMenuToSlot(dropTarget.dataset.slot, item.name);
             } else {
               assignMenuToSlot(activeSlot, item.name);
             }
@@ -654,15 +665,15 @@
 
       function renderCatalog() {
         const q = els.menuSearch.value.trim().toLowerCase();
-        els.catTabs.style.display = q ? 'none' : 'flex';
         els.catTabs.innerHTML = '';
 
         categories.forEach(cat => {
           const b = document.createElement('button');
           b.type = 'button';
-          b.className = 'cat-tab' + (cat.id === activeCatId ? ' active' : '');
-          b.textContent = `${cat.icon || '☕'} ${(cat.title || '').split('(')[0].trim()}`;
-          b.addEventListener('click', () => { activeCatId = cat.id; renderCatalog(); });
+          b.className = 'cat-tab' + (!q && cat.id === activeCatId ? ' active' : '');
+          const shortLabel = cat.id === 'coffee' ? 'กาแฟ' : cat.id === 'tea' ? 'ชา' : cat.id === 'other_drink' ? 'ม็อกเทล/สมูทตี้' : 'เมนูพิเศษ';
+          b.textContent = `${cat.icon || '🍹'} ${shortLabel}`;
+          b.addEventListener('click', () => { els.menuSearch.value = ''; activeCatId = cat.id; renderCatalog(); });
           els.catTabs.appendChild(b);
         });
 
@@ -682,7 +693,8 @@
           chip.className = 'menu-chip';
           const tClass = item.tierCode === '?' ? 'MYSTERY' : item.tierCode;
           chip.innerHTML = `
-            <span class="m-chip-name">${item.icon || '☕'} ${item.name}</span>
+            <span class="m-chip-name">${item.icon || '🍹'} ${item.name}</span>
+            <span class="chip-v-sep"></span>
             <span class="tier-pill tier-${tClass}">${item.tierCode}</span>
           `;
           attachDragBehavior(chip, item);
@@ -697,9 +709,9 @@
         curDay = u.birthdayDay || null;
         curMonth = u.birthdayMonth || 1;
         els.monthSelect.value = curMonth;
-        slots.favorite = u.favoriteMenu && u.favoriteMenu !== 'ขอคิดดูก่อน' ? u.favoriteMenu : '';
-        slots.liked1 = u.likedMenu1 && u.likedMenu1 !== 'ขอคิดดูก่อน' ? u.likedMenu1 : '';
-        slots.liked2 = u.likedMenu2 && u.likedMenu2 !== 'ขอคิดดูก่อน' ? u.likedMenu2 : '';
+        slots.favorite = u.favoriteMenu && u.favoriteMenu !== 'ขอคิดดูก่อน' && menuMap.has(u.favoriteMenu) ? u.favoriteMenu : '';
+        slots.liked1 = u.likedMenu1 && u.likedMenu1 !== 'ขอคิดดูก่อน' && menuMap.has(u.likedMenu1) ? u.likedMenu1 : '';
+        slots.liked2 = u.likedMenu2 && u.likedMenu2 !== 'ขอคิดดูก่อน' && menuMap.has(u.likedMenu2) ? u.likedMenu2 : '';
         renderCalendarDays();
         updateCardUI();
         renderEligibleMembers(els.memberSearch.value);
@@ -708,9 +720,7 @@
 
       function renderEligibleMembers(q = '') {
         const clean = q.trim().toLowerCase();
-        const filtered = eligibleMembers.filter(m =>
-          !clean || m.displayName.toLowerCase().includes(clean) || m.username.toLowerCase().includes(clean)
-        );
+        const filtered = eligibleMembers.filter(m => !clean || m.displayName.toLowerCase().includes(clean) || m.username.toLowerCase().includes(clean));
         els.eligibleCountTxt.textContent = `${eligibleMembers.length} ท่าน`;
         els.memberList.innerHTML = '';
         filtered.slice(0, 50).forEach(m => {
@@ -726,71 +736,48 @@
             </div>
             <span class="pill ready">เลือกฉัน</span>
           `;
-          row.addEventListener('click', () => {
-            selectUser(m);
-            els.notMeDrawer.classList.remove('open');
-          });
+          row.addEventListener('click', () => { selectUser(m); els.notMeDrawer.classList.remove('open'); });
           els.memberList.appendChild(row);
         });
       }
 
-      // ตั้งค่า Event ทั่วไป
-      document.querySelectorAll('.drop-slot').forEach(slotEl => {
-        slotEl.addEventListener('click', () => setActiveSlot(slotEl.dataset.slot));
-      });
-      document.querySelectorAll('.slot-clear').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-          e.stopPropagation();
-          slots[btn.dataset.clear] = '';
-          updateCardUI();
-        });
-      });
+      document.querySelectorAll('.drop-slot').forEach(s => s.addEventListener('click', () => setActiveSlot(s.dataset.slot)));
+      document.querySelectorAll('.slot-clear').forEach(btn => btn.addEventListener('click', (e) => { e.stopPropagation(); slots[btn.dataset.clear] = ''; updateCardUI(); }));
 
       els.notMeToggleBtn.addEventListener('click', () => els.notMeDrawer.classList.toggle('open'));
       els.memberSearch.addEventListener('input', (e) => renderEligibleMembers(e.target.value));
       els.menuSearch.addEventListener('input', renderCatalog);
       els.nickInput.addEventListener('input', () => { updateCardUI(); popAnim(els.liveNickTxt); });
-      els.pinInput.addEventListener('input', () => {
-        els.pinInput.value = els.pinInput.value.replace(/\D/g, '').slice(0, 4);
-        updateCardUI();
-      });
+      els.pinInput.addEventListener('input', () => { els.pinInput.value = els.pinInput.value.replace(/\D/g, '').slice(0, 4); updateCardUI(); });
 
-      // เอฟเฟกต์เอียงการ์ด 3D
       els.idCard.addEventListener('mousemove', (e) => {
         if (!window.matchMedia('(hover: hover)').matches) return;
         const r = els.idCard.getBoundingClientRect();
-        const rx = (0.5 - (e.clientY - r.top) / r.height) * 9;
-        const ry = ((e.clientX - r.left) / r.width - 0.5) * 9;
+        const rx = (0.5 - (e.clientY - r.top) / r.height) * 8;
+        const ry = ((e.clientX - r.left) / r.width - 0.5) * 8;
         els.idCard.style.transform = `perspective(900px) rotateX(${rx.toFixed(2)}deg) rotateY(${ry.toFixed(2)}deg)`;
       });
-      els.idCard.addEventListener('mouseleave', () => {
-        els.idCard.style.transform = 'perspective(900px) rotateX(0deg) rotateY(0deg)';
-      });
+      els.idCard.addEventListener('mouseleave', () => { els.idCard.style.transform = 'perspective(900px) rotateX(0deg) rotateY(0deg)'; });
 
-      // เอฟเฟกต์ละอองดาว & พลุฉลอง
-      const canvas = $('fxCanvas');
-      const ctx = canvas.getContext('2d');
+      const canvas = $('fxCanvas'), ctx = canvas.getContext('2d');
       let particles = [];
       function resizeCanvas() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
       window.addEventListener('resize', resizeCanvas); resizeCanvas();
 
-      for (let i = 0; i < 28; i++) {
+      for (let i = 0; i < 32; i++) {
         particles.push({
           x: Math.random() * canvas.width, y: Math.random() * canvas.height,
-          r: Math.random() * 2.5 + 1, vy: -Math.random() * 0.4 - 0.15,
-          color: ['#FFD1DC', '#E2D1F9', '#F5B041'][i % 3], alpha: Math.random() * 0.5 + 0.2
+          r: Math.random() * 3 + 1.2, vy: -Math.random() * 0.45 - 0.15,
+          color: ['#FF8DA1', '#C3A6FF', '#F5B041', '#8FD19E'][i % 4], alpha: Math.random() * 0.55 + 0.2
         });
       }
 
       function burstConfetti(x, y) {
-        for (let i = 0; i < 40; i++) {
-          const angle = Math.random() * Math.PI * 2;
-          const speed = Math.random() * 6 + 2;
+        for (let i = 0; i < 45; i++) {
+          const angle = Math.random() * Math.PI * 2, speed = Math.random() * 6.5 + 2;
           particles.push({
-            x, y, r: Math.random() * 4 + 2,
-            vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed - 2,
-            gravity: 0.15, color: ['#FF8DA1', '#FFD700', '#8FD19E', '#C3A6FF'][i % 4],
-            alpha: 1, burst: true
+            x, y, r: Math.random() * 4.5 + 2, vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed - 2,
+            gravity: 0.15, color: ['#FF758F', '#FFD700', '#8FD19E', '#C3A6FF'][i % 4], alpha: 1, burst: true
           });
         }
       }
@@ -799,8 +786,7 @@
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         for (let i = particles.length - 1; i >= 0; i--) {
           const p = particles[i];
-          ctx.globalAlpha = p.alpha;
-          ctx.fillStyle = p.color;
+          ctx.globalAlpha = p.alpha; ctx.fillStyle = p.color;
           ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2); ctx.fill();
           if (p.burst) {
             p.x += p.vx; p.y += p.vy; p.vy += p.gravity; p.alpha -= 0.018;
@@ -814,7 +800,6 @@
       }
       tickFx();
 
-      // ส่งฟอร์มลงทะเบียน
       els.regForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         if (!currentUser?.discordId) return showToast('กรุณาเลือกบัญชีของคุณก่อนค่ะ', false);
@@ -857,7 +842,6 @@
         }
       });
 
-      // โหลดข้อมูลเริ่มต้นอัตโนมัติ
       async function init() {
         initCalendar();
         const [catRes, memRes] = await Promise.all([
@@ -866,7 +850,8 @@
         ]);
 
         if (catRes?.ok && Array.isArray(catRes.categories)) {
-          categories = catRes.categories;
+          // กรองเฉพาะหมวดเครื่องดื่มเท่านั้น (ตัดขนมและท็อปปิ้งออก)
+          categories = catRes.categories.filter(c => c.typeKey === 'drink' || DRINK_CAT_IDS.has(c.id));
           categories.forEach(c => (c.items || []).forEach(it => menuMap.set(it.name, it)));
           if (categories.length > 0) activeCatId = categories[0].id;
           renderCatalog();
@@ -882,18 +867,11 @@
 
         if (targetId) {
           const uRes = await fetch(`/api/register/user/${encodeURIComponent(targetId)}`).then(r => r.json()).catch(() => null);
-          if (uRes?.ok && uRes.user) {
-            selectUser(uRes.user);
-            return;
-          }
+          if (uRes?.ok && uRes.user) { selectUser(uRes.user); return; }
         }
 
-        if (eligibleMembers.length > 0) {
-          selectUser(eligibleMembers[0]);
-        } else {
-          els.serverNameTxt.textContent = 'ไม่พบผู้ที่รอลงทะเบียน';
-          els.notMeDrawer.classList.add('open');
-        }
+        if (eligibleMembers.length > 0) selectUser(eligibleMembers[0]);
+        else { els.serverNameTxt.textContent = 'ไม่พบผู้ที่รอลงทะเบียน'; els.notMeDrawer.classList.add('open'); }
       }
 
       init();
