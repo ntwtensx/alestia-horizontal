@@ -34,7 +34,6 @@ function formatMemberPayload(discordId, member, dbDoc, inCafeVoice = false) {
     favoriteMenu: (dbDoc?.favoriteMenu || '').trim(),
     likedMenu1: (dbDoc?.likedMenu1 || '').trim(),
     likedMenu2: (dbDoc?.likedMenu2 || '').trim(),
-    inviter: (dbDoc?.inviter || '').trim(),
     avatarUrl: member
       ? member.displayAvatarURL({ extension: 'png', size: 256 })
       : dbDoc?.avatarUrl || 'https://cdn.discordapp.com/embed/avatars/0.png',
@@ -47,7 +46,6 @@ function formatMemberPayload(discordId, member, dbDoc, inCafeVoice = false) {
   };
 }
 
-// ฟังก์ชันดึงข้อมูลสมาชิกจากแคชของ Discord ร่วมกับฐานข้อมูล MongoDB
 async function buildMemberDirectorySnapshot(client) {
   const guild = client?.guilds?.cache?.get(TARGET_GUILD_ID) || client?.guilds?.cache?.first();
   const dbUsers = await UserDB.find({}).lean().catch(() => []);
@@ -69,7 +67,6 @@ async function buildMemberDirectorySnapshot(client) {
         const inCafeVoice = Boolean(
           cafeChannel?.members?.has(memberId) || member.voice?.channelId === CAFE_CHANNEL_ID
         );
-
         resultList.push(formatMemberPayload(memberId, member, dbDoc, inCafeVoice));
       }
     }
@@ -89,7 +86,7 @@ async function buildMemberDirectorySnapshot(client) {
   return resultList;
 }
 
-// 1. GET /api/register/catalog - ดึงสมุดเมนูทั้ง 150 รายการพร้อมระดับ Tier
+// 1. GET /api/register/catalog - ดึงสมุดเมนู 150 รายการพร้อมระดับ Tier
 router.get('/catalog', async (req, res) => {
   try {
     await menuCatalog.syncMysteryMenusFromDB();
@@ -117,17 +114,14 @@ router.get('/members', async (req, res) => {
   }
 });
 
-// 3. GET /api/register/user/:discordId - ค้นหาสมาชิกรายบุคคลจาก Discord ID
+// 3. GET /api/register/user/:discordId - ค้นหาสมาชิกรายบุคคล
 router.get('/user/:discordId', async (req, res) => {
   try {
     const client = req.app.get('bot');
     const discordId = String(req.params.discordId || '').trim();
 
     if (!/^\d{15,21}$/.test(discordId)) {
-      return res.status(400).json({
-        ok: false,
-        error: 'รูปแบบรหัส Discord ID ไม่ถูกต้องค่ะ (ต้องเป็นตัวเลข 15-21 หลัก)'
-      });
+      return res.status(400).json({ ok: false, error: 'รูปแบบรหัส Discord ID ไม่ถูกต้องค่ะ' });
     }
 
     const guild = client?.guilds?.cache?.get(TARGET_GUILD_ID) || client?.guilds?.cache?.first();
@@ -139,10 +133,7 @@ router.get('/user/:discordId', async (req, res) => {
     const dbDoc = await UserDB.findOne({ discordId }).lean().catch(() => null);
 
     if (!member && !dbDoc) {
-      return res.status(404).json({
-        ok: false,
-        error: 'ไม่พบสมาชิกที่ใช้รหัส Discord ID นี้ในเซิร์ฟเวอร์ Horizontal ค่ะ'
-      });
+      return res.status(404).json({ ok: false, error: 'ไม่พบสมาชิกที่ใช้รหัส Discord ID นี้ค่ะ' });
     }
 
     const inCafeVoice = Boolean(member?.voice?.channelId === CAFE_CHANNEL_ID);
@@ -156,7 +147,7 @@ router.get('/user/:discordId', async (req, res) => {
   }
 });
 
-// 4. POST /api/register/submit - บันทึกข้อมูลบัตรสมาชิก วันเกิด เมนูประจำตัว และรหัส PIN ลง MongoDB
+// 4. POST /api/register/submit - บันทึกข้อมูลลง MongoDB และมอบยศใน Discord อัตโนมัติ
 async function handleRegistrationSubmit(req, res) {
   try {
     const client = req.app.get('bot');
@@ -171,17 +162,11 @@ async function handleRegistrationSubmit(req, res) {
     const newPin = String(req.body?.newPin || req.body?.pin || '').trim();
 
     if (!/^\d{15,21}$/.test(discordId)) {
-      return res.status(400).json({
-        ok: false,
-        error: 'กรุณาเลือกโปรไฟล์ของคุณจากรายชื่อ หรือระบุรหัส Discord ID ให้ถูกต้องค่ะ'
-      });
+      return res.status(400).json({ ok: false, error: 'กรุณาเลือกโปรไฟล์ของคุณจากรายชื่อค่ะ' });
     }
 
     if (!nickname || nickname.length < 1 || nickname.length > 35) {
-      return res.status(400).json({
-        ok: false,
-        error: 'กรุณาตั้งชื่อเล่นความยาวระหว่าง 1 ถึง 35 ตัวอักษรค่ะ'
-      });
+      return res.status(400).json({ ok: false, error: 'กรุณาตั้งชื่อเล่นความยาวระหว่าง 1 ถึง 35 ตัวอักษรค่ะ' });
     }
 
     if (
@@ -192,10 +177,7 @@ async function handleRegistrationSubmit(req, res) {
       birthdayMonth < 1 ||
       birthdayMonth > 12
     ) {
-      return res.status(400).json({
-        ok: false,
-        error: 'กรุณาเลือกวันที่และเดือนเกิดจากปฏิทินจำลองให้ครบถ้วนค่ะ 🎂'
-      });
+      return res.status(400).json({ ok: false, error: 'กรุณาเลือกวันที่และเดือนเกิดจากปฏิทินจำลองให้ครบถ้วนค่ะ 🎂' });
     }
 
     const birthdayText = `${birthdayDay} ${THAI_MONTHS[birthdayMonth - 1]}`;
@@ -203,7 +185,6 @@ async function handleRegistrationSubmit(req, res) {
     const existingUser = await UserDB.findOne({ discordId });
     const existingPin = String(existingUser?.pin || existingUser?.casinoPin || '').trim();
 
-    // ตรวจสอบรหัส PIN เดิม หากบัญชีนี้เคยตั้งรหัส PIN ไว้แล้ว
     if (existingPin !== '') {
       if (!currentPin) {
         return res.status(401).json({
@@ -216,19 +197,15 @@ async function handleRegistrationSubmit(req, res) {
         return res.status(401).json({
           ok: false,
           requireCurrentPin: true,
-          error: 'รหัส PIN เดิมไม่ถูกต้อง! ไม่อนุญาตให้แก้ไขข้อมูลบัตรสมาชิกค่ะ'
+          error: 'รหัส PIN เดิมไม่ถูกต้อง! ไม่อนุญาตให้แก้ไขข้อมูลค่ะ'
         });
       }
     }
 
-    // จัดการรหัส PIN ใหม่ (ถ้ามีการกรอกเข้ามา ต้องเป็นตัวเลข 4-6 หลัก)
     let finalPinToSave = existingPin;
     if (newPin !== '') {
       if (!/^\d{4,6}$/.test(newPin)) {
-        return res.status(400).json({
-          ok: false,
-          error: 'รหัส PIN ต้องเป็นตัวเลข 4 ถึง 6 หลักเท่านั้นค่ะ (เช่น 1234)'
-        });
+        return res.status(400).json({ ok: false, error: 'รหัส PIN ต้องเป็นตัวเลข 4 ถึง 6 หลักเท่านั้นค่ะ' });
       }
       finalPinToSave = newPin;
     }
@@ -294,7 +271,7 @@ async function handleRegistrationSubmit(req, res) {
 
     return res.json({
       ok: true,
-      message: `บันทึกบัตรสมาชิกของคุณ "${nickname}" (เกิดวันที่ ${birthdayText}) และเมนูประจำตัวลงฐานข้อมูลเรียบร้อยแล้วค่ะ!${roleMsg}`,
+      message: `บันทึกบัตรสมาชิกของคุณ "${nickname}" (เกิดวันที่ ${birthdayText}) และเมนูประจำตัวเรียบร้อยแล้วค่ะ!${roleMsg}`,
       user: formatMemberPayload(
         discordId,
         member,

@@ -28,23 +28,19 @@ export default function RegisterPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [memberCountText, setMemberCountText] = useState('กำลังโหลดรายชื่อ...');
 
-  // ฟิลด์แบบฟอร์มลงทะเบียน (อัปเดตขึ้นบัตรสมาชิกแบบเรียลไทม์ทันทีที่เปลี่ยนค่า)
   const [discordId, setDiscordId] = useState('');
   const [nickname, setNickname] = useState('');
   const [birthdayDay, setBirthdayDay] = useState(null);
   const [birthdayMonth, setBirthdayMonth] = useState(1);
 
-  // เมนูประจำตัว 3 ลำดับ
   const [favoriteMenu, setFavoriteMenu] = useState('');
   const [likedMenu1, setLikedMenu1] = useState('');
   const [likedMenu2, setLikedMenu2] = useState('');
 
-  // ระบบสมุดเมนู Interactive Picker
-  const [activeMenuSlot, setActiveMenuSlot] = useState('favorite'); // 'favorite' | 'liked1' | 'liked2'
+  const [activeMenuSlot, setActiveMenuSlot] = useState('favorite');
   const [activeCategoryId, setActiveCategoryId] = useState('coffee');
   const [menuSearch, setMenuSearch] = useState('');
 
-  // รหัส PIN
   const [currentPin, setCurrentPin] = useState('');
   const [newPin, setNewPin] = useState('');
   const [showPin, setShowPin] = useState(false);
@@ -56,14 +52,17 @@ export default function RegisterPage() {
   const cardRef = useRef(null);
   const [cardTransform, setCardTransform] = useState('perspective(900px) rotateX(0deg) rotateY(0deg)');
 
-  // สร้าง Map ค้นหาข้อมูลเมนูและระดับ Tier แบบเร็ว O(1)
   const menuInfoMap = useMemo(() => {
     const map = new Map();
-    catalogCategories.forEach(cat => {
-      (cat.items || []).forEach(item => {
-        map.set(item.name, item);
+    if (Array.isArray(catalogCategories)) {
+      catalogCategories.forEach(cat => {
+        if (Array.isArray(cat.items)) {
+          cat.items.forEach(item => {
+            if (item && item.name) map.set(item.name, item);
+          });
+        }
       });
-    });
+    }
     return map;
   }, [catalogCategories]);
 
@@ -76,12 +75,11 @@ export default function RegisterPage() {
       const found = menuInfoMap.get(clean);
       return {
         name: found.name,
-        tierCode: found.tierCode,
-        icon: found.icon,
-        priceText: found.isMystery ? '199-999 🪙' : `${found.price} 🪙`
+        tierCode: found.tierCode || 'C',
+        icon: found.icon || '☕',
+        priceText: found.isMystery ? '199-999 🪙' : `${found.price || 0} 🪙`
       };
     }
-    // กรณีพิมพ์ชื่อเมนูพิเศษเอง จะจัดเป็นระดับ ? • Create one อัตโนมัติ
     return {
       name: clean,
       tierCode: '?',
@@ -121,12 +119,12 @@ export default function RegisterPage() {
         fetchMenuCatalog().catch(() => ({ categories: [] }))
       ]);
 
-      if (Array.isArray(catalogData.categories) && catalogData.categories.length > 0) {
+      if (catalogData && Array.isArray(catalogData.categories) && catalogData.categories.length > 0) {
         setCatalogCategories(catalogData.categories);
         setActiveCategoryId(catalogData.categories[0].id);
       }
 
-      const members = membersData.members || [];
+      const members = membersData?.members || [];
       setAllMembers(members);
       setMemberCountText(`สมาชิกในร้าน ${members.length} ท่าน`);
 
@@ -141,14 +139,14 @@ export default function RegisterPage() {
         }
         try {
           const singleRes = await lookupDiscordMember(targetId);
-          if (singleRes.user) {
+          if (singleRes && singleRes.user) {
             handleSelectMember(singleRes.user);
             return;
           }
         } catch (e) {}
       }
 
-      if (members.length > 0 && !selectedUser) {
+      if (members.length > 0) {
         handleSelectMember(members[0]);
       }
     } catch (err) {
@@ -160,7 +158,6 @@ export default function RegisterPage() {
     loadInitialData();
   }, []);
 
-  // คำนวณวันสูงสุดของเดือนที่เลือกในปฏิทินจำลอง
   const currentMonthMeta =
     THAI_MONTHS.find(m => m.num === Number(birthdayMonth)) || THAI_MONTHS[0];
 
@@ -172,7 +169,6 @@ export default function RegisterPage() {
     }
   };
 
-  // เลือกเมนูจากสมุดแคตตาล็อกเข้าสู่ช่องที่กำลังเลือกอยู่
   const handlePickMenuFromCatalog = (menuName) => {
     if (activeMenuSlot === 'favorite') {
       setFavoriteMenu(menuName);
@@ -209,10 +205,12 @@ export default function RegisterPage() {
     }
     try {
       const data = await lookupDiscordMember(cleanId);
-      handleSelectMember(data.user);
-      setToast({ ok: true, text: `ดึงโปรไฟล์ของ ${data.user.displayName} สำเร็จแล้วค่ะ!` });
+      if (data && data.user) {
+        handleSelectMember(data.user);
+        setToast({ ok: true, text: `ดึงโปรไฟล์ของ ${data.user.displayName} สำเร็จแล้วค่ะ!` });
+      }
     } catch (err) {
-      setToast({ ok: false, text: err.message });
+      setToast({ ok: false, text: err.message || 'ไม่พบข้อมูลสมาชิกค่ะ' });
     }
   };
 
@@ -239,13 +237,13 @@ export default function RegisterPage() {
         newPin: newPin.trim()
       });
 
-      if (!data.ok) {
-        if (data.requireCurrentPin) {
+      if (!data || !data.ok) {
+        if (data && data.requireCurrentPin) {
           setRequireOldPin(true);
         }
-        setToast({ ok: false, text: data.error || 'บันทึกข้อมูลไม่สำเร็จค่ะ' });
+        setToast({ ok: false, text: data?.error || 'บันทึกข้อมูลไม่สำเร็จค่ะ' });
       } else {
-        setToast({ ok: true, text: `🎉 ${data.message}` });
+        setToast({ ok: true, text: `🎉 ${data.message || 'บันทึกสำเร็จ'}` });
         setCurrentPin('');
         setNewPin('');
         if (data.user) {
@@ -265,7 +263,7 @@ export default function RegisterPage() {
     }
   };
 
-  const filteredMembers = allMembers
+  const filteredMembers = (Array.isArray(allMembers) ? allMembers : [])
     .filter(m => {
       const q = searchQuery.trim().toLowerCase();
       if (!q) return true;
@@ -273,27 +271,34 @@ export default function RegisterPage() {
         (m.nickname && m.nickname.toLowerCase().includes(q)) ||
         (m.displayName && m.displayName.toLowerCase().includes(q)) ||
         (m.username && m.username.toLowerCase().includes(q)) ||
-        m.discordId.includes(q)
+        (m.discordId && m.discordId.includes(q))
       );
     })
     .slice(0, 60);
 
-  // รายการเมนูที่แสดงในสมุดเมนูตามหมวดหมู่หรือคำค้นหา
   const displayedCatalogItems = useMemo(() => {
     const q = menuSearch.trim().toLowerCase();
     if (q) {
       const all = [];
-      catalogCategories.forEach(cat => {
-        (cat.items || []).forEach(item => {
-          if (item.name.toLowerCase().includes(q) || item.tierCode.toLowerCase().includes(q)) {
-            all.push(item);
+      if (Array.isArray(catalogCategories)) {
+        catalogCategories.forEach(cat => {
+          if (Array.isArray(cat.items)) {
+            cat.items.forEach(item => {
+              if (
+                item &&
+                item.name &&
+                (item.name.toLowerCase().includes(q) || (item.tierCode && item.tierCode.toLowerCase().includes(q)))
+              ) {
+                all.push(item);
+              }
+            });
           }
         });
-      });
+      }
       return all;
     }
-    const activeCat = catalogCategories.find(c => c.id === activeCategoryId);
-    return activeCat ? activeCat.items : [];
+    const activeCat = (Array.isArray(catalogCategories) ? catalogCategories : []).find(c => c.id === activeCategoryId);
+    return activeCat && Array.isArray(activeCat.items) ? activeCat.items : [];
   }, [catalogCategories, activeCategoryId, menuSearch]);
 
   const roleColor = selectedUser?.roleColor || '#AA817E';
@@ -309,9 +314,6 @@ export default function RegisterPage() {
 
   return (
     <div className="portal-grid">
-      {/* ========================================================
-          🃏 คอลัมน์ซ้าย: บัตรสมาชิกจำลองแบบเรียลไทม์ (Live Preview Card)
-         ======================================================== */}
       <div className="sticky-preview-column">
         <div
           ref={cardRef}
@@ -334,7 +336,6 @@ export default function RegisterPage() {
             </span>
           </div>
 
-          {/* รูปโปรไฟล์ Discord ของผู้สมัคร */}
           <div className="avatar-stage">
             <img
               src={selectedUser?.avatarUrl || 'https://cdn.discordapp.com/embed/avatars/0.png'}
@@ -342,7 +343,6 @@ export default function RegisterPage() {
             />
           </div>
 
-          {/* ชื่อที่ปรากฏในดิสคอร์ดเซิร์ฟเวอร์ */}
           <div className="preview-server-name">{serverDisplayName}</div>
           <div className="preview-discord-tag">
             @{selectedUser?.username || discordId || 'discord_member'}
@@ -353,7 +353,6 @@ export default function RegisterPage() {
             <span>{selectedUser?.roleName || 'ลูกค้าประจำคาเฟ่'}</span>
           </div>
 
-          {/* ข้อมูลชื่อเล่นและวันเกิดที่เปลี่ยนตามการกรอกแบบสดๆ */}
           <div className="live-identity-grid">
             <div className="live-identity-box">
               <div className="preview-stat-label">🏷️ ชื่อเล่นประจำคาเฟ่</div>
@@ -365,7 +364,6 @@ export default function RegisterPage() {
             </div>
           </div>
 
-          {/* รายการเมนูประจำตัวทั้ง 3 ลำดับบนบัตรสมาชิก */}
           <div className="live-menu-showcase">
             <div className="showcase-header">☕ เมนูประจำตัวสำหรับเสิร์ฟในห้องเสียง</div>
 
@@ -413,7 +411,6 @@ export default function RegisterPage() {
           </div>
         </div>
 
-        {/* 🔍 กล่องเลือกโปรไฟล์ด่วนจากรายชื่อในเซิร์ฟเวอร์ */}
         <div className="quick-picker-panel alx-glass-panel">
           <div className="picker-header">
             <h3>⚡ คลิกเลือกชื่อ Discord ของคุณ</h3>
@@ -456,9 +453,6 @@ export default function RegisterPage() {
         </div>
       </div>
 
-      {/* ========================================================
-          📝 คอลัมน์ขวา: แบบฟอร์มกรอกข้อมูลลงทะเบียนสมาชิก
-         ======================================================== */}
       <div className="form-card-panel alx-glass-panel">
         <div className="form-header">
           <h2>🪪 แบบฟอร์มลงทะเบียนบัตรสมาชิก Horizontal Cafe</h2>
@@ -469,7 +463,6 @@ export default function RegisterPage() {
         </div>
 
         <form onSubmit={handleSubmit} autoComplete="off">
-          {/* 1. รหัส Discord ID */}
           <div className="field-group">
             <label className="field-label">
               <span>1️⃣ โปรไฟล์ Discord ของผู้สมัคร</span>
@@ -490,7 +483,6 @@ export default function RegisterPage() {
             </div>
           </div>
 
-          {/* 2. กรอกชื่อเล่น */}
           <div className="field-group">
             <label className="field-label">
               <span>2️⃣ ชื่อเล่นประจำคาเฟ่ (แสดงสดบนบัตรสมาชิก)</span>
@@ -507,7 +499,6 @@ export default function RegisterPage() {
             />
           </div>
 
-          {/* 3. ปฏิทินจำลองเลือกวันเกิด (วันที่และเดือน) */}
           <div className="field-group">
             <label className="field-label">
               <span>3️⃣ วันเกิดของคุณ (ปฏิทินจำลอง วันที่ & เดือน)</span>
@@ -550,7 +541,6 @@ export default function RegisterPage() {
             </div>
           </div>
 
-          {/* 4. เลือกเมนูโปรด / เมนูที่ชอบ / เมนูที่อาจจะสั่ง */}
           <div className="field-group">
             <label className="field-label">
               <span>4️⃣ เมนูประจำตัว 3 ลำดับ (เลือกจากสมุดเมนูด้านล่าง หรือพิมพ์เองได้เลย)</span>
@@ -558,7 +548,6 @@ export default function RegisterPage() {
             </label>
 
             <div className="menu-slots-selector">
-              {/* ช่องที่ 1: เมนูโปรด */}
               <div
                 onClick={() => setActiveMenuSlot('favorite')}
                 className={`menu-slot-card ${activeMenuSlot === 'favorite' ? 'active-slot' : ''}`}
@@ -581,7 +570,6 @@ export default function RegisterPage() {
                 />
               </div>
 
-              {/* ช่องที่ 2: เมนูที่ชอบ */}
               <div
                 onClick={() => setActiveMenuSlot('liked1')}
                 className={`menu-slot-card ${activeMenuSlot === 'liked1' ? 'active-slot' : ''}`}
@@ -604,7 +592,6 @@ export default function RegisterPage() {
                 />
               </div>
 
-              {/* ช่องที่ 3: เมนูที่อาจจะสั่ง */}
               <div
                 onClick={() => setActiveMenuSlot('liked2')}
                 className={`menu-slot-card ${activeMenuSlot === 'liked2' ? 'active-slot' : ''}`}
@@ -628,7 +615,6 @@ export default function RegisterPage() {
               </div>
             </div>
 
-            {/* สมุดแคตตาล็อกเมนู 150 รายการจาก menuPriceCatalog.js */}
             <div className="catalog-browser-box">
               <div className="catalog-browser-top">
                 <span className="catalog-target-indicator">
@@ -650,8 +636,7 @@ export default function RegisterPage() {
                 />
               </div>
 
-              {/* แถบหมวดหมู่เมนู */}
-              {!menuSearch.trim() && (
+              {!menuSearch.trim() && Array.isArray(catalogCategories) && catalogCategories.length > 0 && (
                 <div className="catalog-category-tabs">
                   {catalogCategories.map(cat => (
                     <button
@@ -661,13 +646,12 @@ export default function RegisterPage() {
                       className={`cat-tab-btn ${activeCategoryId === cat.id ? 'active' : ''}`}
                     >
                       <span>{cat.icon}</span>
-                      <span>{cat.title.split('(')[0].trim()}</span>
+                      <span>{cat.title ? cat.title.split('(')[0].trim() : ''}</span>
                     </button>
                   ))}
                 </div>
               )}
 
-              {/* รายการปุ่มเมนูพร้อมป้าย Tier และราคา */}
               <div className="catalog-items-grid">
                 {displayedCatalogItems.map(item => {
                   const isSelectedInActiveSlot =
@@ -679,7 +663,9 @@ export default function RegisterPage() {
                     <button
                       key={`${item.categoryId}-${item.name}`}
                       type="button"
-                      onClick={() => handlePickMenuFromCatalog(item.name)}
+                      onClick={() => {
+                        if (item && item.name) handlePickMenuFromCatalog(item.name);
+                      }}
                       className={`catalog-item-chip ${isSelectedInActiveSlot ? 'picked' : ''}`}
                     >
                       <div className="chip-left">
@@ -705,7 +691,6 @@ export default function RegisterPage() {
             </div>
           </div>
 
-          {/* 5. ยืนยัน / ตั้งรหัส PIN (สำหรับรับยศ PIN และปกป้องข้อมูล) */}
           {requireOldPin && (
             <div className="current-pin-alert-box">
               <label className="field-label">
