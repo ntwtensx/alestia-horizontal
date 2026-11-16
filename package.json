@@ -6,7 +6,7 @@
   "scripts": {
     "start": "node src/index.js",
     "dev": "node --watch src/index.js",
-    "build": "echo 'React client build will be added in Step 2'"
+    "build": "npm install --prefix client && npm run build --prefix client"
   },
   "dependencies": {
     "cors": "^2.8.5",
