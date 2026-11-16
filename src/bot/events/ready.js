@@ -1,4 +1,10 @@
-const { ActivityType } = require('discord.js');
+const {
+  ActivityType,
+  ActionRowBuilder,
+  ButtonBuilder,
+  ButtonStyle
+} = require('discord.js');
+const theme = require('../../config/theme');
 
 module.exports = {
   name: 'ready',
@@ -6,23 +12,19 @@ module.exports = {
   async execute(client) {
     console.log(`🌸 [Alestia] บาริสต้า ${client.user.tag} พร้อมเสิร์ฟกาแฟใน Horizontal แล้ว!`);
 
-    // ตั้งสถานะบอทสไตล์คาเฟ่ชิลๆ
     client.user.setActivity('กำลังดริปกาแฟที่ Horizontal ☕', {
       type: ActivityType.Custom,
       state: '☕ กำลังชงเครื่องดื่มต้อนรับสมาชิก Horizontal'
     });
 
-    // ลงทะเบียน Slash Commands ทั้งหมดที่มีในโฟลเดอร์ commands ให้อัตโนมัติ
+    // 1. ลงทะเบียน Slash Commands ทั้งหมดอัตโนมัติ
     try {
       const commandsData = client.commands.map(cmd => cmd.data.toJSON());
-
-      // ดึงรายการคำสั่งเดิมบน Discord เพื่อตรวจสอบว่ามี Entry Point Command (Type 4) ค้างอยู่หรือไม่
       const existingCommands = await client.application.commands.fetch();
       const entryPoints = existingCommands.filter(cmd => cmd.type === 4);
 
       if (entryPoints.size > 0) {
         try {
-          // วิธีที่ 1: แนบ Entry Point Command เดิมกลับเข้าไปในการอัปเดตพร้อมคำสั่งใหม่
           const payload = [
             ...commandsData,
             ...entryPoints.map(cmd => ({
@@ -33,9 +35,7 @@ module.exports = {
           ];
           await client.application.commands.set(payload);
         } catch (innerError) {
-          // วิธีที่ 2: หาก Discord บังคับให้ลบแยกต่างหาก (Error 50240) ให้ลบ Entry Point ออกก่อนแล้วลงทะเบียนใหม่
           if (innerError.code === 50240) {
-            console.log('🧹 [Alestia] กำลังเคลียร์ Entry Point Command ที่ค้างอยู่ออกให้ก่อน...');
             for (const [id] of entryPoints) {
               await client.application.commands.delete(id);
             }
@@ -51,6 +51,38 @@ module.exports = {
       console.log(`📋 [Alestia] อัปเดต Slash Commands จำนวน ${commandsData.length} คำสั่งเรียบร้อย!`);
     } catch (error) {
       console.error('❌ [Alestia] ไม่สามารถลงทะเบียน Slash Commands ได้:', error);
+    }
+
+    // 2. ซิงก์รายชื่อสมาชิกในเซิร์ฟเวอร์ Horizontal และเชื่อมปุ่มรับบัตรสมาชิกที่ข้อความเป้าหมาย
+    try {
+      const { guildId, registerChannelId, registerMessageId, registerButtonEmoji, registerButtonLabel } = theme.discordConfig;
+      const guild = client.guilds.cache.get(guildId) || client.guilds.cache.first();
+
+      if (guild) {
+        await guild.members.fetch().catch(() => null);
+        console.log(`👥 [Alestia] ซิงก์รายชื่อสมาชิกเซิร์ฟเวอร์ ${guild.name} เข้าสู่ระบบเรียบร้อย!`);
+      }
+
+      const channel = await client.channels.fetch(registerChannelId).catch(() => null);
+      if (channel && channel.isTextBased()) {
+        const targetMsg = await channel.messages.fetch(registerMessageId).catch(() => null);
+
+        if (targetMsg && targetMsg.author.id === client.user.id) {
+          const registerBtn = new ButtonBuilder()
+            .setCustomId('alestia_open_register')
+            .setLabel(registerButtonLabel)
+            .setEmoji(registerButtonEmoji)
+            .setStyle(ButtonStyle.Primary);
+
+          const row = new ActionRowBuilder().addComponents(registerBtn);
+          await targetMsg.edit({ components: [row] });
+          console.log(`🪪 [Alestia] ติดตั้งปุ่ม "${registerButtonLabel}" บนข้อความ ${registerMessageId} เรียบร้อยแล้ว!`);
+        } else if (targetMsg) {
+          console.log(`ℹ️ [Alestia] พบข้อความ ${registerMessageId} แล้ว พร้อมดักจับการกดปุ่มรับบัตรสมาชิก!`);
+        }
+      }
+    } catch (err) {
+      console.warn('⚠️ [Alestia] ไม่สามารถตรวจสอบข้อความปุ่มรับบัตรสมาชิกอัตโนมัติได้:', err.message);
     }
   }
 };

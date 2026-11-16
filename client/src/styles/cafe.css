@@ -1,54 +1,637 @@
 :root {
+  /* โทนสี Alestia Espresso & Aesthetic Pastel */
+  --alx-espresso: #504027;
+  --alx-rosewood: #AA817E;
+  --alx-cream: #FFFDF9;
+  --alx-sage: #8F9779;
   --bg-cream: #FDFBF7;
-  --card-latte: #FFF8F5;
+  --card-latte: rgba(255, 250, 245, 0.78);
   --pastel-pink: #FFD1DC;
   --pastel-pink-dark: #F4ACB7;
   --matcha-green: #C1E1C1;
   --caramel-warm: #E6CCB2;
   --lavender-mist: #E2D1F9;
-  --text-espresso: #5C4B51;
-  --text-muted: #8E7DBE;
-  --border-soft: #F3E5DE;
-  --shadow-cafe: 0 10px 25px rgba(92, 75, 81, 0.06);
+  --text-espresso: #504027;
+  --border-soft: rgba(170, 129, 126, 0.28);
+  --shadow-cafe: 0 14px 34px rgba(80, 64, 39, 0.08);
+
+  /* ขอบมนและแอนิเมชัน */
+  --alx-radius-md: 16px;
+  --alx-radius-lg: 26px;
+  --alx-radius-pill: 999px;
+  --alx-spring-smooth: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 * {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
+  -webkit-tap-highlight-color: transparent;
 }
 
 body {
   background-color: var(--bg-cream);
-  background-image: radial-gradient(#F3E5DE 1px, transparent 1px);
-  background-size: 24px 24px;
-  color: var(--text-espresso);
-  font-family: 'Quicksand', 'Mali', sans-serif;
+  background-image:
+    radial-gradient(at 12% 15%, rgba(255, 209, 220, 0.42) 0px, transparent 50%),
+    radial-gradient(at 88% 20%, rgba(226, 209, 249, 0.38) 0px, transparent 50%),
+    radial-gradient(at 50% 85%, rgba(252, 206, 171, 0.35) 0px, transparent 55%),
+    radial-gradient(#EADCD3 1px, transparent 1px);
+  background-size: 100% 100%, 100% 100%, 100% 100%, 24px 24px;
+  background-attachment: fixed;
+  color: var(--alx-espresso);
+  font-family: 'Kanit', 'Outfit', 'Quicksand', sans-serif;
   line-height: 1.6;
   min-height: 100vh;
+  min-height: 100dvh;
+  padding: clamp(14px, 3vw, 28px) clamp(12px, 3vw, 20px) 64px;
+  overflow-x: hidden;
 }
 
-.cafe-container {
-  max-width: 960px;
+.page-shell {
+  max-width: 1120px;
   margin: 0 auto;
-  padding: 40px 20px;
+  position: relative;
+  z-index: 2;
 }
 
-.cafe-header {
-  background: linear-gradient(135deg, #FFF0F5 0%, #FDFBF7 100%);
-  border: 2px solid var(--pastel-pink);
-  border-radius: 28px;
-  padding: 32px;
+/* ==========================================
+   ✨ กราฟิกกระจกฝ้า (Alestia Glassmorphism)
+   ========================================== */
+.alx-glass-panel {
+  background: rgba(255, 252, 248, 0.76);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1.5px solid rgba(170, 129, 126, 0.26);
+  border-radius: var(--alx-radius-lg);
+  box-shadow: var(--shadow-cafe);
+}
+
+.alx-glass-card {
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.88) 0%, rgba(255, 246, 240, 0.74) 100%);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border: 2px solid rgba(170, 129, 126, 0.32);
+  border-radius: var(--alx-radius-lg);
+  box-shadow: 0 18px 40px -12px rgba(80, 64, 39, 0.14);
+  overflow: hidden;
+}
+
+/* ==========================================
+   🧭 แถบนำทางแคปซูลกระจกฝ้า (Top Floating Navigation)
+   ========================================== */
+.top-nav-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: clamp(12px, 2vw, 16px) clamp(16px, 2.5vw, 24px);
+  margin-bottom: clamp(18px, 3vw, 28px);
+}
+
+.brand-cluster {
   display: flex;
   align-items: center;
-  gap: 24px;
+  gap: 12px;
+  min-width: 0;
+}
+
+.brand-logo-orb {
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, var(--alx-espresso), var(--alx-rosewood));
+  color: var(--alx-cream);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.35rem;
+  flex-shrink: 0;
+  box-shadow: 0 8px 18px rgba(80, 64, 39, 0.22);
+}
+
+.brand-title h1 {
+  font-size: clamp(1.02rem, 2.2vw, 1.22rem);
+  font-weight: 700;
+  color: var(--alx-espresso);
+  line-height: 1.25;
+}
+
+.brand-title p {
+  font-size: clamp(0.75rem, 1.8vw, 0.82rem);
+  color: #7A6352;
+}
+
+.nav-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.nav-pill {
+  text-decoration: none;
+  padding: 9px 16px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--alx-espresso);
+  background: rgba(255, 255, 255, 0.65);
+  border: 1px solid rgba(170, 129, 126, 0.28);
+  border-radius: var(--alx-radius-pill);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.22s ease;
+}
+
+.nav-pill:hover {
+  background: rgba(255, 255, 255, 0.95);
+  transform: translateY(-1px);
+}
+
+.nav-pill.active {
+  background: var(--alx-espresso);
+  color: var(--alx-cream);
+  border-color: var(--alx-espresso);
+  box-shadow: 0 6px 16px rgba(80, 64, 39, 0.25);
+}
+
+/* ==========================================
+   📐 โครงสร้างหลัก 2 คอลัมน์ (Responsive Grid)
+   ========================================== */
+.portal-grid {
+  display: grid;
+  grid-template-columns: minmax(300px, 1fr) minmax(320px, 1.22fr);
+  gap: clamp(18px, 2.8vw, 26px);
+  align-items: start;
+}
+
+/* ==========================================
+   🃏 คอลัมน์ซ้าย: บัตรสมาชิกจำลอง 3 มิติ
+   ========================================== */
+.preview-card-wrapper {
+  padding: clamp(20px, 3vw, 28px) clamp(16px, 2.5vw, 24px);
+  text-align: center;
+  position: relative;
+  transition: transform 0.18s ease-out, border-color 0.4s ease, box-shadow 0.4s ease;
+  will-change: transform;
+}
+
+.preview-card-aura {
+  position: absolute;
+  top: -25%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 240px;
+  height: 240px;
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--preview-role-color, #AA817E) 0%, transparent 70%);
+  opacity: 0.28;
+  filter: blur(28px);
+  pointer-events: none;
+  transition: background 0.4s ease;
+}
+
+.card-badge-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 18px;
+  position: relative;
+  z-index: 2;
+}
+
+.voice-live-pill {
+  font-size: 0.76rem;
+  font-weight: 600;
+  padding: 5px 12px;
+  border-radius: var(--alx-radius-pill);
+  background: rgba(161, 157, 112, 0.2);
+  color: #4D5E32;
+  border: 1px solid rgba(161, 157, 112, 0.45);
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.voice-live-pill.in-voice {
+  background: rgba(46, 125, 50, 0.16);
+  color: #1B5E20;
+  border-color: rgba(46, 125, 50, 0.4);
+}
+
+.pin-shield-pill {
+  font-size: 0.76rem;
+  font-weight: 600;
+  padding: 5px 12px;
+  border-radius: var(--alx-radius-pill);
+  background: rgba(252, 206, 171, 0.45);
+  color: var(--alx-espresso);
+  border: 1px solid rgba(170, 129, 126, 0.3);
+}
+
+.pin-shield-pill.locked {
+  background: rgba(80, 64, 39, 0.92);
+  color: var(--alx-cream);
+}
+
+.avatar-stage {
+  position: relative;
+  width: clamp(96px, 18vw, 118px);
+  height: clamp(96px, 18vw, 118px);
+  margin: 6px auto 14px;
+  z-index: 2;
+}
+
+.avatar-stage img {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+  background: #FFFDF9;
+  border: 4px solid rgba(255, 255, 255, 0.9);
+  box-shadow: 0 10px 24px rgba(80, 64, 39, 0.16);
+}
+
+.preview-nickname {
+  font-size: clamp(1.22rem, 3vw, 1.45rem);
+  font-weight: 700;
+  color: var(--alx-espresso);
+  margin-bottom: 4px;
+  position: relative;
+  z-index: 2;
+  word-break: break-word;
+}
+
+.preview-discord-tag {
+  font-size: 0.85rem;
+  color: #7A6352;
+  margin-bottom: 14px;
+  position: relative;
+  z-index: 2;
+}
+
+.preview-role-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 14px;
+  border-radius: var(--alx-radius-pill);
+  font-size: 0.8rem;
+  font-weight: 600;
+  background: rgba(255, 255, 255, 0.82);
+  border: 1.5px solid var(--preview-role-color, #AA817E);
+  color: var(--alx-espresso);
+  margin-bottom: 20px;
+  position: relative;
+  z-index: 2;
+}
+
+.role-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--preview-role-color, #AA817E);
+}
+
+.preview-stats-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  padding-top: 16px;
+  border-top: 1px dashed rgba(170, 129, 126, 0.35);
+  position: relative;
+  z-index: 2;
+}
+
+.preview-stat-box {
+  background: rgba(255, 255, 255, 0.62);
+  border-radius: var(--alx-radius-md);
+  padding: 10px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.88);
+}
+
+.preview-stat-label {
+  font-size: 0.74rem;
+  color: #7A6352;
+  margin-bottom: 2px;
+}
+
+.preview-stat-value {
+  font-size: clamp(0.95rem, 2.2vw, 1.05rem);
+  font-weight: 700;
+  color: var(--alx-espresso);
+}
+
+/* ==========================================
+   🔍 กล่องเลือกโปรไฟล์ด่วน (Quick Member Picker)
+   ========================================== */
+.quick-picker-panel {
+  margin-top: 20px;
+  padding: clamp(16px, 2.5vw, 20px);
+}
+
+.picker-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+.picker-header h3 {
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+.search-input-box {
+  width: 100%;
+  padding: 11px 16px;
+  border-radius: var(--alx-radius-pill);
+  border: 1.5px solid rgba(170, 129, 126, 0.35);
+  background: rgba(255, 255, 255, 0.85);
+  font-family: inherit;
+  font-size: 0.92rem;
+  color: var(--alx-espresso);
+  outline: none;
+  margin-bottom: 12px;
+  transition: border-color 0.25s ease, box-shadow 0.25s ease;
+}
+
+.search-input-box:focus {
+  border-color: var(--alx-espresso);
+  box-shadow: 0 0 0 3px rgba(170, 129, 126, 0.2);
+}
+
+.member-chips-scroll {
+  max-height: 230px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-right: 4px;
+}
+
+.member-pick-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 9px 12px;
+  border-radius: var(--alx-radius-md);
+  background: rgba(255, 255, 255, 0.66);
+  border: 1px solid rgba(170, 129, 126, 0.22);
+  cursor: pointer;
+  transition: transform 0.2s var(--alx-spring-smooth), background 0.2s ease;
+  text-align: left;
+}
+
+.member-pick-item:hover {
+  background: rgba(255, 255, 255, 0.95);
+  transform: translateX(3px);
+}
+
+.member-pick-item.selected {
+  background: #FFF6EE;
+  border-color: var(--alx-espresso);
+  box-shadow: 0 4px 12px rgba(80, 64, 39, 0.12);
+}
+
+.pick-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.pick-left img {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.pick-names {
+  min-width: 0;
+}
+
+.pick-names .p-main {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--alx-espresso);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pick-names .p-sub {
+  font-size: 0.74rem;
+  color: #7A6352;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pick-badges {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex-shrink: 0;
+}
+
+.mini-tag {
+  font-size: 0.7rem;
+  padding: 3px 8px;
+  border-radius: var(--alx-radius-pill);
+  font-weight: 600;
+}
+
+.mini-tag.voice {
+  background: rgba(46, 125, 50, 0.15);
+  color: #1B5E20;
+}
+
+.mini-tag.reg {
+  background: rgba(161, 157, 112, 0.25);
+  color: var(--alx-espresso);
+}
+
+/* ==========================================
+   📝 คอลัมน์ขวา: ฟอร์มลงทะเบียนและตั้งรหัส PIN
+   ========================================== */
+.form-card-panel {
+  padding: clamp(20px, 3.5vw, 32px) clamp(16px, 3vw, 28px);
+}
+
+.form-header {
+  margin-bottom: 22px;
+}
+
+.form-header h2 {
+  font-size: clamp(1.2rem, 2.8vw, 1.42rem);
+  font-weight: 700;
+  color: var(--alx-espresso);
+  margin-bottom: 6px;
+}
+
+.form-header p {
+  font-size: 0.88rem;
+  color: #6E5849;
+  line-height: 1.55;
+}
+
+.field-group {
+  margin-bottom: 18px;
+}
+
+.field-label {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  margin-bottom: 8px;
+  color: var(--alx-espresso);
+}
+
+.field-hint {
+  font-size: 0.76rem;
+  font-weight: 400;
+  color: #846C5B;
+}
+
+.input-row-wrap {
+  display: flex;
+  gap: 10px;
+}
+
+.glass-input {
+  width: 100%;
+  min-height: 46px;
+  padding: 12px 16px;
+  border-radius: var(--alx-radius-md);
+  border: 1.5px solid rgba(170, 129, 126, 0.35);
+  background: rgba(255, 255, 255, 0.86);
+  font-family: inherit;
+  font-size: 0.96rem;
+  color: var(--alx-espresso);
+  outline: none;
+  transition: all 0.22s ease;
+}
+
+.glass-input:focus {
+  background: #FFFFFF;
+  border-color: var(--alx-espresso);
+  box-shadow: 0 0 0 4px rgba(170, 129, 126, 0.18);
+}
+
+.pin-input-letter {
+  letter-spacing: 0.32em;
+  font-weight: 700;
+  text-align: center;
+  font-size: 1.15rem;
+}
+
+.lookup-btn {
+  min-height: 46px;
+  padding: 0 18px;
+  border: none;
+  border-radius: var(--alx-radius-md);
+  background: var(--alx-sage);
+  color: #FFFFFF;
+  font-family: inherit;
+  font-weight: 600;
+  font-size: 0.88rem;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.lookup-btn:hover {
+  opacity: 0.92;
+  transform: translateY(-1px);
+}
+
+.current-pin-alert-box {
+  padding: 16px;
+  border-radius: var(--alx-radius-md);
+  background: rgba(252, 206, 171, 0.38);
+  border: 1.5px solid rgba(170, 129, 126, 0.45);
+  margin-bottom: 18px;
+}
+
+.submit-hero-btn {
+  width: 100%;
+  min-height: 52px;
+  padding: 14px 22px;
+  border: none;
+  border-radius: var(--alx-radius-md);
+  background: linear-gradient(135deg, var(--alx-espresso) 0%, #6E5239 100%);
+  color: var(--alx-cream);
+  font-family: inherit;
+  font-size: 1.02rem;
+  font-weight: 700;
+  cursor: pointer;
+  margin-top: 6px;
+  box-shadow: 0 12px 28px -8px rgba(80, 64, 39, 0.38);
+  transition: transform 0.2s ease, opacity 0.2s ease;
+}
+
+.submit-hero-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+}
+
+.submit-hero-btn:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+.status-toast {
+  margin-top: 16px;
+  padding: 13px 16px;
+  border-radius: var(--alx-radius-md);
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.status-toast.success {
+  background: rgba(46, 125, 50, 0.14);
+  color: #1B5E20;
+  border: 1.5px solid rgba(46, 125, 50, 0.4);
+}
+
+.status-toast.error {
+  background: rgba(198, 40, 40, 0.12);
+  color: #B71C1C;
+  border: 1.5px solid rgba(198, 40, 40, 0.35);
+}
+
+/* ==========================================
+   🏠 สไตล์หน้า Dashboard เดิม
+   ========================================== */
+.cafe-header {
+  background: linear-gradient(135deg, rgba(255, 240, 245, 0.9) 0%, rgba(253, 251, 247, 0.9) 100%);
+  border: 2px solid var(--pastel-pink);
+  border-radius: 26px;
+  padding: clamp(20px, 3vw, 30px);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 20px;
   box-shadow: var(--shadow-cafe);
-  margin-bottom: 30px;
+  margin-bottom: 24px;
 }
 
 .bot-avatar {
-  width: 96px;
-  height: 96px;
+  width: 88px;
+  height: 88px;
   border-radius: 50%;
   border: 4px solid var(--pastel-pink);
   object-fit: cover;
@@ -61,7 +644,7 @@ body {
   gap: 8px;
   padding: 6px 14px;
   border-radius: 999px;
-  font-size: 0.85rem;
+  font-size: 0.84rem;
   font-weight: 600;
   margin-top: 8px;
 }
@@ -78,45 +661,40 @@ body {
 
 .stats-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 20px;
-  margin-bottom: 30px;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 18px;
+  margin-bottom: 24px;
 }
 
 .cafe-card {
-  background-color: var(--card-latte);
-  border: 2px solid var(--border-soft);
+  background: var(--card-latte);
+  backdrop-filter: blur(12px);
+  border: 1.5px solid var(--border-soft);
   border-radius: 24px;
-  padding: 24px;
+  padding: clamp(18px, 2.5vw, 24px);
   box-shadow: var(--shadow-cafe);
-  transition: transform 0.2s ease;
-}
-
-.cafe-card:hover {
-  transform: translateY(-3px);
 }
 
 .stat-label {
-  font-size: 0.9rem;
-  opacity: 0.8;
+  font-size: 0.88rem;
+  opacity: 0.85;
   margin-bottom: 6px;
 }
 
 .stat-value {
-  font-size: 1.7rem;
+  font-size: 1.55rem;
   font-weight: 700;
-  color: var(--text-espresso);
 }
 
 .form-group {
-  margin-bottom: 18px;
+  margin-bottom: 16px;
 }
 
 .form-group label {
   display: block;
   font-weight: 600;
   margin-bottom: 8px;
-  font-size: 0.95rem;
+  font-size: 0.92rem;
 }
 
 .cafe-input,
@@ -124,55 +702,73 @@ body {
 .cafe-textarea {
   width: 100%;
   padding: 12px 16px;
-  border: 2px solid var(--border-soft);
+  border: 1.5px solid var(--border-soft);
   border-radius: 16px;
-  background-color: #FFFFFF;
-  color: var(--text-espresso);
+  background-color: rgba(255, 255, 255, 0.9);
+  color: var(--alx-espresso);
   font-family: inherit;
   font-size: 0.95rem;
   outline: none;
-  transition: border-color 0.2s;
-}
-
-.cafe-input:focus,
-.cafe-select:focus,
-.cafe-textarea:focus {
-  border-color: var(--pastel-pink-dark);
 }
 
 .cafe-btn {
   background-color: var(--pastel-pink);
-  color: var(--text-espresso);
+  color: var(--alx-espresso);
   border: none;
-  padding: 14px 28px;
+  padding: 13px 26px;
   border-radius: 16px;
   font-family: inherit;
-  font-size: 1rem;
+  font-size: 0.98rem;
   font-weight: 700;
   cursor: pointer;
-  transition: all 0.2s ease;
 }
 
-.cafe-btn:hover {
-  background-color: var(--pastel-pink-dark);
-  transform: translateY(-2px);
+/* ==========================================
+   📱 การคำนวณขนาดสำหรับแท็บเล็ตและมือถือ (Mobile Optimization)
+   ========================================== */
+@media (max-width: 900px) {
+  .portal-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
-.cafe-btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
+@media (max-width: 600px) {
+  .top-nav-bar {
+    flex-direction: column;
+    align-items: stretch;
+  }
 
-.toast-alert {
-  margin-top: 16px;
-  padding: 12px 18px;
-  border-radius: 14px;
-  font-weight: 600;
-  background-color: var(--matcha-green);
-  color: #2D5A27;
-}
+  .nav-links {
+    width: 100%;
+    justify-content: stretch;
+  }
 
-.toast-error {
-  background-color: #FFD6D6;
-  color: #8B2626;
+  .nav-pill {
+    flex: 1;
+    justify-content: center;
+    font-size: 0.84rem;
+    padding: 10px 12px;
+  }
+
+  /* ป้องกัน iOS Safari ซูมหน้าจอเองเมื่อแตะช่องพิมพ์ */
+  .glass-input,
+  .search-input-box,
+  .cafe-input,
+  .cafe-select,
+  .cafe-textarea {
+    font-size: 16px;
+  }
+
+  .input-row-wrap {
+    flex-direction: column;
+  }
+
+  .lookup-btn {
+    width: 100%;
+    padding: 12px;
+  }
+
+  .card-badge-header {
+    justify-content: center;
+  }
 }

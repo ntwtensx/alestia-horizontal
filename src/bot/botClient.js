@@ -8,11 +8,11 @@ function createBotClient() {
       GatewayIntentBits.Guilds,
       GatewayIntentBits.GuildMembers,
       GatewayIntentBits.GuildMessages,
+      GatewayIntentBits.GuildVoiceStates,
       GatewayIntentBits.MessageContent
     ]
   });
 
-  // เก็บรายการคำสั่งทั้งหมดไว้ใน client.commands
   client.commands = new Collection();
 
   // 1. โหลดไฟล์คำสั่งทั้งหมดจาก src/bot/commands/
