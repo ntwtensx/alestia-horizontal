@@ -21,7 +21,14 @@ export async function sendBaristaMessage(payload) {
   return data;
 }
 
-// 🪪 API สำหรับหน้าลงทะเบียนสมาชิกและจัดการรหัส PIN (/register)
+// 🪪 API สำหรับหน้าลงทะเบียนสมาชิก ปฏิทินวันเกิด และสมุดเมนู 150 รายการ (/register)
+export async function fetchMenuCatalog() {
+  const response = await fetch('/api/register/catalog');
+  const data = await response.json();
+  if (!response.ok || !data.ok) throw new Error(data.error || 'ไม่สามารถโหลดสมุดเมนูได้');
+  return data;
+}
+
 export async function fetchRegisterMembers() {
   const response = await fetch('/api/register/members');
   const data = await response.json();

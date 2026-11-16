@@ -1,6 +1,7 @@
 const router = require('express').Router();
 const UserDB = require('../../models/User');
 const theme = require('../../config/theme');
+const menuCatalog = require('../../utils/menuPriceCatalog');
 
 const {
   guildId: TARGET_GUILD_ID,
@@ -8,6 +9,43 @@ const {
   memberRoleId: MEMBER_ROLE_ID,
   pinRoleId: PIN_ROLE_ID
 } = theme.discordConfig;
+
+const THAI_MONTHS = [
+  'มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน',
+  'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'
+];
+
+function formatMemberPayload(discordId, member, dbDoc, inCafeVoice = false) {
+  const topRole = member?.roles?.highest;
+  const roleColor =
+    topRole && topRole.hexColor && topRole.hexColor !== '#000000'
+      ? topRole.hexColor
+      : '#AA817E';
+  const storedPin = String(dbDoc?.pin || dbDoc?.casinoPin || '').trim();
+
+  return {
+    discordId,
+    username: member?.user?.username || dbDoc?.username || dbDoc?.name || `User-${discordId.slice(-4)}`,
+    displayName: member?.displayName || dbDoc?.name || `User-${discordId.slice(-4)}`,
+    nickname: (dbDoc?.nickname || '').trim(),
+    birthdayDay: dbDoc?.birthdayDay || null,
+    birthdayMonth: dbDoc?.birthdayMonth || null,
+    birthdayText: (dbDoc?.birthdayText || '').trim(),
+    favoriteMenu: (dbDoc?.favoriteMenu || '').trim(),
+    likedMenu1: (dbDoc?.likedMenu1 || '').trim(),
+    likedMenu2: (dbDoc?.likedMenu2 || '').trim(),
+    inviter: (dbDoc?.inviter || '').trim(),
+    avatarUrl: member
+      ? member.displayAvatarURL({ extension: 'png', size: 256 })
+      : dbDoc?.avatarUrl || 'https://cdn.discordapp.com/embed/avatars/0.png',
+    roleName: topRole && topRole.name !== '@everyone' ? topRole.name : 'ลูกค้าประจำคาเฟ่',
+    roleColor,
+    inCafeVoice,
+    walletBalance: typeof dbDoc?.walletBalance === 'number' ? dbDoc.walletBalance : 0,
+    hasPin: Boolean(storedPin !== ''),
+    isRegistered: Boolean(dbDoc?.nickname && String(dbDoc.nickname).trim() !== '')
+  };
+}
 
 // ฟังก์ชันดึงข้อมูลสมาชิกจากแคชของ Discord ร่วมกับฐานข้อมูล MongoDB
 async function buildMemberDirectorySnapshot(client) {
@@ -28,53 +66,20 @@ async function buildMemberDirectorySnapshot(client) {
         seenIds.add(memberId);
 
         const dbDoc = dbMap.get(memberId) || {};
-        const storedPin = String(dbDoc.pin || dbDoc.casinoPin || '').trim();
         const inCafeVoice = Boolean(
           cafeChannel?.members?.has(memberId) || member.voice?.channelId === CAFE_CHANNEL_ID
         );
-        const topRole = member.roles?.highest;
-        const roleColor =
-          topRole && topRole.hexColor && topRole.hexColor !== '#000000'
-            ? topRole.hexColor
-            : '#AA817E';
 
-        resultList.push({
-          discordId: memberId,
-          username: member.user.username,
-          displayName: member.displayName || member.user.username,
-          nickname: (dbDoc.nickname || '').trim(),
-          avatarUrl: member.displayAvatarURL({ extension: 'png', size: 256 }),
-          roleName: topRole && topRole.name !== '@everyone' ? topRole.name : 'ลูกค้าประจำคาเฟ่',
-          roleColor,
-          inCafeVoice,
-          walletBalance: typeof dbDoc.walletBalance === 'number' ? dbDoc.walletBalance : 0,
-          hasPin: Boolean(storedPin !== ''),
-          isRegistered: Boolean(dbDoc.nickname && String(dbDoc.nickname).trim() !== '')
-        });
+        resultList.push(formatMemberPayload(memberId, member, dbDoc, inCafeVoice));
       }
     }
   }
 
-  // กรณีมีข้อมูลใน DB แต่ไม่อยู่ในแคชของ Guild
   for (const dbDoc of dbUsers) {
     if (!dbDoc.discordId || seenIds.has(dbDoc.discordId)) continue;
-    const storedPin = String(dbDoc.pin || dbDoc.casinoPin || '').trim();
-    resultList.push({
-      discordId: dbDoc.discordId,
-      username: dbDoc.username || dbDoc.name || dbDoc.nickname || `User-${dbDoc.discordId.slice(-4)}`,
-      displayName: dbDoc.name || dbDoc.nickname || `User-${dbDoc.discordId.slice(-4)}`,
-      nickname: (dbDoc.nickname || '').trim(),
-      avatarUrl: dbDoc.avatarUrl || 'https://cdn.discordapp.com/embed/avatars/0.png',
-      roleName: 'สมาชิกคาเฟ่',
-      roleColor: '#AA817E',
-      inCafeVoice: false,
-      walletBalance: typeof dbDoc.walletBalance === 'number' ? dbDoc.walletBalance : 0,
-      hasPin: Boolean(storedPin !== ''),
-      isRegistered: Boolean(dbDoc.nickname && String(dbDoc.nickname).trim() !== '')
-    });
+    resultList.push(formatMemberPayload(dbDoc.discordId, null, dbDoc, false));
   }
 
-  // เรียงลำดับ: 1) คนที่อยู่ในห้องเสียงคาเฟ่ -> 2) คนที่ลงทะเบียนแล้ว -> 3) เรียงตามตัวอักษรภาษาไทย
   resultList.sort((a, b) => {
     if (a.inCafeVoice !== b.inCafeVoice) return a.inCafeVoice ? -1 : 1;
     if (a.isRegistered !== b.isRegistered) return a.isRegistered ? -1 : 1;
@@ -84,7 +89,23 @@ async function buildMemberDirectorySnapshot(client) {
   return resultList;
 }
 
-// 1. GET /api/register/members - ดึงรายชื่อสมาชิกทั้งหมด
+// 1. GET /api/register/catalog - ดึงสมุดเมนูทั้ง 150 รายการพร้อมระดับ Tier
+router.get('/catalog', async (req, res) => {
+  try {
+    await menuCatalog.syncMysteryMenusFromDB();
+    const categories = menuCatalog.getStructuredMenuCatalog();
+    res.json({
+      ok: true,
+      coinText: menuCatalog.COIN_TEXT,
+      categories
+    });
+  } catch (err) {
+    console.error('❌ [API /api/register/catalog Error]:', err.message);
+    res.status(500).json({ ok: false, error: 'ไม่สามารถโหลดสมุดเมนูคาเฟ่ได้ในขณะนี้ค่ะ' });
+  }
+});
+
+// 2. GET /api/register/members - ดึงรายชื่อสมาชิกทั้งหมด
 router.get('/members', async (req, res) => {
   try {
     const client = req.app.get('bot');
@@ -96,14 +117,17 @@ router.get('/members', async (req, res) => {
   }
 });
 
-// 2. GET /api/register/user/:discordId - ค้นหาสมาชิกรายบุคคลจาก Discord ID
+// 3. GET /api/register/user/:discordId - ค้นหาสมาชิกรายบุคคลจาก Discord ID
 router.get('/user/:discordId', async (req, res) => {
   try {
     const client = req.app.get('bot');
     const discordId = String(req.params.discordId || '').trim();
 
     if (!/^\d{15,21}$/.test(discordId)) {
-      return res.status(400).json({ ok: false, error: 'รูปแบบรหัส Discord ID ไม่ถูกต้องค่ะ (ต้องเป็นตัวเลข 15-21 หลัก)' });
+      return res.status(400).json({
+        ok: false,
+        error: 'รูปแบบรหัส Discord ID ไม่ถูกต้องค่ะ (ต้องเป็นตัวเลข 15-21 หลัก)'
+      });
     }
 
     const guild = client?.guilds?.cache?.get(TARGET_GUILD_ID) || client?.guilds?.cache?.first();
@@ -115,33 +139,16 @@ router.get('/user/:discordId', async (req, res) => {
     const dbDoc = await UserDB.findOne({ discordId }).lean().catch(() => null);
 
     if (!member && !dbDoc) {
-      return res.status(404).json({ ok: false, error: 'ไม่พบสมาชิกที่ใช้รหัส Discord ID นี้ในเซิร์ฟเวอร์ Horizontal ค่ะ' });
+      return res.status(404).json({
+        ok: false,
+        error: 'ไม่พบสมาชิกที่ใช้รหัส Discord ID นี้ในเซิร์ฟเวอร์ Horizontal ค่ะ'
+      });
     }
 
-    const topRole = member?.roles?.highest;
-    const roleColor =
-      topRole && topRole.hexColor && topRole.hexColor !== '#000000'
-        ? topRole.hexColor
-        : '#AA817E';
-    const storedPin = String(dbDoc?.pin || dbDoc?.casinoPin || '').trim();
-
+    const inCafeVoice = Boolean(member?.voice?.channelId === CAFE_CHANNEL_ID);
     return res.json({
       ok: true,
-      user: {
-        discordId,
-        username: member?.user?.username || dbDoc?.username || dbDoc?.name || `User-${discordId.slice(-4)}`,
-        displayName: member?.displayName || dbDoc?.name || `User-${discordId.slice(-4)}`,
-        nickname: (dbDoc?.nickname || '').trim(),
-        avatarUrl: member
-          ? member.displayAvatarURL({ extension: 'png', size: 256 })
-          : dbDoc?.avatarUrl || 'https://cdn.discordapp.com/embed/avatars/0.png',
-        roleName: topRole && topRole.name !== '@everyone' ? topRole.name : 'ลูกค้าประจำคาเฟ่',
-        roleColor,
-        inCafeVoice: Boolean(member?.voice?.channelId === CAFE_CHANNEL_ID),
-        walletBalance: typeof dbDoc?.walletBalance === 'number' ? dbDoc.walletBalance : 0,
-        hasPin: Boolean(storedPin !== ''),
-        isRegistered: Boolean(dbDoc?.nickname && String(dbDoc.nickname).trim() !== '')
-      }
+      user: formatMemberPayload(discordId, member, dbDoc, inCafeVoice)
     });
   } catch (err) {
     console.error('❌ [API /api/register/user Error]:', err.message);
@@ -149,52 +156,24 @@ router.get('/user/:discordId', async (req, res) => {
   }
 });
 
-// 3. POST /api/register/verify-pin - ตรวจสอบรหัส PIN
-router.post('/verify-pin', async (req, res) => {
-  try {
-    const discordId = String(req.body?.discordId || '').trim();
-    const inputPin = String(req.body?.pin || '').trim();
-
-    if (!discordId || !inputPin) {
-      return res.status(400).json({ ok: false, error: 'กรุณาระบุ Discord ID และรหัส PIN ให้ครบถ้วนค่ะ' });
-    }
-
-    const dbDoc = await UserDB.findOne({ discordId }).select('pin casinoPin nickname walletBalance').lean();
-    const savedPin = String(dbDoc?.pin || dbDoc?.casinoPin || '').trim();
-
-    if (!dbDoc || !savedPin) {
-      return res.json({ ok: true, verified: true, message: 'บัญชียังไม่ได้ตั้งรหัส PIN สามารถตั้งรหัสใหม่ได้เลยค่ะ' });
-    }
-
-    if (savedPin !== inputPin) {
-      return res.status(401).json({ ok: false, verified: false, error: 'รหัส PIN ไม่ถูกต้องค่ะ! กรุณาลองใหม่อีกครั้งนะคะ' });
-    }
-
-    return res.json({
-      ok: true,
-      verified: true,
-      nickname: dbDoc.nickname || '',
-      walletBalance: dbDoc.walletBalance || 0
-    });
-  } catch (err) {
-    console.error('❌ [API /api/register/verify-pin Error]:', err.message);
-    res.status(500).json({ ok: false, error: 'ระบบตรวจสอบรหัส PIN ขัดข้องชั่วคราวค่ะ' });
-  }
-});
-
-// 4. POST /api/register/submit - บันทึกการลงทะเบียน ตั้งรหัส PIN และมอบยศใน Discord
+// 4. POST /api/register/submit - บันทึกข้อมูลบัตรสมาชิก วันเกิด เมนูประจำตัว และรหัส PIN ลง MongoDB
 async function handleRegistrationSubmit(req, res) {
   try {
     const client = req.app.get('bot');
     const discordId = String(req.body?.discordId || '').trim();
     const nickname = String(req.body?.nickname || '').trim();
+    const birthdayDay = req.body?.birthdayDay ? Number(req.body.birthdayDay) : null;
+    const birthdayMonth = req.body?.birthdayMonth ? Number(req.body.birthdayMonth) : null;
+    const favoriteMenu = String(req.body?.favoriteMenu || 'ขอคิดดูก่อน').trim() || 'ขอคิดดูก่อน';
+    const likedMenu1 = String(req.body?.likedMenu1 || 'ขอคิดดูก่อน').trim() || 'ขอคิดดูก่อน';
+    const likedMenu2 = String(req.body?.likedMenu2 || 'ขอคิดดูก่อน').trim() || 'ขอคิดดูก่อน';
     const currentPin = String(req.body?.currentPin || '').trim();
     const newPin = String(req.body?.newPin || req.body?.pin || '').trim();
 
     if (!/^\d{15,21}$/.test(discordId)) {
       return res.status(400).json({
         ok: false,
-        error: 'กรุณาเลือกบัญชีของคุณจากรายชื่อ หรือระบุรหัส Discord ID 17-20 หลักให้ถูกต้องค่ะ'
+        error: 'กรุณาเลือกโปรไฟล์ของคุณจากรายชื่อ หรือระบุรหัส Discord ID ให้ถูกต้องค่ะ'
       });
     }
 
@@ -205,28 +184,44 @@ async function handleRegistrationSubmit(req, res) {
       });
     }
 
+    if (
+      !birthdayDay ||
+      !birthdayMonth ||
+      birthdayDay < 1 ||
+      birthdayDay > 31 ||
+      birthdayMonth < 1 ||
+      birthdayMonth > 12
+    ) {
+      return res.status(400).json({
+        ok: false,
+        error: 'กรุณาเลือกวันที่และเดือนเกิดจากปฏิทินจำลองให้ครบถ้วนค่ะ 🎂'
+      });
+    }
+
+    const birthdayText = `${birthdayDay} ${THAI_MONTHS[birthdayMonth - 1]}`;
+
     const existingUser = await UserDB.findOne({ discordId });
     const existingPin = String(existingUser?.pin || existingUser?.casinoPin || '').trim();
 
-    // หากบัญชีนี้เคยมีรหัส PIN อยู่แล้ว ต้องยืนยัน currentPin ให้ตรงก่อนเสมอ
+    // ตรวจสอบรหัส PIN เดิม หากบัญชีนี้เคยตั้งรหัส PIN ไว้แล้ว
     if (existingPin !== '') {
       if (!currentPin) {
         return res.status(401).json({
           ok: false,
           requireCurrentPin: true,
-          error: 'บัญชีนี้ตั้งรหัส PIN ไว้แล้ว กรุณากรอกรหัส PIN เดิมเพื่อยืนยันตัวตนด้วยค่ะ'
+          error: 'บัญชีนี้มีรหัส PIN คุ้มกันอยู่ กรุณากรอกรหัส PIN เดิมเพื่อยืนยันการแก้ไขข้อมูลค่ะ'
         });
       }
       if (existingPin !== currentPin) {
         return res.status(401).json({
           ok: false,
           requireCurrentPin: true,
-          error: 'รหัส PIN เดิมไม่ถูกต้อง! ไม่อนุญาตให้แก้ไขข้อมูลค่ะ'
+          error: 'รหัส PIN เดิมไม่ถูกต้อง! ไม่อนุญาตให้แก้ไขข้อมูลบัตรสมาชิกค่ะ'
         });
       }
     }
 
-    // ตรวจสอบความถูกต้องของรหัส PIN ใหม่ (ตัวเลข 4-6 หลัก)
+    // จัดการรหัส PIN ใหม่ (ถ้ามีการกรอกเข้ามา ต้องเป็นตัวเลข 4-6 หลัก)
     let finalPinToSave = existingPin;
     if (newPin !== '') {
       if (!/^\d{4,6}$/.test(newPin)) {
@@ -236,27 +231,25 @@ async function handleRegistrationSubmit(req, res) {
         });
       }
       finalPinToSave = newPin;
-    } else if (!finalPinToSave) {
-      return res.status(400).json({
-        ok: false,
-        error: 'กรุณาตั้งรหัส PIN ตัวเลข 4-6 หลักสำหรับใช้เข้าคาสิโนและปกป้องข้อมูลของคุณค่ะ'
-      });
     }
 
-    // ดึงข้อมูลสมาชิกจากเซิร์ฟเวอร์ Discord
     const guild = client?.guilds?.cache?.get(TARGET_GUILD_ID) || client?.guilds?.cache?.first();
     let member = guild?.members?.cache?.get(discordId);
     if (!member && guild) {
       member = await guild.members.fetch(discordId).catch(() => null);
     }
 
-    const discordDisplayName = member?.displayName || member?.user?.username || existingUser?.name || nickname;
+    const discordDisplayName =
+      member?.displayName || member?.user?.username || existingUser?.name || nickname;
     const discordUsername = member?.user?.username || existingUser?.username || '';
     const avatarUrl = member
       ? member.displayAvatarURL({ extension: 'png', size: 256 })
       : existingUser?.avatarUrl || 'https://cdn.discordapp.com/embed/avatars/0.png';
 
-    // บันทึกลงฐานข้อมูล MongoDB (บันทึกทั้ง pin และ casinoPin ให้ตรงกันเสมอ)
+    const likedMenusArray = [favoriteMenu, likedMenu1, likedMenu2].filter(
+      m => m && m !== 'ขอคิดดูก่อน'
+    );
+
     const updatedDoc = await UserDB.findOneAndUpdate(
       { discordId },
       {
@@ -266,6 +259,13 @@ async function handleRegistrationSubmit(req, res) {
           username: discordUsername,
           avatarUrl,
           nickname,
+          birthdayDay,
+          birthdayMonth,
+          birthdayText,
+          favoriteMenu,
+          likedMenu1,
+          likedMenu2,
+          likedMenus: likedMenusArray,
           pin: finalPinToSave,
           casinoPin: finalPinToSave
         },
@@ -280,36 +280,27 @@ async function handleRegistrationSubmit(req, res) {
     const rolesGranted = [];
     if (member) {
       if (MEMBER_ROLE_ID && !member.roles.cache.has(MEMBER_ROLE_ID)) {
-        const addedMemberRole = await member.roles.add(MEMBER_ROLE_ID).catch(err => {
-          console.warn(`⚠️ [Role Warning] มอบยศสมาชิก (${MEMBER_ROLE_ID}) ไม่สำเร็จ:`, err.message);
-          return null;
-        });
-        if (addedMemberRole) rolesGranted.push('ยศสมาชิก');
+        const addedMember = await member.roles.add(MEMBER_ROLE_ID).catch(() => null);
+        if (addedMember) rolesGranted.push('ยศสมาชิก');
       }
-
       if (PIN_ROLE_ID && finalPinToSave && !member.roles.cache.has(PIN_ROLE_ID)) {
-        const addedPinRole = await member.roles.add(PIN_ROLE_ID).catch(err => {
-          console.warn(`⚠️ [Role Warning] มอบยศ PIN (${PIN_ROLE_ID}) ไม่สำเร็จ:`, err.message);
-          return null;
-        });
-        if (addedPinRole) rolesGranted.push('ยศรหัส PIN');
+        const addedPin = await member.roles.add(PIN_ROLE_ID).catch(() => null);
+        if (addedPin) rolesGranted.push('ยศรหัส PIN');
       }
     }
 
-    const roleSuffix = rolesGranted.length > 0 ? ` (มอบ${rolesGranted.join(' และ ')}ใน Discord เรียบร้อย ✨)` : '';
+    const roleMsg =
+      rolesGranted.length > 0 ? ` (มอบ${rolesGranted.join(' และ ')}ใน Discord เรียบร้อย ✨)` : '';
 
     return res.json({
       ok: true,
-      message: existingUser
-        ? `อัปเดตข้อมูลและรหัส PIN ของคุณ "${nickname}" เรียบร้อยแล้วค่ะ!${roleSuffix}`
-        : `ลงทะเบียนต้อนรับคุณ "${nickname}" เข้าสู่ครอบครัว Horizontal Cafe เรียบร้อยแล้วค่ะ!${roleSuffix}`,
-      user: {
+      message: `บันทึกบัตรสมาชิกของคุณ "${nickname}" (เกิดวันที่ ${birthdayText}) และเมนูประจำตัวลงฐานข้อมูลเรียบร้อยแล้วค่ะ!${roleMsg}`,
+      user: formatMemberPayload(
         discordId,
-        nickname: updatedDoc.nickname,
-        walletBalance: updatedDoc.walletBalance || 0,
-        hasPin: true,
-        isRegistered: true
-      }
+        member,
+        updatedDoc,
+        Boolean(member?.voice?.channelId === CAFE_CHANNEL_ID)
+      )
     });
   } catch (err) {
     console.error('❌ [API /api/register/submit Error]:', err.message);

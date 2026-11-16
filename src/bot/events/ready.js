@@ -5,6 +5,7 @@ const {
   ButtonStyle
 } = require('discord.js');
 const theme = require('../../config/theme');
+const menuCatalog = require('../../utils/menuPriceCatalog');
 
 module.exports = {
   name: 'ready',
@@ -16,6 +17,9 @@ module.exports = {
       type: ActivityType.Custom,
       state: '☕ กำลังชงเครื่องดื่มต้อนรับสมาชิก Horizontal'
     });
+
+    // 0. ซิงก์คลังเมนู 150 รายการเข้าสู่ฐานข้อมูล MongoDB
+    await menuCatalog.syncPricesToDatabase();
 
     // 1. ลงทะเบียน Slash Commands ทั้งหมดอัตโนมัติ
     try {
