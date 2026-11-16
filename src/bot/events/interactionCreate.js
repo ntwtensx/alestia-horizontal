@@ -1,79 +1,62 @@
-const {
-  EmbedBuilder,
-  ActionRowBuilder,
-  ButtonBuilder,
-  ButtonStyle
-} = require('discord.js');
+const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 const theme = require('../../config/theme');
 
 module.exports = {
   name: 'interactionCreate',
   once: false,
   async execute(interaction, client) {
-    // 1. จัดการเมื่อมีคนกดปุ่ม (Button Interaction)
     if (interaction.isButton()) {
-      const { registerMessageId, registerButtonEmoji, registerButtonLabel } = theme.discordConfig;
-      const isTargetRegisterMsg = interaction.message?.id === registerMessageId;
-      const isRegisterCustomId =
+      const { registerMessageId, memberRoleId, pinRoleId, registerButtonEmoji, registerButtonLabel } = theme.discordConfig;
+      const isRegisterBtn =
+        interaction.message?.id === registerMessageId ||
         interaction.customId === 'alestia_open_register' ||
-        interaction.customId.toLowerCase().includes('register') ||
-        interaction.customId.toLowerCase().includes('member');
+        interaction.customId.toLowerCase().includes('register');
 
-      if (isTargetRegisterMsg || isRegisterCustomId) {
-        const personalRegisterUrl = `${theme.publicUrl}/register?id=${interaction.user.id}`;
+      if (isRegisterBtn) {
+        if (interaction.member?.roles?.cache?.has(memberRoleId)) {
+          return interaction.reply({
+            content: `🪪 คุณมีบัตรสมาชิก <@&${memberRoleId}> อยู่แล้วค่ะ (สงวนสิทธิ์ลงทะเบียนเฉพาะผู้ที่ยังไม่มีบัตรสมาชิกนะคะ)`,
+            ephemeral: true
+          });
+        }
 
+        const personalUrl = `${theme.publicUrl}/register?id=${interaction.user.id}`;
         const embed = new EmbedBuilder()
           .setColor(theme.colors.pastelPink)
-          .setTitle(`🪪 บัตรเชิญลงทะเบียนสมาชิก ${theme.serverName} Cafe`)
+          .setTitle(`🪪 จุดลงทะเบียนบัตรสมาชิก ${theme.serverName} Cafe`)
           .setDescription(
             `สวัสดีค่ะคุณ **${interaction.user.displayName}** 🌸\n` +
-            `คลิกที่ปุ่มด้านล่างเพื่อเข้าสู่หน้าเว็บ **ลงทะเบียนชื่อเล่นประจำคาเฟ่ & ตั้งรหัส PIN** ได้เลยนะคะ\n\n` +
-            `✨ **สิทธิพิเศษเมื่อลงทะเบียนเสร็จสิ้น:**\n` +
-            `• รับยศสมาชิก <@&${theme.discordConfig.memberRoleId}> อัตโนมัติ\n` +
-            `• รับยศกุญแจนิรภัย <@&${theme.discordConfig.pinRoleId}> เมื่อตั้งรหัส PIN\n` +
-            `• ระบบกรอกรหัส Discord ID (\`${interaction.user.id}\`) ให้คุณอัตโนมัติแล้วค่ะ!`
+            `กดปุ่มด้านล่างเพื่อเปิดหน้าลงทะเบียนส่วนตัวของคุณได้เลยค่ะ (ระบบดึงโปรไฟล์ให้เรียบร้อยแล้ว)\n\n` +
+            `✨ **เมื่อบันทึกสำเร็จจะได้รับ:** <@&${memberRoleId}> และ <@&${pinRoleId}>`
           )
           .setThumbnail(interaction.user.displayAvatarURL({ extension: 'png', size: 256 }))
-          .setFooter({ text: theme.footerText })
-          .setTimestamp();
+          .setFooter({ text: theme.footerText });
 
         const linkBtn = new ButtonBuilder()
-          .setLabel(registerButtonLabel)
+          .setLabel(`${registerButtonLabel} (${interaction.user.displayName})`)
           .setEmoji(registerButtonEmoji)
           .setStyle(ButtonStyle.Link)
-          .setURL(personalRegisterUrl);
-
-        const row = new ActionRowBuilder().addComponents(linkBtn);
+          .setURL(personalUrl);
 
         return interaction.reply({
           embeds: [embed],
-          components: [row],
+          components: [new ActionRowBuilder().addComponents(linkBtn)],
           ephemeral: true
         });
       }
       return;
     }
 
-    // 2. จัดการคำสั่ง Slash Commands (/...)
     if (!interaction.isChatInputCommand()) return;
-
     const command = client.commands.get(interaction.commandName);
     if (!command) return;
 
     try {
       await command.execute(interaction, client);
-    } catch (error) {
-      console.error(`❌ [Command Error] /${interaction.commandName}:`, error);
-      const errorMessage = {
-        content: `🍓 ขออภัยค่ะคุณลูกค้า ดูเหมือนเครื่องชงกาแฟของ ${theme.botName} จะสะดุดนิดหน่อย ลองใหม่อีกครั้งนะคะ`,
-        ephemeral: true
-      };
-
-      if (interaction.replied || interaction.deferred) {
-        await interaction.followUp(errorMessage);
-      } else {
-        await interaction.reply(errorMessage);
-      }
+    } catch (err) {
+      const msg = { content: `🍓 ระบบขัดข้องชั่วคราว ลองใหม่อีกครั้งนะคะ`, ephemeral: true };
+      if (interaction.replied || interaction.deferred) await interaction.followUp(msg);
+      else await interaction.reply(msg);
     }
   }
 };

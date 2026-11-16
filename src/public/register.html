@@ -3,1205 +3,386 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0" />
-  <title>🪪 ลงทะเบียนบัตรสมาชิก & เมนูประจำตัว | Horizontal Cafe</title>
+  <title>🪪 ลงทะเบียนบัตรสมาชิก | Horizontal Cafe</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&family=Outfit:wght@400;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&family=Outfit:wght@500;600;700&display=swap" rel="stylesheet">
   <style>
     :root {
-      --alx-espresso: #504027;
-      --alx-rosewood: #AA817E;
-      --alx-cream: #FFFDF9;
-      --alx-sage: #8F9779;
-      --bg-cream: #FDFBF7;
-      --pastel-pink: #FFD1DC;
-      --pastel-pink-dark: #F4ACB7;
-      --shadow-cafe: 0 14px 34px rgba(80, 64, 39, 0.08);
-      --alx-radius-md: 16px;
-      --alx-radius-lg: 26px;
-      --alx-radius-pill: 999px;
+      --espresso: #4A3728; --rosewood: #AA817E; --cream: #FFFDF9;
+      --sage: #8F9779; --pink: #FFD1DC; --pink-dark: #F39EB0;
+      --gold: #F5B041; --radius-lg: 26px; --radius-md: 16px;
+      --spring: cubic-bezier(0.34, 1.56, 0.64, 1);
     }
-
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-      -webkit-tap-highlight-color: transparent;
-    }
-
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
     body {
-      font-family: 'Kanit', 'Outfit', sans-serif;
-      color: var(--alx-espresso);
-      background-color: var(--bg-cream);
-      background-image:
-        radial-gradient(at 12% 15%, rgba(255, 209, 220, 0.45) 0px, transparent 50%),
-        radial-gradient(at 88% 20%, rgba(226, 209, 249, 0.4) 0px, transparent 50%),
-        radial-gradient(at 50% 85%, rgba(252, 206, 171, 0.35) 0px, transparent 55%),
-        radial-gradient(#EADCD3 1px, transparent 1px);
-      background-size: 100% 100%, 100% 100%, 100% 100%, 24px 24px;
-      background-attachment: fixed;
-      min-height: 100vh;
-      min-height: 100dvh;
-      padding: clamp(14px, 3vw, 28px) clamp(12px, 3vw, 20px) 64px;
-      overflow-x: hidden;
-      line-height: 1.55;
-    }
-
-    .page-shell {
-      max-width: 1180px;
-      margin: 0 auto;
-      position: relative;
-      z-index: 2;
-    }
-
-    .alx-glass-panel {
-      background: rgba(255, 252, 248, 0.8);
-      backdrop-filter: blur(16px);
-      -webkit-backdrop-filter: blur(16px);
-      border: 1.5px solid rgba(170, 129, 126, 0.28);
-      border-radius: var(--alx-radius-lg);
-      box-shadow: var(--shadow-cafe);
-    }
-
-    .alx-glass-card {
-      background: linear-gradient(145deg, rgba(255, 255, 255, 0.94) 0%, rgba(255, 245, 238, 0.84) 100%);
-      backdrop-filter: blur(18px);
-      -webkit-backdrop-filter: blur(18px);
-      border: 2px solid rgba(170, 129, 126, 0.36);
-      border-radius: var(--alx-radius-lg);
-      box-shadow: 0 18px 40px -12px rgba(80, 64, 39, 0.16);
-      overflow: hidden;
-    }
-
-    /* ==========================================
-       🧭 แถบนำทางด้านบน
-       ========================================== */
-    .top-nav-bar {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      justify-content: space-between;
-      gap: 14px;
-      padding: clamp(12px, 2vw, 16px) clamp(16px, 2.5vw, 24px);
-      margin-bottom: clamp(18px, 3vw, 26px);
-    }
-
-    .brand-cluster {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
-
-    .brand-logo-orb {
-      width: 44px;
-      height: 44px;
-      border-radius: 14px;
-      background: linear-gradient(135deg, var(--alx-espresso), var(--alx-rosewood));
-      color: var(--alx-cream);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 1.35rem;
-      flex-shrink: 0;
-      box-shadow: 0 8px 18px rgba(80, 64, 39, 0.22);
-    }
-
-    .brand-title h1 {
-      font-size: clamp(1.02rem, 2.2vw, 1.22rem);
-      font-weight: 700;
-      color: var(--alx-espresso);
-    }
-
-    .brand-title p {
-      font-size: clamp(0.75rem, 1.8vw, 0.82rem);
-      color: #7A6352;
-    }
-
-    .nav-links {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-    }
-
-    .nav-pill {
-      text-decoration: none;
-      padding: 8px 16px;
-      font-size: 0.88rem;
-      font-weight: 600;
-      color: var(--alx-espresso);
-      background: rgba(255, 255, 255, 0.65);
-      border: 1px solid rgba(170, 129, 126, 0.28);
-      border-radius: var(--alx-radius-pill);
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      transition: all 0.2s ease;
-    }
-
-    .nav-pill.active {
-      background: var(--alx-espresso);
-      color: var(--alx-cream);
-      border-color: var(--alx-espresso);
-      box-shadow: 0 6px 16px rgba(80, 64, 39, 0.25);
-    }
-
-    /* ==========================================
-       📐 โครงสร้างหลัก 2 คอลัมน์
-       ========================================== */
-    .portal-grid {
-      display: grid;
-      grid-template-columns: minmax(320px, 0.95fr) minmax(340px, 1.35fr);
-      gap: clamp(18px, 2.8vw, 26px);
-      align-items: start;
-    }
-
-    .sticky-left-col {
-      position: sticky;
-      top: 20px;
-    }
-
-    /* ==========================================
-       🃏 คอลัมน์ซ้าย: บัตรสมาชิกจำลองแบบเรียลไทม์
-       ========================================== */
-    .preview-card-wrapper {
-      padding: clamp(20px, 3vw, 26px) clamp(16px, 2.5vw, 22px);
-      text-align: center;
-      position: relative;
-      transition: transform 0.18s ease-out;
-      will-change: transform;
-    }
-
-    .preview-card-aura {
-      position: absolute;
-      top: -25%;
-      left: 50%;
-      transform: translateX(-50%);
-      width: 240px;
-      height: 240px;
-      border-radius: 50%;
-      background: radial-gradient(circle, var(--preview-role-color, #AA817E) 0%, transparent 70%);
-      opacity: 0.28;
-      filter: blur(28px);
-      pointer-events: none;
-    }
-
-    .card-badge-header {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      justify-content: space-between;
-      gap: 8px;
-      margin-bottom: 14px;
-      position: relative;
-      z-index: 2;
-    }
-
-    .voice-live-pill,
-    .pin-shield-pill {
-      font-size: 0.74rem;
-      font-weight: 600;
-      padding: 4px 11px;
-      border-radius: var(--alx-radius-pill);
-    }
-
-    .voice-live-pill {
-      background: rgba(161, 157, 112, 0.2);
-      color: #4D5E32;
-      border: 1px solid rgba(161, 157, 112, 0.45);
-    }
-
-    .voice-live-pill.in-voice {
-      background: rgba(46, 125, 50, 0.16);
-      color: #1B5E20;
-      border-color: rgba(46, 125, 50, 0.4);
-    }
-
-    .pin-shield-pill {
-      background: rgba(252, 206, 171, 0.45);
-      color: var(--alx-espresso);
-      border: 1px solid rgba(170, 129, 126, 0.3);
-    }
-
-    .pin-shield-pill.locked {
-      background: rgba(80, 64, 39, 0.92);
-      color: var(--alx-cream);
-    }
-
-    .avatar-stage {
-      width: clamp(94px, 16vw, 114px);
-      height: clamp(94px, 16vw, 114px);
-      margin: 4px auto 10px;
-      position: relative;
-      z-index: 2;
-    }
-
-    .avatar-stage img {
-      width: 100%;
-      height: 100%;
-      border-radius: 50%;
-      object-fit: cover;
-      background: #FFFDF9;
-      border: 4px solid rgba(255, 255, 255, 0.95);
-      box-shadow: 0 10px 24px rgba(80, 64, 39, 0.16);
-    }
-
-    .preview-server-name {
-      font-size: clamp(1.15rem, 2.5vw, 1.32rem);
-      font-weight: 700;
-      color: var(--alx-espresso);
-      position: relative;
-      z-index: 2;
-      word-break: break-word;
-    }
-
-    .preview-discord-tag {
-      font-size: 0.82rem;
-      color: #7A6352;
-      margin-bottom: 10px;
-      position: relative;
-      z-index: 2;
-    }
-
-    .preview-role-chip {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      padding: 4px 13px;
-      border-radius: var(--alx-radius-pill);
-      font-size: 0.78rem;
-      font-weight: 600;
-      background: rgba(255, 255, 255, 0.85);
-      border: 1.5px solid var(--preview-role-color, #AA817E);
-      color: var(--alx-espresso);
-      margin-bottom: 14px;
-      position: relative;
-      z-index: 2;
-    }
-
-    .role-dot {
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      background: var(--preview-role-color, #AA817E);
-    }
-
-    .live-identity-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 10px;
-      margin-bottom: 14px;
-      position: relative;
-      z-index: 2;
-    }
-
-    .live-identity-box {
-      background: rgba(255, 255, 255, 0.76);
-      border: 1px solid rgba(170, 129, 126, 0.28);
-      border-radius: 14px;
-      padding: 9px 10px;
-    }
-
-    .preview-stat-label {
-      font-size: 0.72rem;
-      color: #7A6352;
-      margin-bottom: 2px;
-    }
-
-    .live-identity-value {
-      font-size: 0.96rem;
-      font-weight: 700;
-      color: var(--alx-espresso);
-      word-break: break-word;
-    }
-
-    .highlight-nick {
-      color: #8B4513;
-    }
-
-    .live-menu-showcase {
-      background: rgba(255, 251, 246, 0.88);
-      border: 1.5px dashed rgba(170, 129, 126, 0.42);
-      border-radius: 16px;
-      padding: 12px;
-      text-align: left;
-      position: relative;
-      z-index: 2;
-    }
-
-    .showcase-header {
-      font-size: 0.76rem;
-      font-weight: 700;
-      color: #7A6352;
-      margin-bottom: 8px;
-      text-align: center;
-    }
-
-    .showcase-menu-row {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 8px;
-      padding: 6px 8px;
-      border-radius: 10px;
-      background: rgba(255, 255, 255, 0.8);
-      margin-bottom: 6px;
-      font-size: 0.82rem;
-    }
-
-    .showcase-menu-row:last-child {
-      margin-bottom: 0;
-    }
-
-    .slot-tag {
-      font-weight: 600;
-      color: #6E5849;
-      white-space: nowrap;
-      font-size: 0.76rem;
-    }
-
-    .slot-detail {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      min-width: 0;
-    }
-
-    .slot-name {
-      font-weight: 600;
-      color: var(--alx-espresso);
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      max-width: 155px;
-    }
-
-    /* ==========================================
-       🏆 ป้ายระดับความพรีเมียม (5-Tier Badges)
-       ========================================== */
-    .tier-pill {
-      font-size: 0.68rem;
-      font-weight: 700;
-      padding: 2px 7px;
-      border-radius: 999px;
-      white-space: nowrap;
-      flex-shrink: 0;
-    }
-
-    .tier-SSR {
-      background: linear-gradient(135deg, #FFD700, #FFA500);
-      color: #4A2E00;
-      box-shadow: 0 2px 6px rgba(255, 165, 0, 0.35);
-    }
-
-    .tier-SR {
-      background: linear-gradient(135deg, #E2D1F9, #C3A6FF);
-      color: #3B1E6D;
-    }
-
-    .tier-R {
-      background: linear-gradient(135deg, #C1E1C1, #8FD19E);
-      color: #1B4D20;
-    }
-
-    .tier-C {
-      background: #EFE6DD;
-      color: #5C4B51;
-    }
-
-    .tier-MYSTERY {
-      background: linear-gradient(90deg, #FFB7B2, #FFDAC1, #E2F0CB, #B5EAD7, #C7CEEA);
-      color: #4A354B;
-      border: 1px solid rgba(80, 64, 39, 0.2);
-    }
-
-    /* ==========================================
-       🔍 รายชื่อสมาชิกในร้าน (Quick Member Picker)
-       ========================================== */
-    .quick-picker-panel {
-      margin-top: 18px;
-      padding: 18px;
-    }
-
-    .picker-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 10px;
-    }
-
-    .picker-header h3 {
-      font-size: 0.94rem;
-      font-weight: 600;
-    }
-
-    .search-input-box {
-      width: 100%;
-      padding: 10px 15px;
-      border-radius: var(--alx-radius-pill);
-      border: 1.5px solid rgba(170, 129, 126, 0.35);
-      background: rgba(255, 255, 255, 0.88);
-      font-family: inherit;
-      font-size: 0.88rem;
-      color: var(--alx-espresso);
-      outline: none;
-      margin-bottom: 10px;
-    }
-
-    .member-chips-scroll {
-      max-height: 215px;
-      overflow-y: auto;
-      display: flex;
-      flex-direction: column;
-      gap: 7px;
-      padding-right: 4px;
-    }
-
-    .member-pick-item {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 8px 12px;
-      border-radius: 14px;
-      background: rgba(255, 255, 255, 0.68);
-      border: 1px solid rgba(170, 129, 126, 0.22);
-      cursor: pointer;
-      transition: all 0.18s ease;
-    }
-
-    .member-pick-item:hover {
-      background: rgba(255, 255, 255, 0.95);
-      transform: translateX(3px);
-    }
-
-    .member-pick-item.selected {
-      background: #FFF6EE;
-      border-color: var(--alx-espresso);
-      box-shadow: 0 4px 12px rgba(80, 64, 39, 0.1);
-    }
-
-    .pick-left {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      min-width: 0;
-    }
-
-    .pick-left img {
-      width: 34px;
-      height: 34px;
-      border-radius: 50%;
-      object-fit: cover;
-      flex-shrink: 0;
-    }
-
-    .pick-names {
-      min-width: 0;
-    }
-
-    .pick-names .p-main {
-      font-size: 0.86rem;
-      font-weight: 600;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-
-    .pick-names .p-sub {
-      font-size: 0.72rem;
-      color: #7A6352;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-
-    .pick-badges {
-      display: flex;
-      gap: 5px;
-      flex-shrink: 0;
-    }
-
-    .mini-tag {
-      font-size: 0.68rem;
-      padding: 2px 8px;
-      border-radius: 999px;
-      font-weight: 600;
-    }
-
-    .mini-tag.voice {
-      background: rgba(46, 125, 50, 0.15);
-      color: #1B5E20;
-    }
-
-    .mini-tag.reg {
-      background: rgba(161, 157, 112, 0.25);
-      color: var(--alx-espresso);
-    }
-
-    /* ==========================================
-       📝 คอลัมน์ขวา: ฟอร์มลงทะเบียน ปฏิทิน & สมุดเมนู
-       ========================================== */
-    .form-card-panel {
-      padding: clamp(20px, 3.5vw, 30px) clamp(16px, 3vw, 26px);
-    }
-
-    .form-header {
-      margin-bottom: 20px;
-    }
-
-    .form-header h2 {
-      font-size: clamp(1.18rem, 2.6vw, 1.38rem);
-      font-weight: 700;
-      margin-bottom: 6px;
-    }
-
-    .form-header p {
-      font-size: 0.86rem;
-      color: #6E5849;
-    }
-
-    .field-group {
-      margin-bottom: 20px;
-    }
-
-    .field-label {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      justify-content: space-between;
-      gap: 6px;
-      font-size: 0.9rem;
-      font-weight: 600;
-      margin-bottom: 8px;
-    }
-
-    .field-hint {
-      font-size: 0.75rem;
-      font-weight: 400;
-      color: #846C5B;
-    }
-
-    .input-row-wrap {
-      display: flex;
-      gap: 10px;
-    }
-
-    .glass-input {
-      width: 100%;
-      min-height: 45px;
-      padding: 11px 15px;
-      border-radius: 14px;
-      border: 1.5px solid rgba(170, 129, 126, 0.35);
-      background: rgba(255, 255, 255, 0.88);
-      font-family: inherit;
-      font-size: 0.95rem;
-      color: var(--alx-espresso);
-      outline: none;
-      transition: border-color 0.2s ease, box-shadow 0.2s ease;
-    }
-
-    .glass-input:focus {
-      background: #FFFFFF;
-      border-color: var(--alx-espresso);
-      box-shadow: 0 0 0 3px rgba(170, 129, 126, 0.18);
-    }
-
-    .lookup-btn {
-      min-height: 45px;
-      padding: 0 18px;
-      border: none;
-      border-radius: 14px;
-      background: var(--alx-sage);
-      color: #FFFFFF;
-      font-family: inherit;
-      font-weight: 600;
-      cursor: pointer;
-      white-space: nowrap;
-    }
-
-    /* ปฏิทินจำลองเลือกวันเกิด */
-    .birthday-live-pill {
-      background: #FFF0F5;
-      border: 1px solid var(--pastel-pink-dark);
-      color: var(--alx-espresso);
-      padding: 3px 12px;
-      border-radius: 999px;
-      font-size: 0.8rem;
-      font-weight: 700;
-    }
-
-    .calendar-simulator-box {
-      background: rgba(255, 255, 255, 0.74);
-      border: 1.5px solid rgba(170, 129, 126, 0.3);
-      border-radius: 18px;
-      padding: 16px;
-    }
-
-    .calendar-step-title {
-      font-size: 0.8rem;
-      font-weight: 600;
-      color: #7A6352;
-      margin-bottom: 8px;
-    }
-
-    .month-grid {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 8px;
-    }
-
-    .month-btn {
-      padding: 8px 6px;
-      border-radius: 12px;
-      border: 1px solid rgba(170, 129, 126, 0.28);
-      background: rgba(255, 255, 255, 0.9);
-      color: var(--alx-espresso);
-      font-family: inherit;
-      cursor: pointer;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      transition: all 0.16s ease;
-    }
-
-    .month-btn .m-short {
-      font-size: 0.85rem;
-      font-weight: 700;
-    }
-
-    .month-btn .m-full {
-      font-size: 0.7rem;
-      opacity: 0.82;
-    }
-
-    .month-btn.active {
-      background: var(--alx-espresso);
-      color: var(--alx-cream);
-      border-color: var(--alx-espresso);
-      box-shadow: 0 4px 10px rgba(80, 64, 39, 0.22);
-    }
-
-    .days-grid {
-      display: grid;
-      grid-template-columns: repeat(7, 1fr);
-      gap: 6px;
-    }
-
-    .day-cell-btn {
-      height: 38px;
-      border-radius: 10px;
-      border: 1px solid rgba(170, 129, 126, 0.25);
-      background: #FFFFFF;
-      color: var(--alx-espresso);
-      font-family: inherit;
-      font-weight: 600;
-      font-size: 0.88rem;
-      cursor: pointer;
-      transition: all 0.15s ease;
-    }
-
-    .day-cell-btn:hover {
-      background: #FFF0F5;
-      border-color: var(--pastel-pink-dark);
-    }
-
-    .day-cell-btn.active {
-      background: linear-gradient(135deg, #FF9AA2, #FFB7B2);
-      color: #3D1E1E;
-      border-color: #E07A84;
-      font-weight: 700;
-      transform: scale(1.05);
-    }
-
-    /* ช่องเลือกเมนูประจำตัว 3 ลำดับ & สมุดเมนู 150 รายการ */
-    .menu-slots-selector {
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-      margin-bottom: 14px;
-    }
-
-    .menu-slot-card {
-      padding: 12px 14px;
-      border-radius: 16px;
-      background: rgba(255, 255, 255, 0.68);
-      border: 1.5px solid rgba(170, 129, 126, 0.25);
-      cursor: pointer;
-      transition: all 0.2s ease;
-    }
-
-    .menu-slot-card.active-slot {
-      background: #FFF9F5;
-      border-color: var(--alx-espresso);
-      box-shadow: 0 6px 16px rgba(80, 64, 39, 0.1);
-    }
-
-    .slot-card-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      font-size: 0.85rem;
-      font-weight: 700;
-      margin-bottom: 6px;
-    }
-
-    .slot-input {
-      min-height: 40px;
-      padding: 8px 12px;
-      font-size: 0.9rem;
-    }
-
-    .catalog-browser-box {
-      background: rgba(255, 255, 255, 0.78);
-      border: 1.5px solid rgba(170, 129, 126, 0.3);
-      border-radius: 18px;
-      padding: 14px;
-    }
-
-    .catalog-browser-top {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      justify-content: space-between;
-      gap: 10px;
-      margin-bottom: 10px;
-    }
-
-    .catalog-target-indicator {
-      font-size: 0.82rem;
-      color: #6E5849;
-    }
-
-    .catalog-search-input {
-      flex: 1;
-      min-width: 200px;
-      padding: 8px 14px;
-      border-radius: 999px;
-      border: 1px solid rgba(170, 129, 126, 0.35);
-      font-family: inherit;
-      font-size: 0.84rem;
-      outline: none;
-    }
-
-    .catalog-category-tabs {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 6px;
-      margin-bottom: 10px;
-    }
-
-    .cat-tab-btn {
-      padding: 6px 12px;
-      border-radius: 999px;
-      border: 1px solid rgba(170, 129, 126, 0.28);
-      background: rgba(255, 255, 255, 0.85);
-      color: var(--alx-espresso);
-      font-family: inherit;
-      font-size: 0.78rem;
-      font-weight: 600;
-      cursor: pointer;
-      display: inline-flex;
-      align-items: center;
-      gap: 5px;
-    }
-
-    .cat-tab-btn.active {
-      background: var(--alx-espresso);
-      color: var(--alx-cream);
-      border-color: var(--alx-espresso);
-    }
-
-    .catalog-items-grid {
-      max-height: 225px;
-      overflow-y: auto;
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(225px, 1fr));
-      gap: 8px;
-      padding-right: 4px;
-    }
-
-    .catalog-item-chip {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 6px;
-      padding: 8px 10px;
-      border-radius: 12px;
-      border: 1px solid rgba(170, 129, 126, 0.24);
-      background: #FFFFFF;
-      color: var(--alx-espresso);
-      font-family: inherit;
-      font-size: 0.8rem;
-      cursor: pointer;
-      text-align: left;
-      transition: all 0.15s ease;
-    }
-
-    .catalog-item-chip:hover {
-      background: #FFF3EE;
-      border-color: var(--alx-rosewood);
-    }
-
-    .catalog-item-chip.picked {
-      background: #FFF0F5;
-      border-color: var(--alx-espresso);
-      font-weight: 700;
-    }
-
-    .chip-left {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      min-width: 0;
-    }
-
-    .chip-name {
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-
-    .chip-right {
-      display: flex;
-      align-items: center;
-      gap: 5px;
-      flex-shrink: 0;
-    }
-
-    .chip-price {
-      font-size: 0.72rem;
-      color: #7A6352;
-      font-weight: 600;
-    }
-
-    /* รหัส PIN และปุ่มบันทึก */
-    .pin-input-letter {
-      letter-spacing: 0.32em;
-      font-weight: 700;
-      text-align: center;
-      font-size: 1.12rem;
-    }
-
-    .toggle-pin-btn {
-      background: none;
-      border: none;
-      color: #7A6352;
-      cursor: pointer;
-      font-size: 0.78rem;
-      font-weight: 600;
-      font-family: inherit;
-    }
-
-    .current-pin-alert-box {
-      display: none;
-      padding: 14px 16px;
-      border-radius: 14px;
-      background: rgba(252, 206, 171, 0.38);
-      border: 1.5px solid rgba(170, 129, 126, 0.45);
-      margin-bottom: 18px;
-    }
-
-    .current-pin-alert-box.active {
-      display: block;
-    }
-
-    .submit-hero-btn {
-      width: 100%;
-      min-height: 52px;
-      padding: 14px 22px;
-      border: none;
-      border-radius: 16px;
-      background: linear-gradient(135deg, var(--alx-espresso) 0%, #6E5239 100%);
-      color: var(--alx-cream);
-      font-family: inherit;
-      font-size: 1.02rem;
-      font-weight: 700;
-      cursor: pointer;
-      box-shadow: 0 12px 28px -8px rgba(80, 64, 39, 0.38);
-      transition: transform 0.2s ease, opacity 0.2s ease;
-    }
-
-    .submit-hero-btn:hover:not(:disabled) {
-      transform: translateY(-2px);
-    }
-
-    .submit-hero-btn:disabled {
-      opacity: 0.65;
-      cursor: not-allowed;
-    }
-
-    .status-toast {
-      display: none;
-      margin-top: 16px;
-      padding: 13px 16px;
-      border-radius: 14px;
-      font-size: 0.9rem;
-      font-weight: 500;
-    }
-
-    .status-toast.success {
-      display: block;
-      background: rgba(46, 125, 50, 0.14);
-      color: #1B5E20;
-      border: 1.5px solid rgba(46, 125, 50, 0.4);
-    }
-
-    .status-toast.error {
-      display: block;
-      background: rgba(198, 40, 40, 0.12);
-      color: #B71C1C;
-      border: 1.5px solid rgba(198, 40, 40, 0.35);
-    }
+      font-family: 'Kanit', 'Outfit', sans-serif; color: var(--espresso);
+      background: #FDFBF7 radial-gradient(at 15% 15%, rgba(255,209,220,0.5) 0px, transparent 50%),
+                  radial-gradient(at 85% 25%, rgba(226,209,249,0.45) 0px, transparent 50%),
+                  radial-gradient(at 50% 85%, rgba(252,206,171,0.4) 0px, transparent 55%);
+      background-attachment: fixed; min-height: 100dvh; padding: clamp(14px,3vw,26px) clamp(12px,3vw,20px) 70px; overflow-x: hidden;
+    }
+    #fxCanvas { position: fixed; inset: 0; pointer-events: none; z-index: 1; }
+    .page-shell { max-width: 1180px; margin: 0 auto; position: relative; z-index: 2; }
+    @keyframes floatUp { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes pulseGlow { 0%, 100% { box-shadow: 0 0 0 0 rgba(243,158,176,0.4); } 50% { box-shadow: 0 0 0 8px rgba(243,158,176,0); } }
+    @keyframes popIn { 0% { transform: scale(0.92); } 60% { transform: scale(1.04); } 100% { transform: scale(1); } }
+
+    .glass-panel {
+      background: rgba(255,252,248,0.82); backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px);
+      border: 1.5px solid rgba(170,129,126,0.28); border-radius: var(--radius-lg);
+      box-shadow: 0 16px 36px rgba(74,55,40,0.08); animation: floatUp 0.55s var(--spring) both;
+    }
+    .top-nav { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 22px; margin-bottom: 24px; }
+    .brand { display: flex; align-items: center; gap: 12px; }
+    .brand-orb { width: 44px; height: 44px; border-radius: 14px; background: linear-gradient(135deg, var(--espresso), var(--rosewood)); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 1.35rem; box-shadow: 0 8px 18px rgba(74,55,40,0.22); }
+    .brand h1 { font-size: clamp(1.05rem, 2.2vw, 1.25rem); font-weight: 700; }
+    .brand p { font-size: 0.8rem; color: #7A6352; }
+
+    .portal-grid { display: grid; grid-template-columns: minmax(320px, 0.92fr) minmax(340px, 1.38fr); gap: 24px; align-items: start; }
+    .sticky-col { position: sticky; top: 20px; }
+
+    /* บัตรสมาชิกจำลอง 3D */
+    .id-card {
+      padding: 24px 20px; text-align: center; position: relative; overflow: hidden;
+      background: linear-gradient(145deg, rgba(255,255,255,0.95) 0%, rgba(255,244,236,0.88) 100%);
+      border: 2px solid rgba(170,129,126,0.38); border-radius: var(--radius-lg);
+      box-shadow: 0 20px 44px -12px rgba(74,55,40,0.16); transition: transform 0.18s ease-out;
+    }
+    .id-card-aura { position: absolute; top: -25%; left: 50%; transform: translateX(-50%); width: 240px; height: 240px; border-radius: 50%; background: radial-gradient(circle, var(--role-color, #AA817E) 0%, transparent 70%); opacity: 0.3; filter: blur(28px); pointer-events: none; }
+    .badge-row { display: flex; justify-content: space-between; gap: 8px; margin-bottom: 12px; position: relative; z-index: 2; }
+    .pill { font-size: 0.74rem; font-weight: 600; padding: 4px 11px; border-radius: 999px; background: rgba(252,206,171,0.45); border: 1px solid rgba(170,129,126,0.3); }
+    .pill.ready { background: rgba(46,125,50,0.15); color: #1B5E20; border-color: rgba(46,125,50,0.4); }
+    .pill.locked { background: var(--espresso); color: var(--cream); }
+
+    .avatar-wrap { width: 108px; height: 108px; margin: 4px auto 10px; position: relative; z-index: 2; }
+    .avatar-wrap img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; border: 4px solid #fff; box-shadow: 0 10px 24px rgba(74,55,40,0.18); transition: transform 0.35s var(--spring); }
+    .avatar-wrap:hover img { transform: scale(1.06) rotate(-2deg); }
+    .server-name { font-size: 1.28rem; font-weight: 700; position: relative; z-index: 2; }
+    .discord-tag { font-size: 0.82rem; color: #7A6352; margin-bottom: 10px; position: relative; z-index: 2; }
+
+    .not-me-btn {
+      display: inline-flex; align-items: center; gap: 6px; padding: 6px 14px; border-radius: 999px;
+      font-family: inherit; font-size: 0.78rem; font-weight: 600; cursor: pointer;
+      background: #FFF0F5; color: var(--espresso); border: 1.5px solid var(--pink-dark);
+      margin-bottom: 14px; position: relative; z-index: 2; transition: all 0.2s var(--spring);
+    }
+    .not-me-btn:hover { transform: scale(1.05); background: var(--pink); }
+
+    .live-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; position: relative; z-index: 2; }
+    .live-box { background: rgba(255,255,255,0.78); border: 1px solid rgba(170,129,126,0.28); border-radius: 14px; padding: 9px 10px; }
+    .live-label { font-size: 0.72rem; color: #7A6352; }
+    .live-val { font-size: 0.96rem; font-weight: 700; word-break: break-word; }
+    .live-val.pop { animation: popIn 0.35s var(--spring); }
+
+    .showcase-box { background: rgba(255,251,246,0.9); border: 1.5px dashed rgba(170,129,126,0.42); border-radius: 16px; padding: 12px; text-align: left; position: relative; z-index: 2; }
+    .showcase-title { font-size: 0.75rem; font-weight: 700; color: #7A6352; margin-bottom: 8px; text-align: center; }
+    .showcase-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 6px 8px; border-radius: 10px; background: #fff; margin-bottom: 6px; font-size: 0.8rem; }
+    .showcase-row:last-child { margin-bottom: 0; }
+    .s-name { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 155px; }
+
+    /* กล่อง "ไม่ใช่ฉัน" (เฉพาะผู้ไม่มียศสมาชิก) */
+    .not-me-drawer { display: none; margin-top: 14px; padding: 16px; }
+    .not-me-drawer.open { display: block; animation: floatUp 0.35s var(--spring); }
+    .search-box { width: 100%; padding: 9px 14px; border-radius: 999px; border: 1.5px solid rgba(170,129,126,0.35); font-family: inherit; font-size: 0.86rem; outline: none; margin: 8px 0; }
+    .member-scroll { max-height: 200px; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; }
+    .member-item { display: flex; align-items: center; justify-content: space-between; padding: 7px 10px; border-radius: 12px; background: rgba(255,255,255,0.75); border: 1px solid rgba(170,129,126,0.22); cursor: pointer; transition: all 0.18s ease; }
+    .member-item:hover { background: #fff; transform: translateX(4px); }
+    .member-item.selected { background: #FFF0F5; border-color: var(--espresso); }
+    .m-left { display: flex; align-items: center; gap: 9px; min-width: 0; }
+    .m-left img { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; }
+    .m-name { font-size: 0.84rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+    /* ฟอร์มฝั่งขวา */
+    .form-panel { padding: clamp(20px,3vw,28px); }
+    .sec-title { display: flex; align-items: center; justify-content: space-between; font-size: 0.92rem; font-weight: 700; margin-bottom: 8px; }
+    .sec-hint { font-size: 0.75rem; font-weight: 400; color: #7A6352; }
+    .field-block { margin-bottom: 22px; }
+    .text-input { width: 100%; padding: 12px 16px; border-radius: 14px; border: 1.5px solid rgba(170,129,126,0.35); background: #fff; font-family: inherit; font-size: 0.96rem; color: var(--espresso); outline: none; transition: all 0.2s ease; }
+    .text-input:focus { border-color: var(--espresso); box-shadow: 0 0 0 4px rgba(170,129,126,0.15); }
+
+    /* ปฏิทินของจริง (Realistic Calendar Widget) */
+    .real-calendar {
+      background: #fff; border-radius: 20px; border: 1.5px solid rgba(170,129,126,0.32);
+      box-shadow: 0 10px 26px rgba(74,55,40,0.07); overflow: hidden;
+    }
+    .cal-top-bar {
+      background: linear-gradient(135deg, var(--espresso), #6E5239); color: var(--cream);
+      padding: 12px 16px; display: flex; align-items: center; justify-content: space-between;
+    }
+    .cal-nav-btn {
+      width: 34px; height: 34px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.25);
+      background: rgba(255,255,255,0.12); color: #fff; font-size: 1rem; cursor: pointer;
+      display: flex; align-items: center; justify-content: center; transition: all 0.18s ease;
+    }
+    .cal-nav-btn:hover { background: rgba(255,255,255,0.28); transform: scale(1.06); }
+    .cal-month-select {
+      background: rgba(255,255,255,0.15); color: #fff; border: 1px solid rgba(255,255,255,0.3);
+      padding: 5px 12px; border-radius: 10px; font-family: inherit; font-size: 0.95rem; font-weight: 700; cursor: pointer; outline: none;
+    }
+    .cal-month-select option { color: var(--espresso); background: #fff; }
+    .cal-weekdays {
+      display: grid; grid-template-columns: repeat(7, 1fr); text-align: center;
+      background: #FAF3ECE8; padding: 8px 10px; font-size: 0.76rem; font-weight: 700; color: #7A6352;
+      border-bottom: 1px solid rgba(170,129,126,0.2);
+    }
+    .cal-weekdays span:first-child { color: #C0392B; }
+    .cal-weekdays span:last-child { color: #2980B9; }
+    .cal-days-body {
+      display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; padding: 12px;
+      transition: opacity 0.2s ease, transform 0.2s ease;
+    }
+    .cal-cell {
+      aspect-ratio: 1; max-height: 42px; border-radius: 12px; border: 1px solid transparent;
+      background: #FDFBF7; color: var(--espresso); font-family: inherit; font-weight: 600; font-size: 0.88rem;
+      display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.18s var(--spring);
+    }
+    .cal-cell.empty { background: transparent; pointer-events: none; }
+    .cal-cell:not(.empty):hover { background: #FFF0F5; border-color: var(--pink-dark); transform: translateY(-2px); }
+    .cal-cell.selected {
+      background: linear-gradient(135deg, #FF8DA1, #FFB7B2); color: #3D1E1E;
+      border-color: #E06C78; font-weight: 700; transform: scale(1.08);
+      box-shadow: 0 6px 14px rgba(224,108,120,0.35);
+    }
+
+    /* ช่องวางเมนู Drag & Drop */
+    .drop-slots-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 14px; }
+    .drop-slot {
+      padding: 12px; border-radius: 16px; background: rgba(255,255,255,0.8);
+      border: 2px dashed rgba(170,129,126,0.4); min-height: 92px;
+      display: flex; flex-direction: column; justify-content: space-between;
+      cursor: pointer; transition: all 0.22s var(--spring); position: relative;
+    }
+    .drop-slot.active-target { border-style: solid; border-color: var(--espresso); background: #FFF9F5; }
+    .drop-slot.drag-over {
+      border-style: solid; border-color: #E06C78; background: #FFF0F5;
+      transform: scale(1.04); animation: pulseGlow 1s infinite;
+    }
+    .drop-slot.just-dropped { animation: popIn 0.4s var(--spring); }
+    .slot-head { display: flex; align-items: center; justify-content: space-between; font-size: 0.78rem; font-weight: 700; color: #6E5849; }
+    .slot-clear { background: none; border: none; font-size: 0.75rem; color: #A94442; cursor: pointer; display: none; }
+    .drop-slot.has-val .slot-clear { display: inline; }
+    .slot-body { font-size: 0.84rem; font-weight: 700; color: var(--espresso); margin-top: 6px; word-break: break-word; }
+    .slot-placeholder { font-size: 0.76rem; font-weight: 400; color: #9A8272; }
+
+    /* สมุดเมนูลากวาง */
+    .catalog-box { background: rgba(255,255,255,0.82); border: 1.5px solid rgba(170,129,126,0.3); border-radius: 18px; padding: 14px; }
+    .cat-tabs { display: flex; flex-wrap: wrap; gap: 6px; margin: 10px 0; }
+    .cat-tab { padding: 6px 12px; border-radius: 999px; border: 1px solid rgba(170,129,126,0.28); background: #fff; font-family: inherit; font-size: 0.78rem; font-weight: 600; cursor: pointer; transition: all 0.18s ease; }
+    .cat-tab.active { background: var(--espresso); color: var(--cream); }
+    .menu-grid { max-height: 230px; overflow-y: auto; display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 8px; padding-right: 4px; }
+    .menu-chip {
+      display: flex; align-items: center; justify-content: space-between; gap: 6px;
+      padding: 9px 11px; border-radius: 12px; border: 1px solid rgba(170,129,126,0.26);
+      background: #fff; font-family: inherit; font-size: 0.8rem; cursor: grab;
+      user-select: none; -webkit-user-select: none; touch-action: pan-y;
+      transition: transform 0.16s var(--spring), box-shadow 0.16s ease, background 0.16s ease;
+    }
+    .menu-chip:hover { background: #FFF6F0; transform: translateY(-2px); box-shadow: 0 6px 14px rgba(74,55,40,0.08); }
+    .menu-chip:active { cursor: grabbing; transform: scale(0.97); }
+    .menu-chip.dragging-source { opacity: 0.4; transform: scale(0.95); }
+    .m-chip-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 600; }
+
+    /* ตัวลอยตอนลาก (Floating Drag Ghost) */
+    .drag-ghost {
+      position: fixed; z-index: 9999; pointer-events: none;
+      padding: 9px 14px; border-radius: 999px; background: var(--espresso); color: #fff;
+      font-family: inherit; font-size: 0.84rem; font-weight: 700;
+      box-shadow: 0 14px 28px rgba(74,55,40,0.35); transform: translate(-50%, -120%) scale(1.06);
+      display: flex; align-items: center; gap: 8px; white-space: nowrap;
+    }
+
+    .tier-pill { font-size: 0.66rem; font-weight: 700; padding: 2px 7px; border-radius: 999px; flex-shrink: 0; }
+    .tier-SSR { background: linear-gradient(135deg, #FFD700, #FFA500); color: #4A2E00; }
+    .tier-SR { background: linear-gradient(135deg, #E2D1F9, #C3A6FF); color: #3B1E6D; }
+    .tier-R { background: linear-gradient(135deg, #C1E1C1, #8FD19E); color: #1B4D20; }
+    .tier-C { background: #EFE6DD; color: #5C4B51; }
+    .tier-MYSTERY { background: linear-gradient(90deg, #FFB7B2, #FFDAC1, #B5EAD7, #C7CEEA); color: #4A354B; }
+
+    /* รหัส PIN 4 หลัก */
+    .pin-wrap { display: flex; align-items: center; gap: 12px; }
+    .pin-input-4 {
+      letter-spacing: 0.55em; font-weight: 700; text-align: center; font-size: 1.25rem; max-width: 220px;
+    }
+    .pin-dots { display: flex; gap: 8px; }
+    .pin-dot { width: 12px; height: 12px; border-radius: 50%; background: rgba(170,129,126,0.3); transition: all 0.2s var(--spring); }
+    .pin-dot.filled { background: var(--espresso); transform: scale(1.2); }
+
+    .submit-btn {
+      width: 100%; min-height: 52px; border: none; border-radius: 16px;
+      background: linear-gradient(135deg, var(--espresso) 0%, #6E5239 100%); color: var(--cream);
+      font-family: inherit; font-size: 1.02rem; font-weight: 700; cursor: pointer;
+      box-shadow: 0 12px 28px -8px rgba(74,55,40,0.4); transition: all 0.22s var(--spring);
+    }
+    .submit-btn:hover:not(:disabled) { transform: translateY(-2px) scale(1.01); }
+    .submit-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+    .toast { display: none; margin-top: 14px; padding: 12px 16px; border-radius: 14px; font-size: 0.9rem; font-weight: 600; animation: floatUp 0.3s var(--spring); }
+    .toast.ok { display: block; background: rgba(46,125,50,0.14); color: #1B5E20; border: 1.5px solid rgba(46,125,50,0.4); }
+    .toast.err { display: block; background: rgba(198,40,40,0.12); color: #B71C1C; border: 1.5px solid rgba(198,40,40,0.35); }
 
-    /* รองรับมือถือและแท็บเล็ต */
     @media (max-width: 920px) {
-      .portal-grid {
-        grid-template-columns: 1fr;
-      }
-      .sticky-left-col {
-        position: static;
-      }
+      .portal-grid { grid-template-columns: 1fr; }
+      .sticky-col { position: static; }
     }
-
-    @media (max-width: 600px) {
-      .month-grid {
-        grid-template-columns: repeat(3, 1fr);
-      }
-      .days-grid {
-        grid-template-columns: repeat(7, 1fr);
-        gap: 4px;
-      }
-      .day-cell-btn {
-        height: 34px;
-        font-size: 0.82rem;
-      }
-      .glass-input,
-      .search-input-box,
-      .catalog-search-input {
-        font-size: 16px;
-      }
-      .input-row-wrap {
-        flex-direction: column;
-      }
-      .lookup-btn {
-        width: 100%;
-        padding: 12px;
-      }
+    @media (max-width: 640px) {
+      .drop-slots-grid { grid-template-columns: 1fr; }
+      .text-input, .search-box { font-size: 16px; }
     }
   </style>
 </head>
 <body>
+  <canvas id="fxCanvas"></canvas>
+
   <div class="page-shell">
-    <!-- 🧭 แถบนำทางด้านบน -->
-    <nav class="top-nav-bar alx-glass-panel">
-      <div class="brand-cluster">
-        <div class="brand-logo-orb">☕</div>
-        <div class="brand-title">
-          <h1>Horizontal Cafe • Alestia Member Portal</h1>
-          <p>แบบฟอร์มลงทะเบียนบัตรสมาชิก วันเกิด เมนูประจำตัว & รหัส PIN</p>
+    <nav class="top-nav glass-panel">
+      <div class="brand">
+        <div class="brand-orb">☕</div>
+        <div>
+          <h1>Horizontal Cafe • Member Registration</h1>
+          <p>ระบบลงทะเบียนบัตรสมาชิกอัตโนมัติ (เฉพาะผู้ที่ยังไม่มีบัตรสมาชิก)</p>
         </div>
-      </div>
-      <div class="nav-links">
-        <a href="/" class="nav-pill">☕ หน้าแรกบาริสต้า</a>
-        <a href="/register" class="nav-pill active">🪪 ลงทะเบียนบัตรสมาชิก</a>
       </div>
     </nav>
 
     <div class="portal-grid">
-      <!-- ========================================================
-           🃏 คอลัมน์ซ้าย: บัตรสมาชิกจำลองแบบเรียลไทม์ (Live Preview)
-           ======================================================== -->
-      <div class="sticky-left-col">
-        <div id="livePreviewCard" class="preview-card-wrapper alx-glass-card">
-          <div class="preview-card-aura"></div>
-
-          <div class="card-badge-header">
-            <span id="previewVoiceBadge" class="voice-live-pill">🪪 บัตรสมาชิก Horizontal Cafe</span>
-            <span id="previewPinBadge" class="pin-shield-pill">🔓 ยังไม่ตั้ง PIN</span>
+      <!-- คอลัมน์ซ้าย: บัตรสมาชิกของฉัน + ปุ่ม "ไม่ใช่ฉัน" -->
+      <div class="sticky-col">
+        <div id="idCard" class="id-card">
+          <div class="id-card-aura"></div>
+          <div class="badge-row">
+            <span id="statusBadge" class="pill ready">🪪 รอลงทะเบียนสมาชิกใหม่</span>
+            <span id="pinBadge" class="pill">🔓 PIN 0/4</span>
           </div>
 
-          <div class="avatar-stage">
-            <img id="previewAvatar" src="https://cdn.discordapp.com/embed/avatars/0.png" alt="Discord Avatar" />
+          <div class="avatar-wrap">
+            <img id="avatarImg" src="https://cdn.discordapp.com/embed/avatars/0.png" alt="Avatar" />
           </div>
+          <div id="serverNameTxt" class="server-name">กำลังดึงข้อมูลของคุณ...</div>
+          <div id="discordTagTxt" class="discord-tag">@discord_user</div>
 
-          <div id="previewServerName" class="preview-server-name">เลือกโปรไฟล์ของคุณ</div>
-          <div id="previewDiscordTag" class="preview-discord-tag">@discord_member</div>
+          <button type="button" id="notMeToggleBtn" class="not-me-btn">
+            🔄 ไม่ใช่ฉัน? (เลือกบัญชีที่ยังไม่ได้ลงทะเบียน)
+          </button>
 
-          <div class="preview-role-chip">
-            <span class="role-dot"></span>
-            <span id="previewRoleName">ลูกค้าประจำคาเฟ่</span>
-          </div>
-
-          <!-- ชื่อเล่นและวันเกิดที่อัปเดตสดทันทีที่พิมพ์/เลือก -->
-          <div class="live-identity-grid">
-            <div class="live-identity-box">
-              <div class="preview-stat-label">🏷️ ชื่อเล่นประจำคาเฟ่</div>
-              <div id="previewNickname" class="live-identity-value highlight-nick">รอตั้งชื่อเล่น...</div>
+          <div class="live-grid">
+            <div class="live-box">
+              <div class="live-label">🏷️ ชื่อเล่นประจำคาเฟ่</div>
+              <div id="liveNickTxt" class="live-val">รอตั้งชื่อเล่น...</div>
             </div>
-            <div class="live-identity-box">
-              <div class="preview-stat-label">🎂 วันเกิดสมาชิก</div>
-              <div id="previewBirthday" class="live-identity-value">ยังไม่ได้เลือกวันเกิด</div>
+            <div class="live-box">
+              <div class="live-label">🎂 วันเกิดสมาชิก</div>
+              <div id="liveBdayTxt" class="live-val">เลือกในปฏิทิน</div>
             </div>
           </div>
 
-          <!-- เมนูประจำตัว 3 ลำดับบนบัตรสมาชิก -->
-          <div class="live-menu-showcase">
-            <div class="showcase-header">☕ เมนูประจำตัวสำหรับเสิร์ฟในห้องเสียง</div>
-
-            <div class="showcase-menu-row">
-              <span class="slot-tag">⭐ เมนูโปรด</span>
-              <div id="previewFavSlot" class="slot-detail">
-                <span class="slot-name">🍵 ยังไม่ได้เลือกเมนู</span>
-              </div>
-            </div>
-
-            <div class="showcase-menu-row">
-              <span class="slot-tag">💖 เมนูที่ชอบ</span>
-              <div id="previewLike1Slot" class="slot-detail">
-                <span class="slot-name">🍵 ยังไม่ได้เลือกเมนู</span>
-              </div>
-            </div>
-
-            <div class="showcase-menu-row">
-              <span class="slot-tag">🎲 อาจจะสั่ง</span>
-              <div id="previewLike2Slot" class="slot-detail">
-                <span class="slot-name">🍵 ยังไม่ได้เลือกเมนู</span>
-              </div>
-            </div>
+          <div class="showcase-box">
+            <div class="showcase-title">☕ เมนูประจำตัว 3 ลำดับบนบัตรสมาชิก</div>
+            <div class="showcase-row"><span>⭐ เมนูโปรด</span><span id="cardFavTxt" class="s-name">🍵 รอลากเมนูมาวาง</span></div>
+            <div class="showcase-row"><span>💖 เมนูที่ชอบ</span><span id="cardLike1Txt" class="s-name">🍵 รอลากเมนูมาวาง</span></div>
+            <div class="showcase-row"><span>🎲 อาจจะสั่ง</span><span id="cardLike2Txt" class="s-name">🍵 รอลากเมนูมาวาง</span></div>
           </div>
         </div>
 
-        <!-- 🔍 กล่องเลือกโปรไฟล์ด่วนจากรายชื่อในเซิร์ฟเวอร์ -->
-        <div class="quick-picker-panel alx-glass-panel">
-          <div class="picker-header">
-            <h3>⚡ คลิกเลือกชื่อ Discord ของคุณ</h3>
-            <span id="memberCountLabel" class="field-hint">กำลังโหลดรายชื่อ...</span>
+        <!-- ลิ้นชัก "ไม่ใช่ฉัน" แสดงเฉพาะผู้ไม่มียศ 995343114854211654 -->
+        <div id="notMeDrawer" class="not-me-drawer glass-panel">
+          <div class="sec-title">
+            <span>🔍 เลือกบัญชีของคุณ (เฉพาะผู้ยังไม่มียศสมาชิก)</span>
+            <span id="eligibleCountTxt" class="sec-hint">0 ท่าน</span>
           </div>
-          <input type="text" id="memberSearchInput" class="search-input-box" placeholder="🔍 ค้นหาชื่อในเซิร์ฟเวอร์, ชื่อเล่น หรือ Discord ID..." />
-          <div id="memberChipsContainer" class="member-chips-scroll"></div>
+          <input type="text" id="memberSearch" class="search-box" placeholder="พิมพ์ค้นหาชื่อในเซิร์ฟเวอร์..." />
+          <div id="memberList" class="member-scroll"></div>
         </div>
       </div>
 
-      <!-- ========================================================
-           📝 คอลัมน์ขวา: แบบฟอร์มกรอกข้อมูลลงทะเบียนสมาชิก
-           ======================================================== -->
-      <div class="form-card-panel alx-glass-panel">
-        <div class="form-header">
-          <h2>🪪 แบบฟอร์มลงทะเบียนบัตรสมาชิก Horizontal Cafe</h2>
-          <p>
-            กรอกชื่อเล่น เลือกวันเกิดจากปฏิทินจำลอง และเลือกเมนูประจำตัวของคุณ
-            ข้อมูลจะแสดงผลขึ้นบัตรตัวอย่างด้านซ้ายแบบสดๆ และบันทึกลงฐานข้อมูลพร้อมมอบยศสมาชิกใน Discord ทันทีค่ะ
-          </p>
-        </div>
-
-        <form id="registrationForm" autocomplete="off">
-          <!-- 1. รหัส Discord ID -->
-          <div class="field-group">
-            <label class="field-label">
-              <span>1️⃣ โปรไฟล์ Discord ของผู้สมัคร</span>
-              <span class="field-hint">คลิกจากรายชื่อด้านซ้าย หรือวางรหัส ID</span>
+      <!-- คอลัมน์ขวา: ฟอร์มลงทะเบียน ปฏิทินจริง & ลากวางเมนู -->
+      <div class="form-panel glass-panel">
+        <form id="regForm" autocomplete="off">
+          <!-- 1. ชื่อเล่น -->
+          <div class="field-block">
+            <label class="sec-title">
+              <span>1️⃣ ตั้งชื่อเล่นประจำคาเฟ่</span>
+              <span class="sec-hint">แสดงสดบนบัตรสมาชิก (1–35 ตัวอักษร)</span>
             </label>
-            <div class="input-row-wrap">
-              <input type="text" id="discordIdInput" class="glass-input" placeholder="รหัส Discord ID เช่น 995629374722297946" required />
-              <button type="button" id="lookupIdBtn" class="lookup-btn">ดึงโปรไฟล์</button>
-            </div>
+            <input type="text" id="nickInput" class="text-input" maxlength="35" placeholder="เช่น เอ, มาย, เมฆ..." required />
           </div>
 
-          <!-- 2. กรอกชื่อเล่น -->
-          <div class="field-group">
-            <label class="field-label">
-              <span>2️⃣ ชื่อเล่นประจำคาเฟ่ (เปลี่ยนสดบนบัตรสมาชิก)</span>
-              <span class="field-hint">1–35 ตัวอักษร</span>
+          <!-- 2. ปฏิทินวันเกิดเสมือนจริง -->
+          <div class="field-block">
+            <label class="sec-title">
+              <span>2️⃣ เลือกวันเกิดของคุณ</span>
+              <span id="bdayPillTxt" class="sec-hint" style="font-weight:700;color:var(--espresso);">🎂 ยังไม่ได้เลือกวันเกิด</span>
             </label>
-            <input type="text" id="nicknameInput" class="glass-input" maxlength="35" placeholder="พิมพ์ชื่อเล่นที่ต้องการให้อเลสเทียเรียก เช่น เอ, มาย, เมฆ..." required />
-          </div>
-
-          <!-- 3. ปฏิทินจำลองเลือกวันเกิด -->
-          <div class="field-group">
-            <label class="field-label">
-              <span>3️⃣ วันเกิดของคุณ (ปฏิทินจำลอง วันที่ & เดือน)</span>
-              <span id="birthdayFormPill" class="birthday-live-pill">🎂 คลิกเลือกวันที่ด้านล่าง</span>
-            </label>
-
-            <div class="calendar-simulator-box">
-              <div class="calendar-step-title">เลือกเดือนเกิด (Month)</div>
-              <div id="monthGrid" class="month-grid"></div>
-
-              <div id="daysStepTitle" class="calendar-step-title" style="margin-top: 14px;">
-                เลือกวันที่เกิด (1 – 31)
+            <div class="real-calendar">
+              <div class="cal-top-bar">
+                <button type="button" id="prevMonthBtn" class="cal-nav-btn">❮</button>
+                <select id="monthSelect" class="cal-month-select"></select>
+                <button type="button" id="nextMonthBtn" class="cal-nav-btn">❯</button>
               </div>
-              <div id="daysGrid" class="days-grid"></div>
+              <div class="cal-weekdays">
+                <span>อา</span><span>จ</span><span>อ</span><span>พ</span><span>พฤ</span><span>ศ</span><span>ส</span>
+              </div>
+              <div id="calDaysGrid" class="cal-days-body"></div>
             </div>
           </div>
 
-          <!-- 4. เลือกเมนูโปรด / เมนูที่ชอบ / เมนูที่อาจจะสั่ง -->
-          <div class="field-group">
-            <label class="field-label">
-              <span>4️⃣ เมนูประจำตัว 3 ลำดับ (จิ้มจากสมุดเมนู 150 รายการ หรือพิมพ์เองได้เลย)</span>
-              <span class="field-hint">คลิกช่องที่ต้องการแล้วเลือกเมนูด้านล่าง</span>
+          <!-- 3. ลากเมนูคาเฟ่ไปวางในช่อง -->
+          <div class="field-block">
+            <label class="sec-title">
+              <span>3️⃣ เมนูประจำตัว (กดค้างที่เมนูด้านล่างแล้วลากมาวางในช่องได้เลย!)</span>
+              <span class="sec-hint">รองรับทั้งการลากวางและคลิกเลือก</span>
             </label>
 
-            <div class="menu-slots-selector">
-              <div id="slotCardFavorite" class="menu-slot-card active-slot">
-                <div class="slot-card-header">
-                  <span>⭐ 1. เมนูโปรด (Favorite Menu)</span>
-                  <span id="slotBadgeFavorite"></span>
+            <div class="drop-slots-grid">
+              <div class="drop-slot active-target" data-slot="favorite">
+                <div class="slot-head">
+                  <span>⭐ 1. เมนูโปรด</span>
+                  <button type="button" class="slot-clear" data-clear="favorite">✕ ล้าง</button>
                 </div>
-                <input type="text" id="favoriteMenuInput" class="glass-input slot-input" placeholder="คลิกเลือกจากสมุดเมนู หรือพิมพ์ชื่อเมนูโปรด..." />
+                <div id="slotFavBody" class="slot-body"><span class="slot-placeholder">ลากเมนูมาวางที่นี่...</span></div>
               </div>
 
-              <div id="slotCardLiked1" class="menu-slot-card">
-                <div class="slot-card-header">
-                  <span>💖 2. เมนูที่ชอบ (Liked Menu)</span>
-                  <span id="slotBadgeLiked1"></span>
+              <div class="drop-slot" data-slot="liked1">
+                <div class="slot-head">
+                  <span>💖 2. เมนูที่ชอบ</span>
+                  <button type="button" class="slot-clear" data-clear="liked1">✕ ล้าง</button>
                 </div>
-                <input type="text" id="likedMenu1Input" class="glass-input slot-input" placeholder="คลิกเลือกจากสมุดเมนู หรือพิมพ์ชื่อเมนูที่ชอบ..." />
+                <div id="slotLike1Body" class="slot-body"><span class="slot-placeholder">ลากเมนูมาวางที่นี่...</span></div>
               </div>
 
-              <div id="slotCardLiked2" class="menu-slot-card">
-                <div class="slot-card-header">
-                  <span>🎲 3. เมนูที่อาจจะสั่ง (Alternative Menu)</span>
-                  <span id="slotBadgeLiked2"></span>
+              <div class="drop-slot" data-slot="liked2">
+                <div class="slot-head">
+                  <span>🎲 3. อาจจะสั่ง</span>
+                  <button type="button" class="slot-clear" data-clear="liked2">✕ ล้าง</button>
                 </div>
-                <input type="text" id="likedMenu2Input" class="glass-input slot-input" placeholder="คลิกเลือกจากสมุดเมนู หรือพิมพ์ชื่อเมนูที่อาจจะสั่ง..." />
+                <div id="slotLike2Body" class="slot-body"><span class="slot-placeholder">ลากเมนูมาวางที่นี่...</span></div>
               </div>
             </div>
 
-            <!-- สมุดแคตตาล็อกเมนู 150 รายการ -->
-            <div class="catalog-browser-box">
-              <div class="catalog-browser-top">
-                <span class="catalog-target-indicator">
-                  📖 กำลังเลือกใส่ช่อง: <strong id="activeSlotLabel">⭐ เมนูโปรด</strong>
-                </span>
-                <input type="text" id="catalogSearchInput" class="catalog-search-input" placeholder="🔍 ค้นหาจาก 150 เมนู (เช่น มัทฉะ, ลาเต้, SSR)..." />
-              </div>
-
-              <div id="catalogCategoryTabs" class="catalog-category-tabs"></div>
-              <div id="catalogItemsGrid" class="catalog-items-grid"></div>
+            <div class="catalog-box">
+              <input type="text" id="menuSearch" class="search-box" style="margin-top:0;" placeholder="🔍 ค้นหาจาก 150 เมนู (เช่น ลาเต้, มัทฉะ, ครัวซองต์, SSR)..." />
+              <div id="catTabs" class="cat-tabs"></div>
+              <div id="menuGrid" class="menu-grid"></div>
             </div>
           </div>
 
-          <!-- 5. ยืนยัน / ตั้งรหัส PIN -->
-          <div id="currentPinBox" class="current-pin-alert-box">
-            <label class="field-label">
-              <span>🔐 ยืนยันรหัส PIN เดิมของคุณ</span>
-              <span class="field-hint">จำเป็นต้องกรอกเพื่ออัปเดตข้อมูลบัตรสมาชิก</span>
+          <!-- 4. รหัส PIN 4 หลัก -->
+          <div class="field-block">
+            <label class="sec-title">
+              <span>4️⃣ ตั้งรหัส PIN 4 หลัก (รับยศกุญแจนิรภัย)</span>
+              <span class="sec-hint">ตัวเลข 4 หลักเท่านั้น</span>
             </label>
-            <input type="password" id="currentPinInput" class="glass-input pin-input-letter" inputmode="numeric" maxlength="6" placeholder="••••" />
+            <div class="pin-wrap">
+              <input type="password" id="pinInput" class="text-input pin-input-4" inputmode="numeric" maxlength="4" placeholder="••••" required />
+              <div id="pinDots" class="pin-dots">
+                <span class="pin-dot"></span><span class="pin-dot"></span><span class="pin-dot"></span><span class="pin-dot"></span>
+              </div>
+            </div>
           </div>
 
-          <div class="field-group">
-            <label class="field-label">
-              <span id="newPinLabelText">5️⃣ ตั้งรหัส PIN ประจำตัว 4–6 หลัก (รับยศ PIN พิเศษ)</span>
-              <button type="button" id="togglePinBtn" class="toggle-pin-btn">👁️ แสดงตัวเลข</button>
-            </label>
-            <input type="password" id="newPinInput" class="glass-input pin-input-letter" inputmode="numeric" maxlength="6" placeholder="••••" />
-          </div>
-
-          <button type="submit" id="submitBtn" class="submit-hero-btn">
-            ✨ บันทึกข้อมูลบัตรสมาชิก & รับยศใน Discord ✨
+          <button type="submit" id="submitBtn" class="submit-btn">
+            ✨ ยืนยันลงทะเบียนบัตรสมาชิก & รับยศทันที ✨
           </button>
-
-          <div id="statusToast" class="status-toast"></div>
+          <div id="toastBox" class="toast"></div>
         </form>
       </div>
     </div>
@@ -1209,577 +390,513 @@
 
   <script>
     (function () {
-      const THAI_MONTHS = [
-        { num: 1, full: 'มกราคม', short: 'ม.ค.', days: 31 },
-        { num: 2, full: 'กุมภาพันธ์', short: 'ก.พ.', days: 29 },
-        { num: 3, full: 'มีนาคม', short: 'มี.ค.', days: 31 },
-        { num: 4, full: 'เมษายน', short: 'เม.ย.', days: 30 },
-        { num: 5, full: 'พฤษภาคม', short: 'พ.ค.', days: 31 },
-        { num: 6, full: 'มิถุนายน', short: 'มิ.ย.', days: 30 },
-        { num: 7, full: 'กรกฎาคม', short: 'ก.ค.', days: 31 },
-        { num: 8, full: 'สิงหาคม', short: 'ส.ค.', days: 31 },
-        { num: 9, full: 'กันยายน', short: 'ก.ย.', days: 30 },
-        { num: 10, full: 'ตุลาคม', short: 'ต.ค.', days: 31 },
-        { num: 11, full: 'พฤศจิกายน', short: 'พ.ย.', days: 30 },
-        { num: 12, full: 'ธันวาคม', short: 'ธ.ค.', days: 31 }
+      const MONTHS = [
+        { num: 1, name: 'มกราคม', days: 31, offset: 4 },
+        { num: 2, name: 'กุมภาพันธ์', days: 29, offset: 0 },
+        { num: 3, name: 'มีนาคม', days: 31, offset: 1 },
+        { num: 4, name: 'เมษายน', days: 30, offset: 4 },
+        { num: 5, name: 'พฤษภาคม', days: 31, offset: 6 },
+        { num: 6, name: 'มิถุนายน', days: 30, offset: 2 },
+        { num: 7, name: 'กรกฎาคม', days: 31, offset: 4 },
+        { num: 8, name: 'สิงหาคม', days: 31, offset: 0 },
+        { num: 9, name: 'กันยายน', days: 30, offset: 3 },
+        { num: 10, name: 'ตุลาคม', days: 31, offset: 5 },
+        { num: 11, name: 'พฤศจิกายน', days: 30, offset: 1 },
+        { num: 12, name: 'ธันวาคม', days: 31, offset: 3 }
       ];
 
-      let allMembers = [];
-      let catalogCategories = [];
-      const menuInfoMap = new Map();
+      let eligibleMembers = [];
+      let categories = [];
+      const menuMap = new Map();
 
-      let selectedUser = null;
-      let selectedMonth = 1;
-      let selectedDay = null;
-      let activeMenuSlot = 'favorite'; // 'favorite' | 'liked1' | 'liked2'
-      let activeCategoryId = 'coffee';
-      let showPin = false;
+      let currentUser = null;
+      let curMonth = 1;
+      let curDay = null;
+      let activeSlot = 'favorite';
+      let activeCatId = 'coffee';
+      const slots = { favorite: '', liked1: '', liked2: '' };
 
+      const $ = id => document.getElementById(id);
       const els = {
-        previewCard: document.getElementById('livePreviewCard'),
-        previewVoiceBadge: document.getElementById('previewVoiceBadge'),
-        previewPinBadge: document.getElementById('previewPinBadge'),
-        previewAvatar: document.getElementById('previewAvatar'),
-        previewServerName: document.getElementById('previewServerName'),
-        previewDiscordTag: document.getElementById('previewDiscordTag'),
-        previewRoleName: document.getElementById('previewRoleName'),
-        previewNickname: document.getElementById('previewNickname'),
-        previewBirthday: document.getElementById('previewBirthday'),
-        previewFavSlot: document.getElementById('previewFavSlot'),
-        previewLike1Slot: document.getElementById('previewLike1Slot'),
-        previewLike2Slot: document.getElementById('previewLike2Slot'),
-
-        memberCountLabel: document.getElementById('memberCountLabel'),
-        memberSearchInput: document.getElementById('memberSearchInput'),
-        memberChipsContainer: document.getElementById('memberChipsContainer'),
-
-        form: document.getElementById('registrationForm'),
-        discordIdInput: document.getElementById('discordIdInput'),
-        lookupIdBtn: document.getElementById('lookupIdBtn'),
-        nicknameInput: document.getElementById('nicknameInput'),
-        birthdayFormPill: document.getElementById('birthdayFormPill'),
-        monthGrid: document.getElementById('monthGrid'),
-        daysStepTitle: document.getElementById('daysStepTitle'),
-        daysGrid: document.getElementById('daysGrid'),
-
-        slotCardFavorite: document.getElementById('slotCardFavorite'),
-        slotCardLiked1: document.getElementById('slotCardLiked1'),
-        slotCardLiked2: document.getElementById('slotCardLiked2'),
-        slotBadgeFavorite: document.getElementById('slotBadgeFavorite'),
-        slotBadgeLiked1: document.getElementById('slotBadgeLiked1'),
-        slotBadgeLiked2: document.getElementById('slotBadgeLiked2'),
-        favoriteMenuInput: document.getElementById('favoriteMenuInput'),
-        likedMenu1Input: document.getElementById('likedMenu1Input'),
-        likedMenu2Input: document.getElementById('likedMenu2Input'),
-
-        activeSlotLabel: document.getElementById('activeSlotLabel'),
-        catalogSearchInput: document.getElementById('catalogSearchInput'),
-        catalogCategoryTabs: document.getElementById('catalogCategoryTabs'),
-        catalogItemsGrid: document.getElementById('catalogItemsGrid'),
-
-        currentPinBox: document.getElementById('currentPinBox'),
-        currentPinInput: document.getElementById('currentPinInput'),
-        newPinLabelText: document.getElementById('newPinLabelText'),
-        togglePinBtn: document.getElementById('togglePinBtn'),
-        newPinInput: document.getElementById('newPinInput'),
-        submitBtn: document.getElementById('submitBtn'),
-        statusToast: document.getElementById('statusToast')
+        idCard: $('idCard'), statusBadge: $('statusBadge'), pinBadge: $('pinBadge'),
+        avatarImg: $('avatarImg'), serverNameTxt: $('serverNameTxt'), discordTagTxt: $('discordTagTxt'),
+        notMeToggleBtn: $('notMeToggleBtn'), notMeDrawer: $('notMeDrawer'),
+        eligibleCountTxt: $('eligibleCountTxt'), memberSearch: $('memberSearch'), memberList: $('memberList'),
+        liveNickTxt: $('liveNickTxt'), liveBdayTxt: $('liveBdayTxt'),
+        cardFavTxt: $('cardFavTxt'), cardLike1Txt: $('cardLike1Txt'), cardLike2Txt: $('cardLike2Txt'),
+        nickInput: $('nickInput'), bdayPillTxt: $('bdayPillTxt'),
+        prevMonthBtn: $('prevMonthBtn'), nextMonthBtn: $('nextMonthBtn'),
+        monthSelect: $('monthSelect'), calDaysGrid: $('calDaysGrid'),
+        slotFavBody: $('slotFavBody'), slotLike1Body: $('slotLike1Body'), slotLike2Body: $('slotLike2Body'),
+        menuSearch: $('menuSearch'), catTabs: $('catTabs'), menuGrid: $('menuGrid'),
+        pinInput: $('pinInput'), pinDots: $('pinDots'),
+        regForm: $('regForm'), submitBtn: $('submitBtn'), toastBox: $('toastBox')
       };
 
-      function showToast(msg, isSuccess = true) {
-        els.statusToast.textContent = msg;
-        els.statusToast.className = 'status-toast ' + (isSuccess ? 'success' : 'error');
+      function popAnim(el) {
+        el.classList.remove('pop');
+        void el.offsetWidth;
+        el.classList.add('pop');
       }
 
-      function resolveMenuMeta(rawName) {
-        const clean = String(rawName || '').trim();
-        if (!clean || clean === 'ขอคิดดูก่อน') {
-          return { name: 'ยังไม่ได้เลือกเมนู', tierCode: 'NONE', icon: '🍵', priceText: '' };
+      function showToast(text, ok = true) {
+        els.toastBox.textContent = text;
+        els.toastBox.className = 'toast ' + (ok ? 'ok' : 'err');
+      }
+
+      function updateCardUI() {
+        if (currentUser) {
+          els.idCard.style.setProperty('--role-color', currentUser.roleColor || '#AA817E');
+          els.avatarImg.src = currentUser.avatarUrl || 'https://cdn.discordapp.com/embed/avatars/0.png';
+          els.serverNameTxt.textContent = currentUser.displayName;
+          els.discordTagTxt.textContent = '@' + currentUser.username;
+          if (currentUser.hasMemberRole) {
+            els.statusBadge.textContent = '✅ มียศสมาชิกแล้ว';
+            els.statusBadge.className = 'pill locked';
+            els.submitBtn.disabled = true;
+            els.submitBtn.textContent = '🪪 บัญชีนี้มียศสมาชิกแล้ว (กด "ไม่ใช่ฉัน?" เพื่อเปลี่ยนบัญชี)';
+          } else {
+            els.statusBadge.textContent = '🪪 พร้อมลงทะเบียนรับยศ';
+            els.statusBadge.className = 'pill ready';
+            els.submitBtn.disabled = false;
+            els.submitBtn.textContent = '✨ ยืนยันลงทะเบียนบัตรสมาชิก & รับยศทันที ✨';
+          }
         }
-        if (menuInfoMap.has(clean)) {
-          const item = menuInfoMap.get(clean);
-          return {
-            name: item.name,
-            tierCode: item.tierCode || 'C',
-            icon: item.icon || '☕',
-            priceText: item.isMystery ? '199-999 🪙' : `${item.price} 🪙`
-          };
+
+        const nick = els.nickInput.value.trim();
+        els.liveNickTxt.textContent = nick || 'รอตั้งชื่อเล่น...';
+
+        const mObj = MONTHS.find(m => m.num === Number(curMonth)) || MONTHS[0];
+        if (curDay) {
+          const bTxt = `${curDay} ${mObj.name}`;
+          els.liveBdayTxt.textContent = bTxt;
+          els.bdayPillTxt.textContent = `🎂 ${bTxt}`;
+        } else {
+          els.liveBdayTxt.textContent = 'เลือกในปฏิทิน';
+          els.bdayPillTxt.textContent = '🎂 ยังไม่ได้เลือกวันเกิด';
         }
-        return {
-          name: clean,
-          tierCode: '?',
-          icon: '🌈',
-          priceText: '199-999 🪙'
+
+        const renderSlot = (slotKey, bodyEl, cardEl) => {
+          const val = slots[slotKey];
+          const slotWrap = document.querySelector(`.drop-slot[data-slot="${slotKey}"]`);
+          if (!val) {
+            slotWrap.classList.remove('has-val');
+            bodyEl.innerHTML = '<span class="slot-placeholder">ลากเมนูมาวางที่นี่...</span>';
+            cardEl.textContent = '🍵 รอลากเมนูมาวาง';
+            return;
+          }
+          slotWrap.classList.add('has-val');
+          const info = menuMap.get(val) || { icon: '☕', tierCode: 'C' };
+          const tClass = info.tierCode === '?' ? 'MYSTERY' : info.tierCode;
+          bodyEl.innerHTML = `${info.icon} ${val} <span class="tier-pill tier-${tClass}">${info.tierCode}</span>`;
+          cardEl.textContent = `${info.icon} ${val}`;
         };
+
+        renderSlot('favorite', els.slotFavBody, els.cardFavTxt);
+        renderSlot('liked1', els.slotLike1Body, els.cardLike1Txt);
+        renderSlot('liked2', els.slotLike2Body, els.cardLike2Txt);
+
+        const pinLen = els.pinInput.value.length;
+        els.pinBadge.textContent = pinLen === 4 ? '🔒 PIN 4/4 พร้อมใช้' : `🔓 PIN ${pinLen}/4`;
+        els.pinBadge.className = 'pill' + (pinLen === 4 ? ' locked' : '');
+        Array.from(els.pinDots.children).forEach((dot, i) => dot.classList.toggle('filled', i < pinLen));
       }
 
-      function renderMenuPreviewRow(containerEl, badgeEl, rawValue) {
-        const meta = resolveMenuMeta(rawValue);
-        const tierClass = meta.tierCode === '?' ? 'MYSTERY' : meta.tierCode;
-
-        containerEl.innerHTML = '';
-        const spanName = document.createElement('span');
-        spanName.className = 'slot-name';
-        spanName.textContent = `${meta.icon} ${meta.name}`;
-        containerEl.appendChild(spanName);
-
-        if (meta.tierCode !== 'NONE') {
-          const spanTier = document.createElement('span');
-          spanTier.className = `tier-pill tier-${tierClass}`;
-          spanTier.textContent = meta.tierCode;
-          containerEl.appendChild(spanTier);
-
-          badgeEl.className = `tier-pill tier-${tierClass}`;
-          badgeEl.textContent = `${meta.tierCode} ${meta.priceText}`;
-        } else {
-          badgeEl.className = '';
-          badgeEl.textContent = '';
-        }
-      }
-
-      function updateLivePreviewCard() {
-        const roleColor = (selectedUser && selectedUser.roleColor) || '#AA817E';
-        els.previewCard.style.setProperty('--preview-role-color', roleColor);
-        els.previewAvatar.src =
-          (selectedUser && selectedUser.avatarUrl) || 'https://cdn.discordapp.com/embed/avatars/0.png';
-
-        els.previewServerName.textContent =
-          (selectedUser && selectedUser.displayName) || 'ยังไม่ได้เลือกสมาชิกในเซิร์ฟเวอร์';
-        els.previewDiscordTag.textContent =
-          '@' + ((selectedUser && selectedUser.username) || els.discordIdInput.value.trim() || 'discord_member');
-        els.previewRoleName.textContent =
-          (selectedUser && selectedUser.roleName) || 'ลูกค้าประจำคาเฟ่';
-
-        if (selectedUser && selectedUser.inCafeVoice) {
-          els.previewVoiceBadge.textContent = '🎙️ กำลังนั่งอยู่ในคาเฟ่';
-          els.previewVoiceBadge.classList.add('in-voice');
-        } else {
-          els.previewVoiceBadge.textContent = '🪪 บัตรสมาชิก Horizontal Cafe';
-          els.previewVoiceBadge.classList.remove('in-voice');
-        }
-
-        const hasPinNow = Boolean((selectedUser && selectedUser.hasPin) || els.newPinInput.value.trim());
-        if (hasPinNow) {
-          els.previewPinBadge.textContent = '🔒 ตั้งรหัส PIN แล้ว';
-          els.previewPinBadge.classList.add('locked');
-        } else {
-          els.previewPinBadge.textContent = '🔓 ยังไม่ตั้ง PIN';
-          els.previewPinBadge.classList.remove('locked');
-        }
-
-        const typedNick = els.nicknameInput.value.trim();
-        els.previewNickname.textContent =
-          typedNick || (selectedUser && selectedUser.nickname) || 'รอตั้งชื่อเล่น...';
-
-        const monthMeta = THAI_MONTHS.find(m => m.num === Number(selectedMonth)) || THAI_MONTHS[0];
-        if (selectedDay) {
-          const bText = `${selectedDay} ${monthMeta.full}`;
-          els.previewBirthday.textContent = bText;
-          els.birthdayFormPill.textContent = `🎂 ${bText}`;
-        } else if (selectedUser && selectedUser.birthdayText) {
-          els.previewBirthday.textContent = selectedUser.birthdayText;
-          els.birthdayFormPill.textContent = `🎂 ${selectedUser.birthdayText}`;
-        } else {
-          els.previewBirthday.textContent = 'ยังไม่ได้เลือกวันเกิด';
-          els.birthdayFormPill.textContent = '🎂 คลิกเลือกวันที่ด้านล่าง';
-        }
-
-        renderMenuPreviewRow(els.previewFavSlot, els.slotBadgeFavorite, els.favoriteMenuInput.value);
-        renderMenuPreviewRow(els.previewLike1Slot, els.slotBadgeLiked1, els.likedMenu1Input.value);
-        renderMenuPreviewRow(els.previewLike2Slot, els.slotBadgeLiked2, els.likedMenu2Input.value);
-      }
-
-      function renderCalendar() {
-        const monthMeta = THAI_MONTHS.find(m => m.num === Number(selectedMonth)) || THAI_MONTHS[0];
-        if (selectedDay && selectedDay > monthMeta.days) {
-          selectedDay = monthMeta.days;
-        }
-
-        els.monthGrid.innerHTML = '';
-        THAI_MONTHS.forEach(m => {
-          const btn = document.createElement('button');
-          btn.type = 'button';
-          btn.className = 'month-btn' + (Number(selectedMonth) === m.num ? ' active' : '');
-          btn.innerHTML = `<span class="m-short">${m.short}</span><span class="m-full">${m.full}</span>`;
-          btn.addEventListener('click', () => {
-            selectedMonth = m.num;
-            renderCalendar();
-            updateLivePreviewCard();
-          });
-          els.monthGrid.appendChild(btn);
+      // ปฏิทินเสมือนจริง
+      function initCalendar() {
+        els.monthSelect.innerHTML = MONTHS.map(m => `<option value="${m.num}">📅 เดือน${m.name}</option>`).join('');
+        els.monthSelect.addEventListener('change', (e) => {
+          curMonth = Number(e.target.value);
+          renderCalendarDays();
         });
+        els.prevMonthBtn.addEventListener('click', () => {
+          curMonth = curMonth === 1 ? 12 : curMonth - 1;
+          els.monthSelect.value = curMonth;
+          renderCalendarDays();
+        });
+        els.nextMonthBtn.addEventListener('click', () => {
+          curMonth = curMonth === 12 ? 1 : curMonth + 1;
+          els.monthSelect.value = curMonth;
+          renderCalendarDays();
+        });
+        renderCalendarDays();
+      }
 
-        els.daysStepTitle.textContent = `เลือกวันที่เกิดในเดือน${monthMeta.full} (1 – ${monthMeta.days})`;
-        els.daysGrid.innerHTML = '';
-        for (let d = 1; d <= monthMeta.days; d++) {
-          const dayBtn = document.createElement('button');
-          dayBtn.type = 'button';
-          dayBtn.className = 'day-cell-btn' + (Number(selectedDay) === d ? ' active' : '');
-          dayBtn.textContent = d;
-          dayBtn.addEventListener('click', () => {
-            selectedDay = d;
-            renderCalendar();
-            updateLivePreviewCard();
-          });
-          els.daysGrid.appendChild(dayBtn);
+      function renderCalendarDays() {
+        const mObj = MONTHS.find(m => m.num === Number(curMonth)) || MONTHS[0];
+        if (curDay && curDay > mObj.days) curDay = mObj.days;
+
+        els.calDaysGrid.style.opacity = '0.3';
+        els.calDaysGrid.style.transform = 'translateY(4px)';
+
+        setTimeout(() => {
+          els.calDaysGrid.innerHTML = '';
+          for (let i = 0; i < mObj.offset; i++) {
+            const empty = document.createElement('div');
+            empty.className = 'cal-cell empty';
+            els.calDaysGrid.appendChild(empty);
+          }
+          for (let d = 1; d <= mObj.days; d++) {
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'cal-cell' + (curDay === d ? ' selected' : '');
+            btn.textContent = d;
+            btn.addEventListener('click', () => {
+              curDay = d;
+              renderCalendarDays();
+              updateCardUI();
+              popAnim(els.liveBdayTxt);
+            });
+            els.calDaysGrid.appendChild(btn);
+          }
+          els.calDaysGrid.style.opacity = '1';
+          els.calDaysGrid.style.transform = 'translateY(0)';
+          updateCardUI();
+        }, 90);
+      }
+
+      // ระบบกำหนดเมนูลงช่อง + อนิเมชั่นเด้ง
+      function assignMenuToSlot(slotKey, menuName) {
+        slots[slotKey] = menuName;
+        const slotEl = document.querySelector(`.drop-slot[data-slot="${slotKey}"]`);
+        if (slotEl) {
+          slotEl.classList.remove('just-dropped');
+          void slotEl.offsetWidth;
+          slotEl.classList.add('just-dropped');
         }
+        if (slotKey === 'favorite' && !slots.liked1) setActiveSlot('liked1');
+        else if (slotKey === 'liked1' && !slots.liked2) setActiveSlot('liked2');
+        updateCardUI();
       }
 
       function setActiveSlot(slotKey) {
-        activeMenuSlot = slotKey;
-        els.slotCardFavorite.classList.toggle('active-slot', slotKey === 'favorite');
-        els.slotCardLiked1.classList.toggle('active-slot', slotKey === 'liked1');
-        els.slotCardLiked2.classList.toggle('active-slot', slotKey === 'liked2');
-
-        els.activeSlotLabel.textContent =
-          slotKey === 'favorite'
-            ? '⭐ เมนูโปรด'
-            : slotKey === 'liked1'
-            ? '💖 เมนูที่ชอบ'
-            : '🎲 เมนูที่อาจจะสั่ง';
-        renderCatalogItems();
-      }
-
-      function handlePickMenu(menuName) {
-        if (activeMenuSlot === 'favorite') {
-          els.favoriteMenuInput.value = menuName;
-          if (!els.likedMenu1Input.value.trim()) setActiveSlot('liked1');
-        } else if (activeMenuSlot === 'liked1') {
-          els.likedMenu1Input.value = menuName;
-          if (!els.likedMenu2Input.value.trim()) setActiveSlot('liked2');
-        } else {
-          els.likedMenu2Input.value = menuName;
-        }
-        updateLivePreviewCard();
-        renderCatalogItems();
-      }
-
-      function renderCatalogTabs() {
-        const q = els.catalogSearchInput.value.trim();
-        if (q) {
-          els.catalogCategoryTabs.style.display = 'none';
-          return;
-        }
-        els.catalogCategoryTabs.style.display = 'flex';
-        els.catalogCategoryTabs.innerHTML = '';
-
-        catalogCategories.forEach(cat => {
-          const btn = document.createElement('button');
-          btn.type = 'button';
-          btn.className = 'cat-tab-btn' + (cat.id === activeCategoryId ? ' active' : '');
-          const shortTitle = (cat.title || '').split('(')[0].trim();
-          btn.innerHTML = `<span>${cat.icon || '☕'}</span><span>${shortTitle}</span>`;
-          btn.addEventListener('click', () => {
-            activeCategoryId = cat.id;
-            renderCatalogTabs();
-            renderCatalogItems();
-          });
-          els.catalogCategoryTabs.appendChild(btn);
+        activeSlot = slotKey;
+        document.querySelectorAll('.drop-slot').forEach(el => {
+          el.classList.toggle('active-target', el.dataset.slot === slotKey);
         });
       }
 
-      function renderCatalogItems() {
-        const q = els.catalogSearchInput.value.trim().toLowerCase();
-        let itemsToShow = [];
+      // ระบบกดค้างแล้วลาก (Pointer Drag & Drop รองรับทั้ง PC และมือถือ)
+      function attachDragBehavior(chipEl, item) {
+        let ghost = null;
+        let startX = 0, startY = 0;
+        let isDragging = false;
+        let holdTimer = null;
 
-        if (q) {
-          catalogCategories.forEach(cat => {
-            (cat.items || []).forEach(item => {
-              if (
-                item.name.toLowerCase().includes(q) ||
-                (item.tierCode && item.tierCode.toLowerCase().includes(q))
-              ) {
-                itemsToShow.push(item);
-              }
-            });
-          });
-        } else {
-          const currentCat = catalogCategories.find(c => c.id === activeCategoryId);
-          itemsToShow = currentCat && Array.isArray(currentCat.items) ? currentCat.items : [];
-        }
+        const clearDrag = () => {
+          clearTimeout(holdTimer);
+          if (ghost) { ghost.remove(); ghost = null; }
+          chipEl.classList.remove('dragging-source');
+          document.querySelectorAll('.drop-slot').forEach(s => s.classList.remove('drag-over'));
+        };
 
-        els.catalogItemsGrid.innerHTML = '';
-        itemsToShow.forEach(item => {
-          const isPicked =
-            (activeMenuSlot === 'favorite' && els.favoriteMenuInput.value.trim() === item.name) ||
-            (activeMenuSlot === 'liked1' && els.likedMenu1Input.value.trim() === item.name) ||
-            (activeMenuSlot === 'liked2' && els.likedMenu2Input.value.trim() === item.name);
+        chipEl.addEventListener('pointerdown', (e) => {
+          if (e.button && e.button !== 0) return;
+          startX = e.clientX; startY = e.clientY;
+          isDragging = false;
 
-          const btn = document.createElement('button');
-          btn.type = 'button';
-          btn.className = 'catalog-item-chip' + (isPicked ? ' picked' : '');
-
-          const tierClass = item.tierCode === '?' ? 'MYSTERY' : item.tierCode;
-          const priceLabel = item.isMystery ? '199-999' : item.price;
-
-          btn.innerHTML = `
-            <div class="chip-left">
-              <span>${item.icon || '☕'}</span>
-              <span class="chip-name"></span>
-            </div>
-            <div class="chip-right">
-              <span class="chip-price">${priceLabel} 🪙</span>
-              <span class="tier-pill tier-${tierClass}">${item.tierCode}</span>
-            </div>
-          `;
-          btn.querySelector('.chip-name').textContent = item.name;
-          btn.addEventListener('click', () => handlePickMenu(item.name));
-          els.catalogItemsGrid.appendChild(btn);
-        });
-      }
-
-      function selectMember(userObj) {
-        if (!userObj) return;
-        selectedUser = userObj;
-        els.discordIdInput.value = userObj.discordId || '';
-        els.nicknameInput.value = userObj.nickname || '';
-        selectedDay = userObj.birthdayDay || null;
-        selectedMonth = userObj.birthdayMonth || 1;
-
-        els.favoriteMenuInput.value =
-          userObj.favoriteMenu && userObj.favoriteMenu !== 'ขอคิดดูก่อน' ? userObj.favoriteMenu : '';
-        els.likedMenu1Input.value =
-          userObj.likedMenu1 && userObj.likedMenu1 !== 'ขอคิดดูก่อน' ? userObj.likedMenu1 : '';
-        els.likedMenu2Input.value =
-          userObj.likedMenu2 && userObj.likedMenu2 !== 'ขอคิดดูก่อน' ? userObj.likedMenu2 : '';
-
-        if (userObj.hasPin) {
-          els.currentPinBox.classList.add('active');
-          els.newPinLabelText.textContent = '5️⃣ เปลี่ยนรหัส PIN ใหม่ (เว้นว่างได้หากใช้รหัสเดิม)';
-        } else {
-          els.currentPinBox.classList.remove('active');
-          els.currentPinInput.value = '';
-          els.newPinLabelText.textContent = '5️⃣ ตั้งรหัส PIN ประจำตัว 4–6 หลัก (รับยศ PIN พิเศษ)';
-        }
-
-        els.statusToast.className = 'status-toast';
-        renderCalendar();
-        updateLivePreviewCard();
-        renderMemberList(els.memberSearchInput.value);
-        renderCatalogItems();
-
-        try {
-          localStorage.setItem('alestia_last_discord_id', userObj.discordId);
-        } catch (e) {}
-      }
-
-      function renderMemberList(query = '') {
-        const q = String(query || '').trim().toLowerCase();
-        const filtered = allMembers
-          .filter(m => {
-            if (!q) return true;
-            return (
-              (m.nickname && m.nickname.toLowerCase().includes(q)) ||
-              (m.displayName && m.displayName.toLowerCase().includes(q)) ||
-              (m.username && m.username.toLowerCase().includes(q)) ||
-              (m.discordId && m.discordId.includes(q))
-            );
-          })
-          .slice(0, 60);
-
-        els.memberChipsContainer.innerHTML = '';
-        filtered.forEach(m => {
-          const row = document.createElement('div');
-          row.className =
-            'member-pick-item' +
-            (selectedUser && selectedUser.discordId === m.discordId ? ' selected' : '');
-
-          row.innerHTML = `
-            <div class="pick-left">
-              <img src="${m.avatarUrl || 'https://cdn.discordapp.com/embed/avatars/0.png'}" alt="" />
-              <div class="pick-names">
-                <div class="p-main"></div>
-                <div class="p-sub"></div>
-              </div>
-            </div>
-            <div class="pick-badges">
-              ${m.inCafeVoice ? '<span class="mini-tag voice">🎙️ ในคาเฟ่</span>' : ''}
-              ${m.isRegistered ? '<span class="mini-tag reg">🪪 สมาชิก</span>' : ''}
-            </div>
-          `;
-          row.querySelector('.p-main').textContent = m.displayName;
-          row.querySelector('.p-sub').textContent =
-            `@${m.username}` + (m.nickname ? ` • (${m.nickname})` : '');
-          row.addEventListener('click', () => selectMember(m));
-          els.memberChipsContainer.appendChild(row);
-        });
-      }
-
-      async function loadInitialData() {
-        renderCalendar();
-        updateLivePreviewCard();
-
-        try {
-          const [catRes, memRes] = await Promise.all([
-            fetch('/api/register/catalog').then(r => r.json()).catch(() => ({ ok: false })),
-            fetch('/api/register/members').then(r => r.json()).catch(() => ({ ok: false }))
-          ]);
-
-          if (catRes && catRes.ok && Array.isArray(catRes.categories)) {
-            catalogCategories = catRes.categories;
-            menuInfoMap.clear();
-            catalogCategories.forEach(cat => {
-              (cat.items || []).forEach(item => {
-                menuInfoMap.set(item.name, item);
-              });
-            });
-            if (catalogCategories.length > 0) {
-              activeCategoryId = catalogCategories[0].id;
-            }
-            renderCatalogTabs();
-            renderCatalogItems();
-          }
-
-          if (memRes && memRes.ok && Array.isArray(memRes.members)) {
-            allMembers = memRes.members;
-            els.memberCountLabel.textContent = `สมาชิกในร้าน ${allMembers.length} ท่าน`;
-            renderMemberList();
-
-            const urlParams = new URLSearchParams(window.location.search);
-            const targetId = urlParams.get('id') || localStorage.getItem('alestia_last_discord_id');
-
-            if (targetId) {
-              const found = allMembers.find(x => x.discordId === targetId);
-              if (found) {
-                selectMember(found);
-                return;
-              }
-              const singleRes = await fetch(`/api/register/user/${encodeURIComponent(targetId)}`)
-                .then(r => r.json())
-                .catch(() => null);
-              if (singleRes && singleRes.ok && singleRes.user) {
-                selectMember(singleRes.user);
-                return;
-              }
-            }
-
-            if (allMembers.length > 0) {
-              selectMember(allMembers[0]);
-            }
-          }
-        } catch (err) {
-          els.memberCountLabel.textContent = 'กรอกรหัส ID ด้านขวาได้เลยค่ะ';
-        }
-      }
-
-      // ผูกเหตุการณ์พิมพ์สดเพื่ออัปเดตบัตรสมาชิกทันที
-      els.nicknameInput.addEventListener('input', updateLivePreviewCard);
-      els.discordIdInput.addEventListener('input', updateLivePreviewCard);
-      els.favoriteMenuInput.addEventListener('input', updateLivePreviewCard);
-      els.likedMenu1Input.addEventListener('input', updateLivePreviewCard);
-      els.likedMenu2Input.addEventListener('input', updateLivePreviewCard);
-      els.newPinInput.addEventListener('input', () => {
-        els.newPinInput.value = els.newPinInput.value.replace(/\D/g, '');
-        updateLivePreviewCard();
-      });
-      els.currentPinInput.addEventListener('input', () => {
-        els.currentPinInput.value = els.currentPinInput.value.replace(/\D/g, '');
-      });
-
-      els.slotCardFavorite.addEventListener('click', () => setActiveSlot('favorite'));
-      els.favoriteMenuInput.addEventListener('focus', () => setActiveSlot('favorite'));
-      els.slotCardLiked1.addEventListener('click', () => setActiveSlot('liked1'));
-      els.likedMenu1Input.addEventListener('focus', () => setActiveSlot('liked1'));
-      els.slotCardLiked2.addEventListener('click', () => setActiveSlot('liked2'));
-      els.likedMenu2Input.addEventListener('focus', () => setActiveSlot('liked2'));
-
-      els.catalogSearchInput.addEventListener('input', () => {
-        renderCatalogTabs();
-        renderCatalogItems();
-      });
-
-      els.memberSearchInput.addEventListener('input', (e) => {
-        renderMemberList(e.target.value);
-      });
-
-      els.togglePinBtn.addEventListener('click', () => {
-        showPin = !showPin;
-        const type = showPin ? 'text' : 'password';
-        els.newPinInput.type = type;
-        els.currentPinInput.type = type;
-        els.togglePinBtn.textContent = showPin ? '🙈 ซ่อนตัวเลข' : '👁️ แสดงตัวเลข';
-      });
-
-      // เอฟเฟกต์เอียงบัตร 3D บนคอมพิวเตอร์
-      els.previewCard.addEventListener('mousemove', (e) => {
-        if (!window.matchMedia('(hover: hover)').matches) return;
-        const rect = els.previewCard.getBoundingClientRect();
-        const x = e.clientX - rect.left;
-        const y = e.clientY - rect.top;
-        const rotateY = ((x / rect.width) - 0.5) * 8;
-        const rotateX = (0.5 - (y / rect.height)) * 8;
-        els.previewCard.style.transform = `perspective(900px) rotateX(${rotateX.toFixed(2)}deg) rotateY(${rotateY.toFixed(2)}deg)`;
-      });
-      els.previewCard.addEventListener('mouseleave', () => {
-        els.previewCard.style.transform = 'perspective(900px) rotateX(0deg) rotateY(0deg)';
-      });
-
-      els.lookupIdBtn.addEventListener('click', async () => {
-        const cleanId = els.discordIdInput.value.trim();
-        if (!cleanId) return showToast('กรุณากรอกรหัส Discord ID ก่อนกดดึงโปรไฟล์ค่ะ', false);
-        try {
-          const res = await fetch(`/api/register/user/${encodeURIComponent(cleanId)}`);
-          const data = await res.json();
-          if (!data.ok) return showToast(data.error || 'ไม่พบข้อมูลสมาชิกค่ะ', false);
-          selectMember(data.user);
-          showToast(`ดึงโปรไฟล์ของคุณ ${data.user.displayName} สำเร็จแล้วค่ะ!`, true);
-        } catch (err) {
-          showToast('ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้ค่ะ', false);
-        }
-      });
-
-      els.form.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        if (!selectedDay || !selectedMonth) {
-          return showToast('กรุณาคลิกเลือกวันที่และเดือนเกิดจากปฏิทินจำลองก่อนบันทึกนะคะ 🎂', false);
-        }
-
-        els.submitBtn.disabled = true;
-        els.submitBtn.textContent = '⏳ อเลสเทียกำลังบันทึกบัตรสมาชิกและมอบยศ...';
-
-        try {
-          const payload = {
-            discordId: els.discordIdInput.value.trim(),
-            nickname: els.nicknameInput.value.trim(),
-            birthdayDay: selectedDay,
-            birthdayMonth: selectedMonth,
-            favoriteMenu: els.favoriteMenuInput.value.trim() || 'ขอคิดดูก่อน',
-            likedMenu1: els.likedMenu1Input.value.trim() || 'ขอคิดดูก่อน',
-            likedMenu2: els.likedMenu2Input.value.trim() || 'ขอคิดดูก่อน',
-            currentPin: els.currentPinInput.value.trim(),
-            newPin: els.newPinInput.value.trim()
+          const startGhost = () => {
+            isDragging = true;
+            chipEl.classList.add('dragging-source');
+            ghost = document.createElement('div');
+            ghost.className = 'drag-ghost';
+            ghost.innerHTML = `<span>${item.icon || '☕'}</span><span>${item.name}</span>`;
+            ghost.style.left = `${startX}px`;
+            ghost.style.top = `${startY}px`;
+            document.body.appendChild(ghost);
           };
 
+          if (e.pointerType === 'mouse') {
+            holdTimer = setTimeout(startGhost, 90);
+          } else {
+            holdTimer = setTimeout(startGhost, 200);
+          }
+
+          const onMove = (ev) => {
+            const dx = Math.abs(ev.clientX - startX);
+            const dy = Math.abs(ev.clientY - startY);
+            if (!isDragging && e.pointerType === 'mouse' && (dx > 5 || dy > 5)) {
+              clearTimeout(holdTimer);
+              startGhost();
+            }
+            if (!isDragging || !ghost) return;
+            ev.preventDefault();
+            ghost.style.left = `${ev.clientX}px`;
+            ghost.style.top = `${ev.clientY}px`;
+
+            const targetEl = document.elementFromPoint(ev.clientX, ev.clientY)?.closest('.drop-slot');
+            document.querySelectorAll('.drop-slot').forEach(s => {
+              s.classList.toggle('drag-over', s === targetEl);
+            });
+          };
+
+          const onUp = (ev) => {
+            window.removeEventListener('pointermove', onMove);
+            window.removeEventListener('pointerup', onUp);
+            window.removeEventListener('pointercancel', onUp);
+
+            if (isDragging) {
+              const dropTarget = document.elementFromPoint(ev.clientX, ev.clientY)?.closest('.drop-slot');
+              if (dropTarget && dropTarget.dataset.slot) {
+                assignMenuToSlot(dropTarget.dataset.slot, item.name);
+              }
+            } else {
+              assignMenuToSlot(activeSlot, item.name);
+            }
+            clearDrag();
+          };
+
+          window.addEventListener('pointermove', onMove, { passive: false });
+          window.addEventListener('pointerup', onUp);
+          window.addEventListener('pointercancel', onUp);
+        });
+      }
+
+      function renderCatalog() {
+        const q = els.menuSearch.value.trim().toLowerCase();
+        els.catTabs.style.display = q ? 'none' : 'flex';
+        els.catTabs.innerHTML = '';
+
+        categories.forEach(cat => {
+          const b = document.createElement('button');
+          b.type = 'button';
+          b.className = 'cat-tab' + (cat.id === activeCatId ? ' active' : '');
+          b.textContent = `${cat.icon || '☕'} ${(cat.title || '').split('(')[0].trim()}`;
+          b.addEventListener('click', () => { activeCatId = cat.id; renderCatalog(); });
+          els.catTabs.appendChild(b);
+        });
+
+        let list = [];
+        if (q) {
+          categories.forEach(c => (c.items || []).forEach(it => {
+            if (it.name.toLowerCase().includes(q) || (it.tierCode && it.tierCode.toLowerCase().includes(q))) list.push(it);
+          }));
+        } else {
+          const cur = categories.find(c => c.id === activeCatId);
+          list = cur?.items || [];
+        }
+
+        els.menuGrid.innerHTML = '';
+        list.forEach(item => {
+          const chip = document.createElement('div');
+          chip.className = 'menu-chip';
+          const tClass = item.tierCode === '?' ? 'MYSTERY' : item.tierCode;
+          chip.innerHTML = `
+            <span class="m-chip-name">${item.icon || '☕'} ${item.name}</span>
+            <span class="tier-pill tier-${tClass}">${item.tierCode}</span>
+          `;
+          attachDragBehavior(chip, item);
+          els.menuGrid.appendChild(chip);
+        });
+      }
+
+      function selectUser(u) {
+        if (!u) return;
+        currentUser = u;
+        els.nickInput.value = u.nickname || '';
+        curDay = u.birthdayDay || null;
+        curMonth = u.birthdayMonth || 1;
+        els.monthSelect.value = curMonth;
+        slots.favorite = u.favoriteMenu && u.favoriteMenu !== 'ขอคิดดูก่อน' ? u.favoriteMenu : '';
+        slots.liked1 = u.likedMenu1 && u.likedMenu1 !== 'ขอคิดดูก่อน' ? u.likedMenu1 : '';
+        slots.liked2 = u.likedMenu2 && u.likedMenu2 !== 'ขอคิดดูก่อน' ? u.likedMenu2 : '';
+        renderCalendarDays();
+        updateCardUI();
+        renderEligibleMembers(els.memberSearch.value);
+        try { localStorage.setItem('alestia_last_discord_id', u.discordId); } catch (e) {}
+      }
+
+      function renderEligibleMembers(q = '') {
+        const clean = q.trim().toLowerCase();
+        const filtered = eligibleMembers.filter(m =>
+          !clean || m.displayName.toLowerCase().includes(clean) || m.username.toLowerCase().includes(clean)
+        );
+        els.eligibleCountTxt.textContent = `${eligibleMembers.length} ท่าน`;
+        els.memberList.innerHTML = '';
+        filtered.slice(0, 50).forEach(m => {
+          const row = document.createElement('div');
+          row.className = 'member-item' + (currentUser?.discordId === m.discordId ? ' selected' : '');
+          row.innerHTML = `
+            <div class="m-left">
+              <img src="${m.avatarUrl}" alt="" />
+              <div>
+                <div class="m-name">${m.displayName}</div>
+                <div class="sec-hint">@${m.username}</div>
+              </div>
+            </div>
+            <span class="pill ready">เลือกฉัน</span>
+          `;
+          row.addEventListener('click', () => {
+            selectUser(m);
+            els.notMeDrawer.classList.remove('open');
+          });
+          els.memberList.appendChild(row);
+        });
+      }
+
+      // ตั้งค่า Event ทั่วไป
+      document.querySelectorAll('.drop-slot').forEach(slotEl => {
+        slotEl.addEventListener('click', () => setActiveSlot(slotEl.dataset.slot));
+      });
+      document.querySelectorAll('.slot-clear').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          slots[btn.dataset.clear] = '';
+          updateCardUI();
+        });
+      });
+
+      els.notMeToggleBtn.addEventListener('click', () => els.notMeDrawer.classList.toggle('open'));
+      els.memberSearch.addEventListener('input', (e) => renderEligibleMembers(e.target.value));
+      els.menuSearch.addEventListener('input', renderCatalog);
+      els.nickInput.addEventListener('input', () => { updateCardUI(); popAnim(els.liveNickTxt); });
+      els.pinInput.addEventListener('input', () => {
+        els.pinInput.value = els.pinInput.value.replace(/\D/g, '').slice(0, 4);
+        updateCardUI();
+      });
+
+      // เอฟเฟกต์เอียงการ์ด 3D
+      els.idCard.addEventListener('mousemove', (e) => {
+        if (!window.matchMedia('(hover: hover)').matches) return;
+        const r = els.idCard.getBoundingClientRect();
+        const rx = (0.5 - (e.clientY - r.top) / r.height) * 9;
+        const ry = ((e.clientX - r.left) / r.width - 0.5) * 9;
+        els.idCard.style.transform = `perspective(900px) rotateX(${rx.toFixed(2)}deg) rotateY(${ry.toFixed(2)}deg)`;
+      });
+      els.idCard.addEventListener('mouseleave', () => {
+        els.idCard.style.transform = 'perspective(900px) rotateX(0deg) rotateY(0deg)';
+      });
+
+      // เอฟเฟกต์ละอองดาว & พลุฉลอง
+      const canvas = $('fxCanvas');
+      const ctx = canvas.getContext('2d');
+      let particles = [];
+      function resizeCanvas() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
+      window.addEventListener('resize', resizeCanvas); resizeCanvas();
+
+      for (let i = 0; i < 28; i++) {
+        particles.push({
+          x: Math.random() * canvas.width, y: Math.random() * canvas.height,
+          r: Math.random() * 2.5 + 1, vy: -Math.random() * 0.4 - 0.15,
+          color: ['#FFD1DC', '#E2D1F9', '#F5B041'][i % 3], alpha: Math.random() * 0.5 + 0.2
+        });
+      }
+
+      function burstConfetti(x, y) {
+        for (let i = 0; i < 40; i++) {
+          const angle = Math.random() * Math.PI * 2;
+          const speed = Math.random() * 6 + 2;
+          particles.push({
+            x, y, r: Math.random() * 4 + 2,
+            vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed - 2,
+            gravity: 0.15, color: ['#FF8DA1', '#FFD700', '#8FD19E', '#C3A6FF'][i % 4],
+            alpha: 1, burst: true
+          });
+        }
+      }
+
+      function tickFx() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        for (let i = particles.length - 1; i >= 0; i--) {
+          const p = particles[i];
+          ctx.globalAlpha = p.alpha;
+          ctx.fillStyle = p.color;
+          ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2); ctx.fill();
+          if (p.burst) {
+            p.x += p.vx; p.y += p.vy; p.vy += p.gravity; p.alpha -= 0.018;
+            if (p.alpha <= 0) particles.splice(i, 1);
+          } else {
+            p.y += p.vy;
+            if (p.y < -10) { p.y = canvas.height + 10; p.x = Math.random() * canvas.width; }
+          }
+        }
+        requestAnimationFrame(tickFx);
+      }
+      tickFx();
+
+      // ส่งฟอร์มลงทะเบียน
+      els.regForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        if (!currentUser?.discordId) return showToast('กรุณาเลือกบัญชีของคุณก่อนค่ะ', false);
+        if (currentUser.hasMemberRole) return showToast('บัญชีนี้มียศสมาชิกอยู่แล้วค่ะ', false);
+        if (!curDay) return showToast('กรุณาเลือกวันที่เกิดในปฏิทินก่อนนะคะ 🎂', false);
+        if (els.pinInput.value.length !== 4) return showToast('กรุณาตั้งรหัส PIN ให้ครบ 4 หลักค่ะ', false);
+
+        els.submitBtn.disabled = true;
+        els.submitBtn.textContent = '⏳ กำลังบันทึกบัตรสมาชิกและมอบยศ...';
+
+        try {
           const res = await fetch('/api/register/submit', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
+            body: JSON.stringify({
+              discordId: currentUser.discordId,
+              nickname: els.nickInput.value.trim(),
+              birthdayDay: curDay,
+              birthdayMonth: curMonth,
+              favoriteMenu: slots.favorite || 'ขอคิดดูก่อน',
+              likedMenu1: slots.liked1 || 'ขอคิดดูก่อน',
+              likedMenu2: slots.liked2 || 'ขอคิดดูก่อน',
+              pin: els.pinInput.value.trim()
+            })
           });
           const data = await res.json();
-
           if (!data.ok) {
-            if (data.requireCurrentPin) {
-              els.currentPinBox.classList.add('active');
-            }
-            showToast(data.error || 'บันทึกข้อมูลไม่สำเร็จค่ะ', false);
+            showToast(data.error || 'บันทึกไม่สำเร็จค่ะ', false);
+            els.submitBtn.disabled = false;
+            els.submitBtn.textContent = '✨ ยืนยันลงทะเบียนบัตรสมาชิก & รับยศทันที ✨';
           } else {
-            showToast(`🎉 ${data.message}`, true);
-            els.currentPinInput.value = '';
-            els.newPinInput.value = '';
-            if (data.user) {
-              selectMember(data.user);
-              showToast(`🎉 ${data.message}`, true);
-            }
+            const rect = els.submitBtn.getBoundingClientRect();
+            burstConfetti(rect.left + rect.width / 2, rect.top);
+            showToast(data.message, true);
+            if (data.user) selectUser(data.user);
           }
         } catch (err) {
-          showToast('เกิดข้อผิดพลาดในการส่งข้อมูล กรุณาลองใหม่อีกครั้งค่ะ', false);
-        } finally {
+          showToast('การเชื่อมต่อขัดข้อง ลองใหม่อีกครั้งนะคะ', false);
           els.submitBtn.disabled = false;
-          els.submitBtn.textContent = '✨ บันทึกข้อมูลบัตรสมาชิก & รับยศใน Discord ✨';
         }
       });
 
-      loadInitialData();
+      // โหลดข้อมูลเริ่มต้นอัตโนมัติ
+      async function init() {
+        initCalendar();
+        const [catRes, memRes] = await Promise.all([
+          fetch('/api/register/catalog').then(r => r.json()).catch(() => ({ ok: false })),
+          fetch('/api/register/members').then(r => r.json()).catch(() => ({ ok: false }))
+        ]);
+
+        if (catRes?.ok && Array.isArray(catRes.categories)) {
+          categories = catRes.categories;
+          categories.forEach(c => (c.items || []).forEach(it => menuMap.set(it.name, it)));
+          if (categories.length > 0) activeCatId = categories[0].id;
+          renderCatalog();
+        }
+
+        if (memRes?.ok && Array.isArray(memRes.members)) {
+          eligibleMembers = memRes.members;
+          renderEligibleMembers();
+        }
+
+        const params = new URLSearchParams(window.location.search);
+        const targetId = params.get('id') || localStorage.getItem('alestia_last_discord_id');
+
+        if (targetId) {
+          const uRes = await fetch(`/api/register/user/${encodeURIComponent(targetId)}`).then(r => r.json()).catch(() => null);
+          if (uRes?.ok && uRes.user) {
+            selectUser(uRes.user);
+            return;
+          }
+        }
+
+        if (eligibleMembers.length > 0) {
+          selectUser(eligibleMembers[0]);
+        } else {
+          els.serverNameTxt.textContent = 'ไม่พบผู้ที่รอลงทะเบียน';
+          els.notMeDrawer.classList.add('open');
+        }
+      }
+
+      init();
     })();
   </script>
 </body>
