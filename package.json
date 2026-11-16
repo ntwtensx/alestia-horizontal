@@ -1,0 +1,18 @@
+{
+  "name": "alestia-horizontal",
+  "version": "1.0.0",
+  "description": "Alestia - Barista & Server Manager Bot for Horizontal",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "node --watch src/index.js",
+    "build": "echo 'React client build will be added in Step 2'"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "discord.js": "^14.16.3",
+    "dotenv": "^16.4.5",
+    "express": "^4.21.1",
+    "mongoose": "^8.8.1"
+  }
+}
