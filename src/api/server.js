@@ -35,12 +35,36 @@ function createWebServer(botClient) {
     }
   }
 
-  // 3. เสิร์ฟหน้าเว็บ React (เมื่อสั่ง Build ในโฟลเดอร์ client/dist แล้ว)
+  // 3. เสิร์ฟหน้าเว็บ /register โดยตรงจากไฟล์ src/public/register.html (ไม่ต้องพึ่งการ Build ของ React)
+  const publicPath = path.join(__dirname, '../public');
+  const registerHtmlFile = path.join(publicPath, 'register.html');
+
+  if (fs.existsSync(publicPath)) {
+    app.use('/public', express.static(publicPath));
+  }
+
+  app.get(['/register', '/register/*'], (req, res) => {
+    if (fs.existsSync(registerHtmlFile)) {
+      return res.sendFile(registerHtmlFile);
+    }
+    res.status(404).send('⚠️ ไม่พบไฟล์ src/public/register.html บนเซิร์ฟเวอร์ค่ะ');
+  });
+
+  // 4. เสิร์ฟหน้าเว็บ React สำหรับหน้าแรก (หากมีโฟลเดอร์ client/dist) หรือส่งไปหน้า /register อัตโนมัติหากไม่ได้ Build React
   const clientDistPath = path.join(__dirname, '../../client/dist');
-  if (fs.existsSync(clientDistPath)) {
+  const clientIndexHtml = path.join(clientDistPath, 'index.html');
+
+  if (fs.existsSync(clientIndexHtml)) {
     app.use(express.static(clientDistPath));
     app.get('*', (req, res) => {
-      res.sendFile(path.join(clientDistPath, 'index.html'));
+      res.sendFile(clientIndexHtml);
+    });
+  } else {
+    app.get('/', (req, res) => {
+      if (fs.existsSync(registerHtmlFile)) {
+        return res.sendFile(registerHtmlFile);
+      }
+      res.status(200).send('🌸 Alestia Horizontal Server is running! เข้าใช้งานหน้าลงทะเบียนได้ที่ /register');
     });
   }
 
