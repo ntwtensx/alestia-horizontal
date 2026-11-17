@@ -1,12 +1,4 @@
 const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
-const path = require('path');
-const fs = require('fs');
-
-let createAudioResource = null;
-try {
-  ({ createAudioResource } = require('@discordjs/voice'));
-} catch (e) {}
-
 const CafeEvent = require('../../models/CafeEvent');
 const CafeSession = require('../../models/CafeSession');
 const memory = require('../../utils/sharedMemory');
@@ -352,15 +344,6 @@ const processCafeEvent = async (oldState, newState, userName, userDataDB, client
 
     await updateSessionLog({ cId: CAFE_CHANNEL_ID, cName: cafeChannel.name, txt: logText, isClosing: false, actorUser, isFirstMember, orderDetails });
     await sendGhostPing(logText);
-
-    setImmediate(() => {
-      try {
-        const soundPath = path.join(__dirname, '../../assets/sounds/welcome.mp3');
-        if (createAudioResource && memory.cafeAudioPlayer && fs.existsSync(soundPath)) {
-          memory.cafeAudioPlayer.play(createAudioResource(soundPath, { inlineVolume: false }));
-        }
-      } catch (e) {}
-    });
   }
 
   if (leftCafe) {

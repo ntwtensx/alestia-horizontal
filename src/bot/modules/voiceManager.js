@@ -1,18 +1,21 @@
 const path = require('path');
 const fs = require('fs');
 const ffmpegPath = require('ffmpeg-static');
+const sodium = require('libsodium-wrappers');
 
-// กำหนดพิกัด FFmpeg อัตโนมัติเพื่อให้รันบน Koyeb ได้ทันที
 if (ffmpegPath) {
   process.env.FFMPEG_PATH = ffmpegPath;
 }
 
 const {
   joinVoiceChannel,
+  getVoiceConnection,
   createAudioPlayer,
   createAudioResource,
+  StreamType,
   NoSubscriberBehavior,
   VoiceConnectionStatus,
+  AudioPlayerStatus,
   entersState
 } = require('@discordjs/voice');
 
@@ -24,17 +27,23 @@ const CAFE_CHANNEL_ID = theme.discordConfig?.cafeVoiceChannelId || '995629374722
 
 let isReconnecting = false;
 
-// สร้างเครื่องเล่นเสียงส่วนกลางและเก็บไว้ใน sharedMemory
-if (!memory.cafeAudioPlayer) {
-  memory.cafeAudioPlayer = createAudioPlayer({
-    behaviors: {
-      noSubscriber: NoSubscriberBehavior.Play
-    }
-  });
+function ensureAudioPlayer() {
+  if (!memory.cafeAudioPlayer) {
+    memory.cafeAudioPlayer = createAudioPlayer({
+      behaviors: {
+        noSubscriber: NoSubscriberBehavior.Play
+      }
+    });
 
-  memory.cafeAudioPlayer.on('error', (err) => {
-    console.warn('⚠️ [Audio Player Error]:', err.message);
-  });
+    memory.cafeAudioPlayer.on(AudioPlayerStatus.Playing, () => {
+      console.log('🔊 [Voice Manager] กำลังเล่นเสียงต้อนรับ welcome.mp3...');
+    });
+
+    memory.cafeAudioPlayer.on('error', (err) => {
+      console.error('❌ [Audio Player Error]:', err.message);
+    });
+  }
+  return memory.cafeAudioPlayer;
 }
 
 async function connectToCafeVoice(client, forceRejoin = false) {
@@ -43,6 +52,8 @@ async function connectToCafeVoice(client, forceRejoin = false) {
 
   try {
     isReconnecting = true;
+    await sodium.ready;
+
     const guild = client.guilds.cache.get(TARGET_GUILD_ID) || client.guilds.cache.first();
     if (!guild) return null;
 
@@ -55,6 +66,8 @@ async function connectToCafeVoice(client, forceRejoin = false) {
       return null;
     }
 
+    const player = ensureAudioPlayer();
+
     const connection = joinVoiceChannel({
       channelId: channel.id,
       guildId: guild.id,
@@ -63,14 +76,21 @@ async function connectToCafeVoice(client, forceRejoin = false) {
       selfMute: false
     });
 
-    connection.subscribe(memory.cafeAudioPlayer);
+    connection.subscribe(player);
 
-    // ดักจับกรณีสัญญาณหลุดหรือถูกตัดการเชื่อมต่อ ให้กระโดดกลับเข้าห้องใหม่ทันที
+    try {
+      await entersState(connection, VoiceConnectionStatus.Ready, 15000);
+      console.log(`🎧 [Voice Manager] อเลสเทียเชื่อมต่อเสียงที่ห้อง "${channel.name}" พร้อมพูดต้อนรับแล้ว!`);
+    } catch (readyErr) {
+      console.warn('⚠️ [Voice Manager] รอสัญญาณเสียง Ready เกินเวลา กำลังลองเชื่อมต่อซ้ำ...');
+    }
+
+    connection.removeAllListeners(VoiceConnectionStatus.Disconnected);
     connection.on(VoiceConnectionStatus.Disconnected, async () => {
       try {
         await Promise.race([
-          entersState(connection, VoiceConnectionStatus.Signalling, 3000),
-          entersState(connection, VoiceConnectionStatus.Connecting, 3000)
+          entersState(connection, VoiceConnectionStatus.Signalling, 4000),
+          entersState(connection, VoiceConnectionStatus.Connecting, 4000)
         ]);
       } catch (e) {
         console.log('🔄 [Voice Manager] บอทหลุดจากห้องเสียง กำลังกลับเข้าห้องคาเฟ่อัตโนมัติ...');
@@ -80,7 +100,6 @@ async function connectToCafeVoice(client, forceRejoin = false) {
       }
     });
 
-    console.log(`🎧 [Voice Manager] อเลสเทียเข้าประจำการที่ห้องเสียง "${channel.name}" เรียบร้อย!`);
     return connection;
   } catch (err) {
     console.error('❌ [Voice Manager Error]:', err.message);
@@ -92,19 +111,40 @@ async function connectToCafeVoice(client, forceRejoin = false) {
   }
 }
 
-function playWelcomeSound() {
+async function playWelcomeSound(client) {
   try {
+    await sodium.ready;
+
     const soundPath = path.join(__dirname, '../../assets/sounds/welcome.mp3');
     if (!fs.existsSync(soundPath)) {
-      console.warn('⚠️ [Voice Manager] ยังไม่พบไฟล์เสียง src/assets/sounds/welcome.mp3');
+      console.error(`❌ [Voice Manager] ไม่พบไฟล์เสียงที่: ${soundPath}`);
       return false;
     }
 
-    const resource = createAudioResource(soundPath, { inlineVolume: true });
+    const guild = client?.guilds?.cache?.get(TARGET_GUILD_ID) || client?.guilds?.cache?.first();
+    let connection = guild ? getVoiceConnection(guild.id) : null;
+
+    if (!connection || connection.state.status !== VoiceConnectionStatus.Ready) {
+      if (client) {
+        connection = await connectToCafeVoice(client, true);
+      }
+    }
+
+    const player = ensureAudioPlayer();
+    if (connection) {
+      connection.subscribe(player);
+    }
+
+    const resource = createAudioResource(fs.createReadStream(soundPath), {
+      inputType: StreamType.Arbitrary,
+      inlineVolume: true
+    });
+
     if (resource.volume) {
       resource.volume.setVolume(1.0);
     }
-    memory.cafeAudioPlayer.play(resource);
+
+    player.play(resource);
     return true;
   } catch (err) {
     console.error('❌ [Play Welcome Sound Error]:', err.message);

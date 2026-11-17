@@ -1,4 +1,9 @@
 require('dotenv').config();
+const ffmpegPath = require('ffmpeg-static');
+if (ffmpegPath) {
+  process.env.FFMPEG_PATH = ffmpegPath;
+}
+
 const connectDB = require('./src/config/db');
 const botModule = require('./src/bot/botClient');
 const createWebServer = require('./src/api/server');
@@ -7,6 +12,8 @@ const PORT = process.env.PORT || 8000;
 
 async function startHorizontalCafe() {
   try {
+    console.log('☕ กำลังเปิดร้านคาเฟ่ Horizontal และปลุกบาริสต้า Alestia...');
+
     // 1. เชื่อมต่อฐานข้อมูล MongoDB
     if (typeof connectDB === 'function') {
       await connectDB();
@@ -40,7 +47,6 @@ async function startHorizontalCafe() {
   }
 }
 
-// ป้องกันเซิร์ฟเวอร์ดับกรณีเกิด Error ไม่คาดคิด
 process.on('unhandledRejection', (err) => {
   console.warn('⚠️ [Unhandled Rejection]:', err?.message || err);
 });

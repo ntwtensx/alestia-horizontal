@@ -1,7 +1,7 @@
+const voiceManager = require('../modules/voiceManager');
+const voiceTracker = require('../modules/voiceTracker');
 const UserDB = require('../../models/User');
 const theme = require('../../config/theme');
-const voiceTracker = require('../modules/voiceTracker');
-const voiceManager = require('../modules/voiceManager');
 
 const CAFE_CHANNEL_ID = theme.discordConfig?.cafeVoiceChannelId || '995629374722297946';
 
@@ -13,7 +13,7 @@ module.exports = {
       const member = newState.member || oldState.member;
       if (!member) return;
 
-      // 🛡️ กรณีตัวบอทถูกเตะออกจากห้องเสียง หรือถูกดึงไปห้องอื่น ให้กลับเข้าห้องคาเฟ่ทันที
+      // 🛡️ กรณีตัวบอทถูกเตะออกจากห้องเสียง หรือถูกย้ายไปห้องอื่น ให้ดึงกลับเข้าห้องคาเฟ่ทันที
       if (member.id === client.user.id) {
         if (newState.channelId !== CAFE_CHANNEL_ID) {
           console.log('🛡️ [Voice Guard] ตรวจพบว่าบอทถูกเตะหรือย้ายห้อง กำลังดึงกลับเข้าห้องคาเฟ่...');
@@ -28,11 +28,11 @@ module.exports = {
       if (member.user?.bot) return;
       if (oldState.channelId === newState.channelId) return;
 
-      // 🔊 เล่นเสียงต้อนรับทันทีเมื่อมีลูกค้าเดินเข้าห้องคาเฟ่
+      // 🔊 เล่นเสียงต้อนรับเมื่อมีลูกค้าเดินเข้าห้องคาเฟ่
       if (newState.channelId === CAFE_CHANNEL_ID) {
         setTimeout(() => {
-          voiceManager.playWelcomeSound();
-        }, 600);
+          voiceManager.playWelcomeSound(client);
+        }, 700);
       }
 
       const userDataDB = await UserDB.findOne({ discordId: member.id }).lean().catch(() => null);
