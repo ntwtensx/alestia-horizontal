@@ -1,24 +1,24 @@
 {
   "name": "alestia-horizontal",
   "version": "1.0.0",
-  "description": "Alestia - Barista & Server Manager Bot for Horizontal",
-  "main": "src/index.js",
-  "engines": {
-    "node": ">=20.0.0"
-  },
+  "description": "Alestia Barista Bot & Horizontal Cafe Web Portal",
+  "main": "index.js",
   "scripts": {
-    "start": "node src/index.js",
-    "dev": "node --watch src/index.js",
-    "build": "npm install --include=dev --prefix client && npm run build --prefix client"
+    "start": "node index.js",
+    "dev": "node --watch index.js",
+    "build": "echo \"Build complete - serving static portal from src/public\""
+  },
+  "engines": {
+    "node": "20.x"
   },
   "dependencies": {
-    "@discordjs/voice": "^0.19.2",
+    "@discordjs/voice": "^0.18.0",
     "cors": "^2.8.5",
     "discord.js": "^14.16.3",
     "dotenv": "^16.4.5",
     "express": "^4.21.1",
-    "ffmpeg-static": "^5.3.0",
-    "libsodium-wrappers": "^0.8.4",
+    "ffmpeg-static": "^5.2.0",
+    "libsodium-wrappers": "^0.7.15",
     "mongoose": "^8.8.1",
     "opusscript": "^0.0.8",
     "prism-media": "^1.3.5"
