@@ -1,5 +1,6 @@
 const express = require('express');
 const cors = require('cors');
+const mongoose = require('mongoose');
 const fs = require('fs');
 const path = require('path');
 
@@ -8,21 +9,22 @@ function createWebServer(botClient) {
 
   app.use(cors());
   app.use(express.json());
-
-  // แชร์ตัวบอท Alestia ให้ทุกไฟล์ในฝั่ง API เรียกใช้งานได้ผ่าน req.app.get('bot')
   app.set('bot', botClient);
 
-  // 1. จุดเช็กสถานะสำหรับ Koyeb และ Cron-job กันบอทหลับ (Anti-Sleep)
+  // 1. จุดเช็กสถานะ Keep-Alive สำหรับ Koyeb และ Cron-job
   app.get('/health', (req, res) => {
+    res.set('Cache-Control', 'no-store');
     res.status(200).json({
-      status: 'awake',
-      bot: 'Alestia',
-      online: botClient.isReady(),
-      timestamp: new Date().toISOString()
+      status: 'AWAKE',
+      botReady: botClient.isReady(),
+      wsPing: botClient.ws?.ping || 0,
+      dbReady: mongoose.connection.readyState === 1,
+      uptimeSeconds: Math.floor(process.uptime()),
+      timestamp: Date.now()
     });
   });
 
-  // 2. โหลดไฟล์ API ทั้งหมดจาก src/api/routes/ อัตโนมัติ
+  // 2. โหลด API ทั้งหมดจาก src/api/routes/ อัตโนมัติ
   const routesPath = path.join(__dirname, 'routes');
   if (fs.existsSync(routesPath)) {
     const routeFiles = fs.readdirSync(routesPath).filter(file => file.endsWith('.js'));
@@ -35,38 +37,29 @@ function createWebServer(botClient) {
     }
   }
 
-  // 3. เสิร์ฟหน้าเว็บ /register โดยตรงจากไฟล์ src/public/register.html (ไม่ต้องพึ่งการ Build ของ React)
+  // 3. เสิร์ฟไฟล์หน้าเว็บจาก src/public/
   const publicPath = path.join(__dirname, '../public');
   const registerHtmlFile = path.join(publicPath, 'register.html');
+  const dashboardHtmlFile = path.join(publicPath, 'dashboard.html');
 
   if (fs.existsSync(publicPath)) {
-    app.use('/public', express.static(publicPath));
+    app.use(express.static(publicPath));
   }
 
+  // หน้าลงทะเบียนบัตรสมาชิก (/register)
   app.get(['/register', '/register/*'], (req, res) => {
-    if (fs.existsSync(registerHtmlFile)) {
-      return res.sendFile(registerHtmlFile);
-    }
-    res.status(404).send('⚠️ ไม่พบไฟล์ src/public/register.html บนเซิร์ฟเวอร์ค่ะ');
+    res.set('Cache-Control', 'no-store');
+    if (fs.existsSync(registerHtmlFile)) return res.sendFile(registerHtmlFile);
+    res.status(404).send('⚠️ ไม่พบไฟล์ src/public/register.html');
   });
 
-  // 4. เสิร์ฟหน้าเว็บ React สำหรับหน้าแรก (หากมีโฟลเดอร์ client/dist) หรือส่งไปหน้า /register อัตโนมัติหากไม่ได้ Build React
-  const clientDistPath = path.join(__dirname, '../../client/dist');
-  const clientIndexHtml = path.join(clientDistPath, 'index.html');
-
-  if (fs.existsSync(clientIndexHtml)) {
-    app.use(express.static(clientDistPath));
-    app.get('*', (req, res) => {
-      res.sendFile(clientIndexHtml);
-    });
-  } else {
-    app.get('/', (req, res) => {
-      if (fs.existsSync(registerHtmlFile)) {
-        return res.sendFile(registerHtmlFile);
-      }
-      res.status(200).send('🌸 Alestia Horizontal Server is running! เข้าใช้งานหน้าลงทะเบียนได้ที่ /register');
-    });
-  }
+  // หน้าบอร์ดสมุดบันทึก & ใบเสร็จคาเฟ่ + ทำเนียบสมาชิก (/, /members, /bank)
+  app.get(['/', '/members', '/bank'], (req, res) => {
+    res.set('Cache-Control', 'no-store');
+    if (fs.existsSync(dashboardHtmlFile)) return res.sendFile(dashboardHtmlFile);
+    if (fs.existsSync(registerHtmlFile)) return res.sendFile(registerHtmlFile);
+    res.status(200).send('☕ Horizontal Cafe Server is running!');
+  });
 
   return app;
 }
