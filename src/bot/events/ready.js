@@ -1,6 +1,7 @@
 const { ActivityType, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 const theme = require('../../config/theme');
 const menuCatalog = require('../../utils/menuPriceCatalog');
+const voiceManager = require('../modules/voiceManager');
 
 module.exports = {
   name: 'ready',
@@ -14,6 +15,17 @@ module.exports = {
 
     await menuCatalog.syncPricesToDatabase();
 
+    // 1. ส่งบอทเข้าประจำการในห้องเสียงคาเฟ่ทันทีที่เปิดระบบ + เช็กซ้ำทุก 30 วินาที
+    await voiceManager.connectToCafeVoice(client);
+    setInterval(() => {
+      const guild = client.guilds.cache.get(theme.discordConfig.guildId) || client.guilds.cache.first();
+      const botVoiceChannelId = guild?.members?.me?.voice?.channelId;
+      if (botVoiceChannelId !== theme.discordConfig.cafeVoiceChannelId) {
+        voiceManager.connectToCafeVoice(client, true).catch(() => null);
+      }
+    }, 30000);
+
+    // 2. ซิงก์คำสั่ง Slash Commands
     try {
       const commandsData = client.commands.map(cmd => cmd.data.toJSON());
       const existing = await client.application.commands.fetch();
@@ -38,6 +50,7 @@ module.exports = {
       console.error('❌ [Slash Error]:', err.message);
     }
 
+    // 3. ตั้งปุ่มลงทะเบียนสมาชิก
     try {
       const { guildId, registerChannelId, registerMessageId, registerButtonEmoji, registerButtonLabel } = theme.discordConfig;
       const guild = client.guilds.cache.get(guildId) || client.guilds.cache.first();

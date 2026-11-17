@@ -1,5 +1,9 @@
 const UserDB = require('../../models/User');
+const theme = require('../../config/theme');
 const voiceTracker = require('../modules/voiceTracker');
+const voiceManager = require('../modules/voiceManager');
+
+const CAFE_CHANNEL_ID = theme.discordConfig?.cafeVoiceChannelId || '995629374722297946';
 
 module.exports = {
   name: 'voiceStateUpdate',
@@ -7,8 +11,29 @@ module.exports = {
   async execute(oldState, newState, client) {
     try {
       const member = newState.member || oldState.member;
-      if (!member || member.user?.bot) return;
+      if (!member) return;
+
+      // 🛡️ กรณีตัวบอทถูกเตะออกจากห้องเสียง หรือถูกดึงไปห้องอื่น ให้กลับเข้าห้องคาเฟ่ทันที
+      if (member.id === client.user.id) {
+        if (newState.channelId !== CAFE_CHANNEL_ID) {
+          console.log('🛡️ [Voice Guard] ตรวจพบว่าบอทถูกเตะหรือย้ายห้อง กำลังดึงกลับเข้าห้องคาเฟ่...');
+          setTimeout(() => {
+            voiceManager.connectToCafeVoice(client, true).catch(() => null);
+          }, 1200);
+        }
+        return;
+      }
+
+      // ข้ามบอทตัวอื่น
+      if (member.user?.bot) return;
       if (oldState.channelId === newState.channelId) return;
+
+      // 🔊 เล่นเสียงต้อนรับทันทีเมื่อมีลูกค้าเดินเข้าห้องคาเฟ่
+      if (newState.channelId === CAFE_CHANNEL_ID) {
+        setTimeout(() => {
+          voiceManager.playWelcomeSound();
+        }, 600);
+      }
 
       const userDataDB = await UserDB.findOne({ discordId: member.id }).lean().catch(() => null);
       const userName = (
