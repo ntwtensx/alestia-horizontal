@@ -220,7 +220,7 @@ const updateSessionLog = async ({ cafeChannel, cId, cName, txt, isClosing = fals
       if (!Array.isArray(session.receipts)) session.receipts = [];
       if (!Array.isArray(session.logLines)) session.logLines = [];
 
-      // กรณีสั่งเมนูสำเร็จ ให้แทรกบรรทัด - {เมนู} -{ท็อปปิ้ง} -{ขนม} ถัดจากบรรทัดแจ้งเข้าคาเฟ่ของคนนั้น
+      // กรณีสั่งเมนูสำเร็จ ให้แทรกบรรทัด - {เมนู}{ความหวาน} -{ท็อปปิ้ง} -{ขนม} ถัดจากบรรทัดแจ้งเข้าคาเฟ่ของคนนั้น
       if (insertBelowEntryLine) {
         let targetIdx = -1;
         for (let i = session.logLines.length - 1; i >= 0; i--) {
@@ -295,10 +295,10 @@ async function confirmMemberOrder(userId, orderDetails, client) {
       const cafeChannel = await getCafeChannel(client);
       if (!cafeChannel) return false;
 
-      // 1. แก้ไขข้อความทวงออเดอร์ของอเลสเทียให้เป็นข้อความยืนยันถาวร
+      // 1. แก้ไขข้อความทวงออเดอร์ของอเลสเทียเป็นข้อความยืนยันถาวรตามรูปแบบใหม่
       if (pending.promptMsg) {
         await pending.promptMsg
-          .edit(`☕ **คุณ${pending.userName}** ได้ทำการสั่ง **${orderDetails.orderText}** เรียบร้อยแล้วค่ะ~✦`)
+          .edit(`☕ ได้ทำการรับออเดอร์ของ **${pending.userName}** เป็น **${orderDetails.orderText}** เรียบร้อยแล้วค่ะ~✦`)
           .catch(() => null);
       }
 
@@ -311,7 +311,7 @@ async function confirmMemberOrder(userId, orderDetails, client) {
         }
       }
 
-      // 3. บันทึกบรรทัดย่อย - {เมนู} -{ท็อปปิ้ง} -{ขนม} ลงใน Embed ถัดจากบรรทัดเข้าคาเฟ่
+      // 3. บันทึกบรรทัดย่อย - {เมนู}{ความหวาน} -{ท็อปปิ้ง} -{ขนม} ลงใน Embed ถัดจากบรรทัดเข้าคาเฟ่
       await updateSessionLog({
         cafeChannel,
         cId: CAFE_CHANNEL_ID,
@@ -340,7 +340,6 @@ async function rejectAndKickMember(userId, reasonType, client) {
   if (pending.timer) clearTimeout(pending.timer);
   memory.pendingOrders.delete(userId);
 
-  // ลบข้อความทวงออเดอร์ของบอทออกทันที
   if (pending.promptMsg) {
     await pending.promptMsg.delete().catch(() => null);
   }
@@ -352,7 +351,6 @@ async function rejectAndKickMember(userId, reasonType, client) {
     reasonPhrase = 'ปฏิเสธการสั่งเมนูจึงของดให้บริการ';
   }
 
-  // เก็บสาเหตุไว้ให้ event leftCafe นำไปลงบันทึกใน Embed ตอนถูกดีดออก
   memory.kickedOrderReasons.set(userId, reasonPhrase);
 
   try {
@@ -365,7 +363,6 @@ async function rejectAndKickMember(userId, reasonType, client) {
       return true;
     }
   } catch (kickErr) {
-    // กรณีเตะไม่ได้ (เช่น เป็นเจ้าของเซิร์ฟเวอร์) ให้ลงบันทึกงดให้บริการใน Embed ทันทีโดยไม่ค้าง
     memory.kickedOrderReasons.delete(userId);
     trackerQueue = trackerQueue.then(async () => {
       const cafeChannel = await getCafeChannel(client);
@@ -424,7 +421,6 @@ const processCafeEvent = async (oldState, newState, userName, userDataDB, client
   // 🌸 1. เมื่อสมาชิกเดินเข้าห้องเสียงคาเฟ่
   // ==========================================
   if (joinedCafe) {
-    // ล้างคิวเก่าถ้าเคยค้างอยู่
     if (memory.pendingOrders.has(userId)) {
       const oldPending = memory.pendingOrders.get(userId);
       if (oldPending.timer) clearTimeout(oldPending.timer);
@@ -437,7 +433,6 @@ const processCafeEvent = async (oldState, newState, userName, userDataDB, client
     const isFirstMember = hMembers.size <= 1;
     const timeStr = getUnixTimestampStr();
 
-    // ข้อความต้อนรับหลักใน Embed แจ้งเฉพาะว่าเดินเข้ามานั่งในคาเฟ่แล้ว
     const entryLogLine = isFirstMember
       ? `${timeStr} <a:9887greentick:1562617728005705799>**${userName}** ได้เข้ามานั่งในคาเฟ่เป็นคนแรกค่ะ~✦`
       : `${timeStr} <a:9887greentick:1562617728005705799>**${userName}** ได้เข้ามานั่งในคาเฟ่แล้วค่ะ~✦`;
@@ -453,12 +448,10 @@ const processCafeEvent = async (oldState, newState, userName, userDataDB, client
       orderDetails: null
     });
 
-    // ส่งข้อความแท็กสมาชิกพร้อมเวลานับถอยหลังไดนามิก 1 นาที (<t:TIMESTAMP:R>)
     const deadlineUnix = Math.floor((Date.now() + ORDER_TIMEOUT_MS) / 1000);
     const promptText = `<@${userId}> รับอะไรดีคะ เข้ามาแล้วต้องสั่งเมนูนะคะไม่งั้นจะไม่ให้ใช้บริการค่ะ กรุณาให้ออเดอร์ภายใน <t:${deadlineUnix}:R> นี้ด้วยค่ะ`;
     const promptMsg = await sendWithRetry(cafeChannel, promptText).catch(() => null);
 
-    // ตั้งเวลา 1 นาที หากไม่สั่งเมนูจะดีดออกจากห้องเสียงทันที
     const timer = setTimeout(() => {
       rejectAndKickMember(userId, 'TIMEOUT', client).catch(() => null);
     }, ORDER_TIMEOUT_MS);
@@ -479,7 +472,6 @@ const processCafeEvent = async (oldState, newState, userName, userDataDB, client
   // 🚪 2. เมื่อสมาชิกออกจากห้องเสียงคาเฟ่ (หรือถูกบอทดีดออก)
   // ==========================================
   if (leftCafe) {
-    // กรณีเดินออกเองระหว่างที่ยังไม่ได้สั่งเมนู ให้ยกเลิกตัวจับเวลาและลบข้อความทวงออเดอร์
     let leftBeforeOrdering = false;
     if (memory.pendingOrders.has(userId)) {
       const pending = memory.pendingOrders.get(userId);
@@ -497,7 +489,6 @@ const processCafeEvent = async (oldState, newState, userName, userDataDB, client
     let isClosing = isLastMember;
     let leaveReasonText = '';
 
-    // ตรวจสอบว่าถูกบอทดีดออกเพราะไม่สั่งเมนู / บอกไม่รู้ / ปฏิเสธ หรือไม่
     if (memory.kickedOrderReasons.has(userId)) {
       const kickReason = memory.kickedOrderReasons.get(userId);
       memory.kickedOrderReasons.delete(userId);

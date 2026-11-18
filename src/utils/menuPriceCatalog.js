@@ -4,6 +4,8 @@ const CafeEvent = require('../models/CafeEvent');
 const COIN_EMOJI = '<a:coin:1563947103032713268>';
 // 🏷️ ชื่อเรียกสกุลเงินสำหรับส่วน Footer
 const COIN_TEXT = 'เหรียญทอง';
+// 🍯 ค่าเริ่มต้นความหวานเมื่อสมาชิกไม่ได้ระบุ
+const DEFAULT_SWEETNESS = 'หวานปกติ';
 
 // ==========================================
 // ☕ 1. หมวดกาแฟ (Coffee: เฟส 1 [28 เมนู] + เฟส 2 [12 เมนู] = 40 เมนู)
@@ -364,25 +366,16 @@ const getStructuredMenuCatalog = () => {
 };
 
 // ==========================================
-// 🧠 6. ระบบวิเคราะห์บริบทประโยคและจับคู่เมนูอัจฉริยะ (Thai Fuzzy NLP Parser v2)
+// 🧠 6. ระบบวิเคราะห์บริบทประโยคและจับคู่เมนูอัจฉริยะ (Thai Fuzzy NLP Parser v3 - Custom Sweetness)
 // ==========================================
-const SWEETNESS_CHOICES = [
-  'หวานน้อย 25%',
-  'หวานกำลังดี 50%',
-  'หวานปกติ 100%',
-  'ไม่ใส่น้ำตาล 0%',
-  'หวานละมุนสูตรบาริสต้า'
-];
 
 // ปรับรูปคำภาษาไทยสำหรับใช้เปรียบเทียบ (ตัดวรรณยุกต์/ไม้ไต่คู้/การันต์ + รวมคำทับศัพท์ที่สะกดได้หลายแบบ)
 function normalizeThaiFuzzy(text) {
   if (!text || typeof text !== 'string') return '';
   return text
     .toLowerCase()
-    // ตัดรูปวรรณยุกต์ ่ ้ ๊ ๋ ์ ็ ฯลฯ ออกทั้งหมด เพื่อให้ เลม่อน==เลมอน และ ชีสเค้ก้ดวย==ชีสเคกดวย
     .replace(/[\u0E47-\u0E4E]/g, '')
     .replace(/[.,!?~()[\]{}"'`/\\-]/g, ' ')
-    // รวมคำทับศัพท์ที่คนไทยมักสะกดสลับกัน
     .replace(/ชอคโกแลต|ชอกโกแลต|ชอคโคแลต|ชอกโคแลต|ชอคแลต/g, 'ชอกโกแลต')
     .replace(/สตรอวเบอรี|สตรอเบอรี|สตอเบอรี|สตรอวเบอริ|สตรอเบอริ|สตอเบอริ/g, 'สตอเบอรี')
     .replace(/ราสปเบอรี|ราสเบอรี|ราสปเบอริ|ราสเบอริ/g, 'ราสเบอรี')
@@ -436,7 +429,6 @@ const RAW_TOPPING_TOKENS = [
   'ทองคำเปลว', 'ครัมเบิลเนย', 'ซอสพิตาชิโอ', 'มินิมาการอง', 'สตรอว์เบอร์รีขาว', 'ครีมไวท์ทรัฟเฟิล'
 ];
 
-// ท็อปปิ้งที่ชัดเจนพอจะจับได้แม้ไม่ได้พิมพ์คำว่า "ใส่/เพิ่ม" นำหน้า
 const UNAMBIGUOUS_TOPPING_TOKENS = [
   'ไข่มุกป๊อปยูซุ', 'ไข่มุกป๊อปสตรอว์เบอร์รี', 'ไข่มุกบราวน์ชูการ์', 'ไข่มุกป๊อป', 'ไข่มุก',
   'บุก', 'คอฟฟี่เจลลี่', 'เอิร์ลเกรย์เจลลี่', 'เจลลี่', 'วิปปิ้งครีม', 'บิสคอฟ', 'โอรีโอ้',
@@ -459,7 +451,6 @@ const ALL_NEGATABLE_TOKENS = [...new Set([...FUZZY_TOPPING_TOKENS, ...FUZZY_DESS
   .filter(t => t.length >= 2)
   .sort((a, b) => b.length - a.length);
 
-// กลุ่มคำพ้องความหมาย (กรณีสะกดต่างคำแต่ความหมายเดียวกัน)
 const SYNONYM_GROUPS = [
   ['เลมอน', 'มะนาว', 'เลมอนเนด'],
   ['สม', 'ออเรนจ', 'ยูซุ'],
@@ -473,7 +464,6 @@ const SYNONYM_GROUPS = [
   ['เบอรี', 'สตอเบอรี', 'ราสเบอรี']
 ].map(group => group.map(normalizeThaiFuzzy));
 
-// เมนูมาตรฐาน (Default Classic) เมื่อผู้ใช้พิมพ์คำกว้างๆ โดยไม่เจาะจงรุ่นย่อย
 const DEFAULT_TOPPING_BY_TOKEN = {
   [normalizeThaiFuzzy('ไข่มุก')]: 'เพิ่มไข่มุกบราวน์ชูการ์อุ่น',
   [normalizeThaiFuzzy('วิปปิ้งครีม')]: 'ท็อปด้วยวิปปิ้งครีมวานิลลาบีน',
@@ -512,8 +502,7 @@ const MOOD_POOLS = {
       'คาราเมลมัคคิอาโต้ครัมเบิล', 'ซิกเนเจอร์ดาร์กโกโก้', 'ชานมไต้หวันรอยัล',
       'ชาไทยสเลอปี้ซิกเนเจอร์', 'วานิลลาบีนลาเต้', 'สตรอว์เบอร์รีชีสเค้กเฟรปเป้',
       'ไวท์ช็อกโกแลตมัทฉะ', 'ดาร์กช็อกโกแลตเฮเซลนัทเฟอร์เรโร่เฟรปเป้', 'เบลเยียมช็อกโกแลตฟองดูว์'
-    ],
-    defaultSweetness: 'หวานละมุนสูตรบาริสต้า'
+    ]
   },
   LIGHT_RELAX: {
     keywords: ['เบาๆ', 'เบา', 'ใสๆ', 'หอม', 'ผ่อนคลาย', 'สบายท้อง', 'อุ่นๆ', 'ชาใส', 'หลับสบาย'].map(normalizeThaiFuzzy),
@@ -530,6 +519,71 @@ const MOOD_POOLS = {
     ]
   }
 };
+
+// คำคั่นที่ใช้หยุดการสกัดความหวานแบบกำหนดเอง (ป้องกันไม่ให้กินคำท็อปปิ้ง ขนม หรือคำลงท้ายติดมาด้วย)
+const SWEETNESS_STOP_REGEX = /(?:ไม่ใส่|ไม่เพิ่ม|ใส่|เพิ่ม|ท็อปด้วย|ท็อป|โรย|ราด|ครับ|ค่ะ|คะ|นะครับ|นะคะ|นะ|ด้วย|้ดวย|หน่อย|กับ|และ|แล้วก็|ทานคู่|กินคู่|เอา|ขอ|สั่ง|ขนม|ไข่มุก|ชีสเค้ก|คุกกี้|คุ้กกี้|บราวนี่|ครัวซอง|วิปครีม|วิปปิ้ง|เจลลี่|เยลลี่|เค้ก|ทาร์ต|มาการอง|บุก|ไอศกรีม|ไอติม|พานาคอตต้า|สโคน|เอแคลร์|ครัฟเฟิล|ฮันนี่โทสต์|แซนด์วิช)/;
+
+// 🍯 ดึงระดับความหวานตามคำที่สมาชิกพิมพ์จริง (เช่น หวานมากกกก, หวานน้อย 25%, ไม่หวานเลย)
+function extractCustomSweetness(originalText) {
+  let sweetWordUsedAsMood = false;
+  let customSweetness = '';
+  let textWithoutSweetness = originalText;
+
+  // จับชุดคำความหวานที่อาจต่อด้วยตัวเลขเปอร์เซ็นต์หรือคำขยายความหวาน
+  const pattern = /(ไม่เอาหวาน|ไม่หวาน|ไม่ใส่น้ำตาล|ไม่เอาน้ำตาล|หวาน)([^\s]*)(?:\s+(?:(\d+\s*%?)|((?:น้อย|มาก|ปกติ|กำลังดี|ปานกลาง|กลาง|ฉ่ำ|เจี๊ยบ|ตัดขา|จัด|สุดๆ|พิเศษ|นิดเดียว|นิดนึง|นิดหน่อย|เบาๆ|เลย)[^\s]*)))?/g;
+
+  const matches = [...originalText.matchAll(pattern)];
+  for (const m of matches) {
+    const base = m[1];
+    let tail = m[2] || '';
+    const spacedNum = m[3] || '';
+    const spacedMod = m[4] || '';
+
+    // ตัดส่วนที่ไม่ใช่ความหวานออกหากพิมพ์ติดกันโดยไม่เว้นวรรค (เช่น ชาไทยหวานมากกกกใส่ไข่มุก)
+    let combinedRest = tail;
+    if (spacedNum) combinedRest += ` ${spacedNum}`;
+    else if (spacedMod) combinedRest += ` ${spacedMod}`;
+
+    const stopMatch = combinedRest.match(SWEETNESS_STOP_REGEX);
+    if (stopMatch) {
+      combinedRest = combinedRest.slice(0, stopMatch.index);
+    }
+
+    const cleanRest = combinedRest.replace(/[.,!?~()[\]{}"'`]+$/g, '').trimEnd();
+    const candidatePhrase = `${base}${cleanRest}`.trim();
+
+    // เช็กกรณีพิมพ์บอกอารมณ์ "ขออะไรหวานๆ" (ไม่ใช่การกำหนดระดับความหวาน)
+    const beforeStr = originalText.slice(Math.max(0, m.index - 12), m.index);
+    const isAfterMoodCue = /(?:อะไร|แนว|แบบ)\s*$/.test(beforeStr);
+
+    if (isAfterMoodCue && base === 'หวาน') {
+      sweetWordUsedAsMood = true;
+      // หากพิมพ์แค่ "ขออะไรหวาน" หรือ "ขออะไรหวานๆ" ให้ถือเป็นหมวดอารมณ์ และใช้ความหวานเริ่มต้น "หวานปกติ"
+      if (!cleanRest || /^ๆ+$/.test(cleanRest)) {
+        continue;
+      }
+    }
+
+    if (!customSweetness && candidatePhrase) {
+      customSweetness = candidatePhrase;
+      // ลบเฉพาะช่วงคำความหวานที่สกัดได้ออกจากข้อความค้นหาเมนู
+      const cutStart = m.index;
+      const cutEnd = m.index + candidatePhrase.length;
+      textWithoutSweetness = (
+        textWithoutSweetness.slice(0, cutStart) +
+        ' ' +
+        textWithoutSweetness.slice(cutEnd)
+      ).replace(/\s+/g, ' ').trim();
+      break;
+    }
+  }
+
+  return {
+    customSweetness,
+    sweetWordUsedAsMood,
+    textWithoutSweetness
+  };
+}
 
 function getBigrams(str) {
   const s = str.replace(/\s+/g, '');
@@ -563,7 +617,6 @@ function pickRandomFromList(arr) {
   return arr[Math.floor(Math.random() * arr.length)];
 }
 
-// สกัดคีย์เวิร์ดที่ไม่ทับซ้อนกันจากข้อความ (เรียงจากคำยาวไปสั้น เพื่อไม่นับ "ชา" ซ้ำกับ "ชาไทย")
 function extractDistinctTokens(fuzzyQuery, sortedTokens) {
   const found = [];
   let temp = fuzzyQuery;
@@ -576,7 +629,6 @@ function extractDistinctTokens(fuzzyQuery, sortedTokens) {
   return found;
 }
 
-// ลบช่วงคำปฏิเสธส่วนผสม เช่น "ไม่ใส่ไข่มุก" หรือ "ไม่เอากาแฟ" ออกจากประโยคค้นหา
 function stripNegatedPhrases(fuzzyText) {
   let result = fuzzyText;
   const negPrefixes = ['ไมใส', 'ไมเอา', 'ไมเพิม', 'ไมรับ', 'ไมกิน', 'ไมดืม'];
@@ -617,7 +669,6 @@ function getSynonymsForToken(tok) {
   return [];
 }
 
-// ค้นหาเมนูที่ตรงบริบทมากที่สุดโดยไม่เอนเอียงไปหาชื่อที่สั้นที่สุด พร้อมรองรับ Default Classic & User Preferences
 function findBestCatalogMatch(fuzzyQuery, candidateNames, sortedTokens, options = {}) {
   const {
     stripToppingActionPrefix = false,
@@ -642,7 +693,6 @@ function findBestCatalogMatch(fuzzyQuery, candidateNames, sortedTokens, options 
     let score = 0;
     const matchedTokens = [];
 
-    // 1. ตรงชื่อเมนูแบบเต็มรูปแบบ
     if (cleanQuery === fuzzyName) {
       score += 220;
     } else if (cleanQuery.includes(fuzzyName) && fuzzyName.length >= 4) {
@@ -651,7 +701,6 @@ function findBestCatalogMatch(fuzzyQuery, candidateNames, sortedTokens, options 
       score += 75;
     }
 
-    // 2. นับคะแนนจากคีย์เวิร์ดหลักที่ไม่ซ้ำซ้อน + คำพ้องความหมาย
     for (const tok of queryTokens) {
       if (fuzzyName.includes(tok)) {
         score += 48 + tok.length * 4;
@@ -666,10 +715,9 @@ function findBestCatalogMatch(fuzzyQuery, candidateNames, sortedTokens, options 
       }
     }
 
-    // 3. คะแนนความคล้ายตัวอักษร (ช่วยกรณีสะกดผิดเล็กน้อย)
     const sim = diceSimilarity(cleanQuery, fuzzyName);
     if (matchedTokens.length > 0) {
-      score += sim * 8; // ลดน้ำหนักลงเพื่อไม่ให้เมนูสั้นชนะขาด
+      score += sim * 8;
     } else {
       score += sim * 45;
     }
@@ -683,36 +731,20 @@ function findBestCatalogMatch(fuzzyQuery, candidateNames, sortedTokens, options 
 
   scoredList.sort((a, b) => b.score - a.score);
   const topScore = scoredList[0].score;
-
-  // รวบรวมเมนูที่ได้คะแนนใกล้เคียงอันดับ 1 (ต่างกันไม่เกิน 6 คะแนน)
   const topCandidates = scoredList.filter(c => topScore - c.score <= 6);
 
-  // กติกาตัดสินเมื่อมีหลายเมนูใกล้เคียงกัน:
-  // 1) หากผู้ใช้พิมพ์แค่คำกว้างคำเดียวและมีเมนูมาตรฐาน (Default Classic) กำหนดไว้ ให้เลือกเมนูมาตรฐานนั้น
   if (defaultByToken && queryTokens.length === 1) {
     const defName = defaultByToken[queryTokens[0]];
     const foundDef = topCandidates.find(c => c.name === defName);
     if (foundDef) return foundDef;
   }
 
-  // 2) หากมีเมนูโปรดของลูกค้าอยู่ในกลุ่มที่คะแนนเท่ากัน ให้หยิบเมนูโปรดขึ้นมาก่อน
   if (preferredNames.length > 0) {
     const favCandidates = topCandidates.filter(c => preferredNames.includes(c.name));
     if (favCandidates.length > 0) return pickRandomFromList(favCandidates);
   }
 
-  // 3) สุ่มเลือกอย่างเป็นธรรมชาติในกลุ่มที่คะแนนสูสีกัน (ไม่ติดล็อกอยู่แค่เมนูชื่อสั้นสุด)
   return pickRandomFromList(topCandidates);
-}
-
-function extractSweetnessFromText(rawLowerText) {
-  const fuzzy = normalizeThaiFuzzy(rawLowerText);
-  if (/ไมหวาน|ไมใสนามตาล|ไมเอาหวาน|หวาน\s*0|0\s*%/.test(fuzzy)) return 'ไม่ใส่น้ำตาล 0%';
-  if (/หวานนอย|หวาน\s*25|25\s*%/.test(fuzzy)) return 'หวานน้อย 25%';
-  if (/หวานกำลังดี|หวานปานกลาง|หวาน\s*50|50\s*%/.test(fuzzy)) return 'หวานกำลังดี 50%';
-  if (/หวานมาก|หวานฉำ|หวานเจียบ|หวานละมุน|หวาน\s*120|หวาน\s*150/.test(fuzzy)) return 'หวานละมุนสูตรบาริสต้า';
-  if (/หวานปกติ|หวาน\s*100|100\s*%/.test(fuzzy)) return 'หวานปกติ 100%';
-  return '';
 }
 
 function maskTokensFromText(text, tokens) {
@@ -727,7 +759,7 @@ function maskTokensFromText(text, tokens) {
 
 function stripSafeFillers(fuzzyText) {
   return fuzzyText
-    .replace(/อยากได|อยากกิน|อยากดืม|ขอสัง|ขอรับ|เอาเมนู|รับเมนู|สังเมนู|ทานคูกับ|กินคูกับ|แลวก็|แลวก|ดวยนะ|ดวยคะ|ดวยครับ|หนอยนะ|หนอยคะ|หนอยครับ|นะครับ|นะคะ|ครับ|หนอย|ดวย|ขอ|เอา|รับ|สัง|กับ|และ|คะ|นะ|เมนู|แกวนึง|แกว|อะไรก็ได|อะไร|สุ่ม|สุม|แนะนำ|เลือกให|จัดมาเลย|จัดมา|ตามใจ|แลวแต/g, ' ')
+    .replace(/อยากได|อยากกิน|อยากดืม|ขอสัง|ขอรับ|เอาเมนู|รับเมนู|สังเมนู|ทานคูกับ|กินคูกับ|แลวก็|แลวก|ดวยนะ|ดวยคะ|ดวยครับ|หนอยนะ|หนอยคะ|หนอยครับ|นะครับ|นะคะ|ครับ|หนอย|ดวย|ขอ|เอา|รับ|สัง|กับ|และ|คะ|นะ|เมนู|แกวนึง|แกว|อะไรก็ได|อะไร|สุม|แนะนำ|เลือกให|จัดมาเลย|จัดมา|ตามใจ|แลวแต/g, ' ')
     .replace(/\s+/g, ' ')
     .trim();
 }
@@ -737,6 +769,7 @@ let isSyncedWithDB = false;
 module.exports = {
   COIN_EMOJI,
   COIN_TEXT,
+  DEFAULT_SWEETNESS,
   COFFEE_PRICES,
   TEA_PRICES,
   OTHER_DRINK_PRICES,
@@ -750,7 +783,7 @@ module.exports = {
   getItemTier,
   getStructuredMenuCatalog,
 
-  // 🧠 ฟังก์ชันหลักสำหรับตีความข้อความสั่งเมนูในห้องแชทคาเฟ่ (v2)
+  // 🧠 ฟังก์ชันหลักสำหรับตีความข้อความสั่งเมนูในห้องแชทคาเฟ่ (v3 - ความหวานกำหนดเอง)
   parseNaturalOrder(rawMessage, userDataDB = null) {
     if (!rawMessage || typeof rawMessage !== 'string') {
       return { intent: 'UNRECOGNIZED' };
@@ -761,26 +794,24 @@ module.exports = {
       return { intent: 'IGNORE' };
     }
 
-    const fuzzyOriginal = normalizeThaiFuzzy(originalText);
     const userFavPool = [
       userDataDB?.favoriteMenu,
       userDataDB?.likedMenu1,
       userDataDB?.likedMenu2
     ].filter(m => m && m !== 'ขอคิดดูก่อน');
 
-    // 1. แยกคำสั่งระดับความหวานออกมาก่อน เพื่อไม่ให้ "ไม่เอาหวาน" ไปชนกับคำปฏิเสธ "ไม่เอา"
-    const explicitSweetness = extractSweetnessFromText(originalText);
-    const sweetWordUsedAsMood =
-      Boolean(explicitSweetness && !explicitSweetness.includes('0%')) &&
-      /อะไร|แนว|แบบ/.test(fuzzyOriginal);
+    // 1. สกัดคำความหวานตามที่สมาชิกพิมพ์จริง (หากไม่ระบุจะเป็น "หวานปกติ")
+    const {
+      customSweetness,
+      sweetWordUsedAsMood,
+      textWithoutSweetness
+    } = extractCustomSweetness(originalText);
 
-    const fuzzyWithoutSweetness = fuzzyOriginal
-      .replace(/ไมเอาหวาน|ไมใสนามตาล|ไมหวาน|หวานนอย|หวานกำลังดี|หวานปานกลาง|หวานปกติ|หวานมาก|หวานฉำ|หวานเจียบ/g, ' ')
-      .replace(/\s+/g, ' ')
-      .trim();
+    const fuzzyWithoutSweetness = normalizeThaiFuzzy(textWithoutSweetness);
 
-    // 2. เช็กเจตนาปฏิเสธล้วน (ต้องเป็นประโยคปฏิเสธตรงๆ ไม่ใช่ "ไม่เอากาแฟ เอาชาไทย")
+    // 2. เช็กเจตนาปฏิเสธล้วน
     const isPureRefusal =
+      !customSweetness &&
       /^(ไมรับ|ไมสัง|ไมเปนไร|ไมเอา|ไมกิน|ไมดืม|ไมหิว|ขีเกียจสัง|ขีเกียจ|ไมเอาอะไรเลย|ไมสังเมนู|ไมรับเมนู|ไมเอาแลว)(ครับ|คะ|นะ|นะครับ|นะคะ|เลย|หรอก|\s)*$/.test(fuzzyWithoutSweetness);
     if (isPureRefusal) {
       return { intent: 'REFUSE_KICK' };
@@ -789,7 +820,7 @@ module.exports = {
     const hasRandomKeyword = /อะไรก็ได|สุม|แลวแต|เลือกให|จัดมา|ตามใจ|แนะนำ/.test(fuzzyWithoutSweetness);
     const hasHesitateKeyword = /ไมรู|คิดไมออก|เลือกไมถูก|เอาไรดี|เอาอะไรดี|นึกไมออก/.test(fuzzyWithoutSweetness);
 
-    // 3. ลบช่วงคำปฏิเสธส่วนผสมออกก่อนค้นหา เช่น "ชาไทยไม่ใส่ไข่มุก" หรือ "ไม่เอากาแฟ เอาชาไทย"
+    // 3. ลบช่วงคำปฏิเสธส่วนผสมออกก่อนค้นหา เช่น "ชาไทยไม่ใส่ไข่มุก"
     let workingText = stripNegatedPhrases(fuzzyWithoutSweetness);
 
     const allDrinkNames = [...Object.keys(DRINK_PRICES), ...Array.from(MYSTERY_MENU_SET)];
@@ -799,16 +830,15 @@ module.exports = {
     let matchedDrink = null;
     let matchedTopping = null;
     let matchedDessert = null;
-    let moodSweetness = '';
 
-    // 4. กรณีพิเศษ: "ชานมไข่มุก" แปลงเป็นชานมไต้หวัน + ไข่มุกบราวน์ชูการ์ทันที
+    // 4. กรณีพิเศษ: "ชานมไข่มุก"
     if (workingText.includes('ชานมไขมุก')) {
       matchedDrink = 'ชานมไต้หวันรอยัล';
       matchedTopping = 'เพิ่มไข่มุกบราวน์ชูการ์อุ่น';
       workingText = workingText.replace(/ชานมไขมุก/g, ' ').replace(/\s+/g, ' ').trim();
     }
 
-    // 5. (Step A: Longest-First) ตรวจจับชื่อเครื่องดื่มเต็มๆ ก่อน เพื่อกันชื่อน้ำที่มีคำว่า "ชีสเค้ก/ไข่มุก" ไปเบิ้ลเป็นขนมหรือท็อปปิ้ง
+    // 5. (Step A: Longest-First) ตรวจจับชื่อเครื่องดื่มเต็มๆ ก่อน
     if (!matchedDrink) {
       const sortedDrinksByLen = [...allDrinkNames]
         .filter(n => n !== 'เอิร์ลเกรย์ลาเวเดอร์')
@@ -824,7 +854,7 @@ module.exports = {
       }
     }
 
-    // 6. (Step B) ตรวจจับท็อปปิ้งเสริมจากคำเชื่อม ("ใส่...", "เพิ่ม...", "ท็อป...", "โรย...", "ราด...")
+    // 6. (Step B) ตรวจจับท็อปปิ้งเสริม
     if (!matchedTopping) {
       const toppingCueRegex = /(?:ใส|เพิม|ทอปดวย|ทอป|โรย|ราด)\s*([^\s]+)/g;
       let cueMatch;
@@ -839,20 +869,14 @@ module.exports = {
           });
           if (topRes) {
             matchedTopping = topRes.name;
-            // ลบเฉพาะคำเชื่อม + คำท็อปปิ้งที่จับได้ เพื่อคงคำอื่นที่ติดกันไว้
-            const cueFullPrefix = cueMatch[0].slice(0, cueMatch[0].length - candidateChunk.length);
             const cleanedChunk = maskTokensFromText(candidateChunk, topTokensInChunk);
             workingText = workingText.replace(cueMatch[0], cleanedChunk ? ` ${cleanedChunk} ` : ' ').replace(/\s+/g, ' ').trim();
-            if (cueFullPrefix) {
-              workingText = workingText.replace(/\s+/g, ' ').trim();
-            }
             break;
           }
         }
       }
     }
 
-    // กรณีไม่ได้พิมพ์คำว่า "ใส่/เพิ่ม" แต่พิมพ์ชื่อท็อปปิ้งชัดเจน (เช่น "โกโก้ ไข่มุก", "ชาไทย วิปครีม")
     if (!matchedTopping) {
       const directTopTokens = extractDistinctTokens(workingText, UNAMBIGUOUS_TOPPING_TOKENS);
       if (directTopTokens.length > 0) {
@@ -868,7 +892,7 @@ module.exports = {
       }
     }
 
-    // 7. (Step C) ตรวจจับขนมหวาน / ของทานเล่น แล้วลบคำขนมออกก่อนส่งส่วนที่เหลือไปหาน้ำ
+    // 7. (Step C) ตรวจจับขนมหวาน / ของทานเล่น
     const dessertTokensInText = extractDistinctTokens(workingText, FUZZY_DESSERT_TOKENS);
     if (dessertTokensInText.length > 0) {
       const desRes = findBestCatalogMatch(dessertTokensInText.join(' '), allDessertNames, FUZZY_DESSERT_TOKENS, {
@@ -884,7 +908,7 @@ module.exports = {
       workingText = workingText.replace(/ขนม|ของวาง|ของทานเลน/g, ' ').replace(/\s+/g, ' ').trim();
     }
 
-    // 8. (Step D) ค้นหาเครื่องดื่มหลักจากข้อความที่เหลือ (หลังหักคำท็อปปิ้ง ขนม และคำฟุ่มเฟือยออกแล้ว)
+    // 8. (Step D) ค้นหาเครื่องดื่มหลักจากข้อความที่เหลือ
     const drinkSearchText = stripSafeFillers(workingText);
 
     if (!matchedDrink && drinkSearchText) {
@@ -897,25 +921,23 @@ module.exports = {
       }
     }
 
-    // 9. (Step E) หากยังไม่เจอชื่อเมนูตรงๆ ให้เช็กหมวดรสชาติและอารมณ์ ("หวานๆ", "ตื่นๆ", "เปรี้ยวๆ", "เบาๆ", "หรูๆ")
+    // 9. (Step E) เช็กหมวดรสชาติและอารมณ์ ("หวานๆ", "ตื่นๆ", "เปรี้ยวๆ", "เบาๆ", "หรูๆ")
     if (!matchedDrink) {
       for (const mood of Object.values(MOOD_POOLS)) {
         if (mood.keywords.some(kw => workingText.includes(kw) || fuzzyWithoutSweetness.includes(kw))) {
           const favInMood = userFavPool.filter(m => mood.drinks.includes(m));
           matchedDrink = favInMood.length > 0 ? pickRandomFromList(favInMood) : pickRandomFromList(mood.drinks);
-          if (mood.defaultSweetness && !explicitSweetness) moodSweetness = mood.defaultSweetness;
           break;
         }
       }
     }
 
-    // รองรับเคส "ขออะไรหวานน้อยๆ" ที่คำว่าหวานถูกสกัดไปเป็นระดับความหวานก่อนหน้า
     if (!matchedDrink && sweetWordUsedAsMood) {
       const favInSweet = userFavPool.filter(m => MOOD_POOLS.SWEET_COZY.drinks.includes(m));
       matchedDrink = favInSweet.length > 0 ? pickRandomFromList(favInSweet) : pickRandomFromList(MOOD_POOLS.SWEET_COZY.drinks);
     }
 
-    // 10. (Step F) กรณีลูกค้าขอให้สุ่ม ("อะไรก็ได้", "สุ่มเลย", "ไม่รู้จะเอาอะไรดีสุ่มให้หน่อย")
+    // 10. (Step F) กรณีขอให้สุ่ม
     if (!matchedDrink && hasRandomKeyword) {
       const validUserPool = userFavPool.filter(m => allDrinkNames.includes(m));
       if (validUserPool.length > 0 && Math.random() <= 0.65) {
@@ -932,7 +954,7 @@ module.exports = {
       }
     }
 
-    // 11. ตรวจสอบกรณีลังเลโดยไม่ขอสุ่ม และไม่ได้สั่งอะไรเลย ("ไม่รู้", "ไม่รู้จะเอาอะไรดี")
+    // 11. ตรวจสอบกรณีลังเลโดยไม่ขอสุ่ม
     if (!matchedDrink && !matchedDessert && !matchedTopping) {
       if (hasHesitateKeyword && !hasRandomKeyword) {
         return { intent: 'HESITATE_KICK' };
@@ -940,10 +962,9 @@ module.exports = {
       return { intent: 'UNRECOGNIZED' };
     }
 
-    // 12. (Step G) ป้องกันการแอบเอาเมนูโปรดมาเสียบแทนชื่อน้ำที่บอทอ่านไม่ออก!
+    // 12. (Step G) ป้องกันการแอบเอาเมนูโปรดมาเสียบแทนชื่อน้ำที่อ่านไม่ออก
     let autoPairedDrink = false;
     if (!matchedDrink && (matchedDessert || matchedTopping)) {
-      // เช็กว่ายังมีคำสั่งน้ำที่อ่านไม่ออกหลงเหลืออยู่ไหม (ตัดคำว่า "อย่างเดียว/แค่/เท่านั้น" ออกก่อน)
       const leftoverText = drinkSearchText
         .replace(/อยางเดียว|แค|เทานัน|พอแลว|พอ|ไมเอานำ/g, ' ')
         .replace(/\s+/g, ' ')
@@ -958,26 +979,26 @@ module.exports = {
         };
       }
 
-      // กรณีสั่งขนมล้วนๆ จริงๆ (ไม่มีคำชื่อน้ำค้างอยู่) จึงค่อยเสิร์ฟคู่เมนูโปรดหรือชาไทยซิกเนเจอร์
       matchedDrink = userFavPool.find(m => allDrinkNames.includes(m)) || 'ชาไทยสเลอปี้ซิกเนเจอร์';
       autoPairedDrink = true;
     }
 
-    // 13. คำนวณราคาและประกอบสร้างรายละเอียดออเดอร์
+    // 13. คำนวณราคาและต่อระดับความหวานติดท้ายชื่อเครื่องดื่มโดยตรง (ไม่มีวงเล็บ)
     const drinkPrice = this.getItemPrice(matchedDrink, 'drink', 0) || 120;
     const toppingName = matchedTopping || '';
     const toppingPrice = toppingName ? (this.getItemPrice(toppingName, 'topping', 0) || 25) : 0;
     const dessertName = matchedDessert || '';
     const dessertPrice = dessertName ? (this.getItemPrice(dessertName, 'dessert', 0) || 95) : 0;
-    const sweetness = explicitSweetness || moodSweetness || pickRandomFromList(SWEETNESS_CHOICES);
+    const sweetness = customSweetness || DEFAULT_SWEETNESS;
     const totalPrice = drinkPrice + toppingPrice + dessertPrice;
 
-    const dessertPhrase = dessertName ? ` ทานคู่กับ${dessertName}` : '';
+    const drinkWithSweetness = `${matchedDrink}${sweetness}`;
     const toppingPhrase = toppingName ? ` ${toppingName}` : '';
-    const orderText = `${matchedDrink} (${sweetness})${toppingPhrase}${dessertPhrase}`.replace(/\s+/g, ' ').trim();
+    const dessertPhrase = dessertName ? ` ทานคู่กับ${dessertName}` : '';
+    const orderText = `${drinkWithSweetness}${toppingPhrase}${dessertPhrase}`.replace(/\s+/g, ' ').trim();
 
-    // บรรทัดย่อยสำหรับแสดงใน Embed: - {เมนู} -{ท็อปปิ้ง} -{ขนม}
-    const embedSubParts = [`- ${matchedDrink} (${sweetness})`];
+    // บรรทัดย่อยสำหรับแสดงใน Embed: - {เมนู}{ความหวาน} -{ท็อปปิ้ง} -{ขนม}
+    const embedSubParts = [`- ${drinkWithSweetness}`];
     if (toppingName) embedSubParts.push(`-${toppingName}`);
     if (dessertName) embedSubParts.push(`-${dessertName}`);
     const embedOrderLine = embedSubParts.join(' ');
