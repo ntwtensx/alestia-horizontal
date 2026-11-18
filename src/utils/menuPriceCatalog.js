@@ -366,7 +366,7 @@ const getStructuredMenuCatalog = () => {
 };
 
 // ==========================================
-// 🧠 6. ระบบวิเคราะห์บริบทประโยคและจับคู่เมนูอัจฉริยะ (Thai Fuzzy NLP Parser v3 - Custom Sweetness)
+// 🧠 6. ระบบวิเคราะห์บริบทประโยคและจับคู่เมนูอัจฉริยะ (Thai Fuzzy NLP Parser v4 - 2-Tier Short Toppings)
 // ==========================================
 
 // ปรับรูปคำภาษาไทยสำหรับใช้เปรียบเทียบ (ตัดวรรณยุกต์/ไม้ไต่คู้/การันต์ + รวมคำทับศัพท์ที่สะกดได้หลายแบบ)
@@ -420,20 +420,29 @@ const RAW_DRINK_TOKENS = [
   'ทับทิม', 'โคโตกะ', 'ไชน์มัสแคท', 'เมล่อน', 'วัลโรนา', 'ช็อกโกแลต', 'กาแฟ', 'ชาเขียว', 'ชาขาว', 'ชาเย็น', 'ชา', 'ส้ม', 'มะพร้าว', 'โซดา'
 ];
 
+// ระดับที่ 1: คีย์เวิร์ดท็อปปิ้งทั้งหมด (รวมคำสั้น เช่น ชีส, วิป, คาราเมล, ฟองนม, ทอง ที่จับเมื่อมีคำเชื่อมนำหน้า)
 const RAW_TOPPING_TOKENS = [
-  'ซินนามอน', 'เลมอนสไลซ์', 'โอรีโอ้', 'คอร์นเฟลกส์', 'คาราเมลซอส', 'ไข่มุกป๊อปยูซุ', 'ไข่มุกป๊อปสตรอว์เบอร์รี',
-  'ไข่มุกบราวน์ชูการ์', 'ไข่มุกป๊อป', 'ไข่มุก', 'บราวน์ชูการ์', 'บุก', 'คอฟฟี่เจลลี่', 'เอิร์ลเกรย์เจลลี่',
-  'เจลลี่', 'อโลเวร่า', 'คริสตัลเพิร์ล', 'เพิร์ล', 'กานาช', 'บิสคอฟ', 'โกโก้นิบส์', 'มาร์ชเมลโลว์',
-  'เพียวเร่', 'อัลมอนด์พราลีน', 'ช็อกโกแลตวิปครีม', 'วิปปิ้งครีม', 'มัคคิอาโต้โฟม', 'มิลค์โฟม',
-  'ครีมชีสโฟม', 'มัทฉะครีม', 'แมคคาเดเมียอบ', 'ไอศกรีมมัทฉะ', 'ไอศกรีมวานิลลา', 'ไอศกรีม', 'รังผึ้ง',
-  'ทองคำเปลว', 'ครัมเบิลเนย', 'ซอสพิตาชิโอ', 'มินิมาการอง', 'สตรอว์เบอร์รีขาว', 'ครีมไวท์ทรัฟเฟิล'
+  'ซินนามอน', 'เลมอนสไลซ์', 'โอรีโอ้', 'คอร์นเฟลกส์', 'คาราเมลซอส', 'คาราเมล',
+  'ไข่มุกป๊อปยูซุ', 'ไข่มุกป๊อปสตรอว์เบอร์รี', 'ไข่มุกบราวน์ชูการ์', 'ไข่มุกป๊อป', 'ไข่มุก',
+  'บราวน์ชูการ์', 'บุก', 'คอฟฟี่เจลลี่', 'เอิร์ลเกรย์เจลลี่', 'เจลลี่', 'อโลเวร่า',
+  'คริสตัลเพิร์ล', 'เพิร์ล', 'กานาช', 'บิสคอฟ', 'โกโก้นิบส์', 'มาร์ชเมลโลว์', 'เพียวเร่',
+  'อัลมอนด์พราลีน', 'อัลมอนด์', 'ช็อกโกแลตวิปครีม', 'วิปปิ้งครีม', 'วิป',
+  'มัคคิอาโต้โฟม', 'มิลค์โฟม', 'ฟองนม', 'โฟมนม', 'ครีมชีสโฟม', 'โฟมชีส', 'ชีสโฟม', 'ครีมชีส', 'ชีส', 'โฟม',
+  'มัทฉะครีมสด', 'มัทฉะครีม', 'ครีมสด', 'แมคคาเดเมียอบ', 'แมคคาเดเมีย',
+  'ไอศกรีมมัทฉะ', 'ไอศกรีมวานิลลา', 'ไอศกรีม', 'รังผึ้ง',
+  'ทองคำเปลว', 'แผ่นทอง', 'ทองคำ', 'ทอง',
+  'ครัมเบิลเนย', 'ครัมเบิล', 'ซอสพิตาชิโอ', 'พิตาชิโอ',
+  'มินิมาการอง', 'สตรอว์เบอร์รีขาว', 'ครีมไวท์ทรัฟเฟิล', 'ทรัฟเฟิล',
+  'ช็อกโกแลต', 'โกโก้', 'เลมอน'
 ];
 
+// ระดับที่ 2: ท็อปปิ้งที่จับได้ทันทีแม้ไม่มีคำเชื่อม "ใส่/เพิ่ม" นำหน้า (ไม่ซ้ำกับชื่อน้ำและขนม)
 const UNAMBIGUOUS_TOPPING_TOKENS = [
   'ไข่มุกป๊อปยูซุ', 'ไข่มุกป๊อปสตรอว์เบอร์รี', 'ไข่มุกบราวน์ชูการ์', 'ไข่มุกป๊อป', 'ไข่มุก',
   'บุก', 'คอฟฟี่เจลลี่', 'เอิร์ลเกรย์เจลลี่', 'เจลลี่', 'วิปปิ้งครีม', 'บิสคอฟ', 'โอรีโอ้',
-  'มาร์ชเมลโลว์', 'รังผึ้ง', 'ทองคำเปลว', 'ครีมชีสโฟม', 'มิลค์โฟม', 'โกโก้นิบส์',
-  'คอร์นเฟลกส์', 'ซินนามอน', 'อโลเวร่า', 'เพิร์ล', 'กานาช', 'ไอศกรีม'
+  'มาร์ชเมลโลว์', 'รังผึ้ง', 'ทองคำเปลว', 'แผ่นทอง', 'ครีมชีสโฟม', 'โฟมชีส', 'ชีสโฟม',
+  'ฟองนม', 'โฟมนม', 'มิลค์โฟม', 'โกโก้นิบส์', 'คอร์นเฟลกส์', 'ซินนามอน',
+  'อโลเวร่า', 'เพิร์ล', 'กานาช', 'ไอศกรีม'
 ].map(normalizeThaiFuzzy).sort((a, b) => b.length - a.length);
 
 const RAW_DESSERT_TOKENS = [
@@ -461,16 +470,44 @@ const SYNONYM_GROUPS = [
   ['ชาเขียว', 'มัทฉะ'],
   ['ชอกโกแลต', 'โกโก'],
   ['กาแฟดำ', 'อเมริกาโน'],
-  ['เบอรี', 'สตอเบอรี', 'ราสเบอรี']
+  ['เบอรี', 'สตอเบอรี', 'ราสเบอรี'],
+  ['ฟองนม', 'โฟมนม', 'มิลคโฟม'],
+  ['โฟมชีส', 'ชีสโฟม', 'ครีมชีสโฟม'],
+  ['วิป', 'วิปครีม'],
+  ['ทอง', 'แผนทอง', 'ทองคำ', 'ทองคำเปลว']
 ].map(group => group.map(normalizeThaiFuzzy));
 
+// เมนูมาตรฐาน (Default Classic) สำหรับท็อปปิ้งคำสั้นหรือคำกว้าง
 const DEFAULT_TOPPING_BY_TOKEN = {
   [normalizeThaiFuzzy('ไข่มุก')]: 'เพิ่มไข่มุกบราวน์ชูการ์อุ่น',
   [normalizeThaiFuzzy('วิปปิ้งครีม')]: 'ท็อปด้วยวิปปิ้งครีมวานิลลาบีน',
+  [normalizeThaiFuzzy('วิป')]: 'ท็อปด้วยวิปปิ้งครีมวานิลลาบีน',
   [normalizeThaiFuzzy('เจลลี่')]: 'ใส่คอฟฟี่เจลลี่สกัดเย็น',
   [normalizeThaiFuzzy('ไอศกรีม')]: 'ท็อปด้วยไอศกรีมวานิลลามาดากัสการ์',
+  [normalizeThaiFuzzy('ชีส')]: 'ราดซีซอลท์ครีมชีสโฟม',
+  [normalizeThaiFuzzy('ครีมชีส')]: 'ราดซีซอลท์ครีมชีสโฟม',
+  [normalizeThaiFuzzy('โฟมชีส')]: 'ราดซีซอลท์ครีมชีสโฟม',
+  [normalizeThaiFuzzy('ชีสโฟม')]: 'ราดซีซอลท์ครีมชีสโฟม',
   [normalizeThaiFuzzy('ครีมชีสโฟม')]: 'ราดซีซอลท์ครีมชีสโฟม',
-  [normalizeThaiFuzzy('คาราเมลซอส')]: 'ราดโฮมเมดคาราเมลซอส'
+  [normalizeThaiFuzzy('คาราเมล')]: 'ราดโฮมเมดคาราเมลซอส',
+  [normalizeThaiFuzzy('คาราเมลซอส')]: 'ราดโฮมเมดคาราเมลซอส',
+  [normalizeThaiFuzzy('ฟองนม')]: 'ราดฮอกไกโดมิลค์โฟม',
+  [normalizeThaiFuzzy('โฟมนม')]: 'ราดฮอกไกโดมิลค์โฟม',
+  [normalizeThaiFuzzy('โฟม')]: 'ราดฮอกไกโดมิลค์โฟม',
+  [normalizeThaiFuzzy('มิลค์โฟม')]: 'ราดฮอกไกโดมิลค์โฟม',
+  [normalizeThaiFuzzy('ครีมสด')]: 'ท็อปด้วยมัทฉะครีมสด',
+  [normalizeThaiFuzzy('ครัมเบิล')]: 'โรยครัมเบิลเนยฝรั่งเศสเกรียงเดอเซล',
+  [normalizeThaiFuzzy('อัลมอนด์')]: 'โรยอัลมอนด์พราลีน',
+  [normalizeThaiFuzzy('แมคคาเดเมีย')]: 'ท็อปด้วยแมคคาเดเมียอบคาราเมล',
+  [normalizeThaiFuzzy('พิตาชิโอ')]: 'ราดซอสพิตาชิโอคั่วบดเข้มข้น',
+  [normalizeThaiFuzzy('ทอง')]: 'ตกแต่งด้วยแผ่นทองคำเปลวออร์แกนิก',
+  [normalizeThaiFuzzy('แผ่นทอง')]: 'ตกแต่งด้วยแผ่นทองคำเปลวออร์แกนิก',
+  [normalizeThaiFuzzy('ทองคำ')]: 'ตกแต่งด้วยแผ่นทองคำเปลวออร์แกนิก',
+  [normalizeThaiFuzzy('ทองคำเปลว')]: 'ตกแต่งด้วยแผ่นทองคำเปลวออร์แกนิก',
+  [normalizeThaiFuzzy('ทรัฟเฟิล')]: 'ท็อปด้วยครีมไวท์ทรัฟเฟิลอิตาเลียน',
+  [normalizeThaiFuzzy('ช็อกโกแลต')]: 'ราดดาร์กช็อกโกแลตกานาชดริซเซิล',
+  [normalizeThaiFuzzy('โกโก้')]: 'ราดดาร์กช็อกโกแลตกานาชดริซเซิล',
+  [normalizeThaiFuzzy('เลมอน')]: 'ประดับเลมอนสไลซ์ดีไฮเดรต'
 };
 
 const DEFAULT_DESSERT_BY_TOKEN = {
@@ -521,7 +558,7 @@ const MOOD_POOLS = {
 };
 
 // คำคั่นที่ใช้หยุดการสกัดความหวานแบบกำหนดเอง (ป้องกันไม่ให้กินคำท็อปปิ้ง ขนม หรือคำลงท้ายติดมาด้วย)
-const SWEETNESS_STOP_REGEX = /(?:ไม่ใส่|ไม่เพิ่ม|ใส่|เพิ่ม|ท็อปด้วย|ท็อป|โรย|ราด|ครับ|ค่ะ|คะ|นะครับ|นะคะ|นะ|ด้วย|้ดวย|หน่อย|กับ|และ|แล้วก็|ทานคู่|กินคู่|เอา|ขอ|สั่ง|ขนม|ไข่มุก|ชีสเค้ก|คุกกี้|คุ้กกี้|บราวนี่|ครัวซอง|วิปครีม|วิปปิ้ง|เจลลี่|เยลลี่|เค้ก|ทาร์ต|มาการอง|บุก|ไอศกรีม|ไอติม|พานาคอตต้า|สโคน|เอแคลร์|ครัฟเฟิล|ฮันนี่โทสต์|แซนด์วิช)/;
+const SWEETNESS_STOP_REGEX = /(?:ไม่ใส่|ไม่เพิ่ม|ใส่|เพิ่ม|ท็อปด้วย|ท็อป|โรย|ราด|ประดับ|ครับ|ค่ะ|คะ|นะครับ|นะคะ|นะ|ด้วย|้ดวย|หน่อย|กับ|และ|แล้วก็|ทานคู่|กินคู่|เอา|ขอ|สั่ง|ขนม|ไข่มุก|ชีสเค้ก|ชีส|โฟม|ฟองนม|คุกกี้|คุ้กกี้|บราวนี่|ครัวซอง|วิปครีม|วิปปิ้ง|วิป|เจลลี่|เยลลี่|เค้ก|ทาร์ต|มาการอง|บุก|ไอศกรีม|ไอติม|พานาคอตต้า|สโคน|เอแคลร์|ครัฟเฟิล|ฮันนี่โทสต์|แซนด์วิช|แผ่นทอง|ครัมเบิล|คาราเมล)/;
 
 // 🍯 ดึงระดับความหวานตามคำที่สมาชิกพิมพ์จริง (เช่น หวานมากกกก, หวานน้อย 25%, ไม่หวานเลย)
 function extractCustomSweetness(originalText) {
@@ -529,7 +566,6 @@ function extractCustomSweetness(originalText) {
   let customSweetness = '';
   let textWithoutSweetness = originalText;
 
-  // จับชุดคำความหวานที่อาจต่อด้วยตัวเลขเปอร์เซ็นต์หรือคำขยายความหวาน
   const pattern = /(ไม่เอาหวาน|ไม่หวาน|ไม่ใส่น้ำตาล|ไม่เอาน้ำตาล|หวาน)([^\s]*)(?:\s+(?:(\d+\s*%?)|((?:น้อย|มาก|ปกติ|กำลังดี|ปานกลาง|กลาง|ฉ่ำ|เจี๊ยบ|ตัดขา|จัด|สุดๆ|พิเศษ|นิดเดียว|นิดนึง|นิดหน่อย|เบาๆ|เลย)[^\s]*)))?/g;
 
   const matches = [...originalText.matchAll(pattern)];
@@ -539,7 +575,6 @@ function extractCustomSweetness(originalText) {
     const spacedNum = m[3] || '';
     const spacedMod = m[4] || '';
 
-    // ตัดส่วนที่ไม่ใช่ความหวานออกหากพิมพ์ติดกันโดยไม่เว้นวรรค (เช่น ชาไทยหวานมากกกกใส่ไข่มุก)
     let combinedRest = tail;
     if (spacedNum) combinedRest += ` ${spacedNum}`;
     else if (spacedMod) combinedRest += ` ${spacedMod}`;
@@ -552,13 +587,11 @@ function extractCustomSweetness(originalText) {
     const cleanRest = combinedRest.replace(/[.,!?~()[\]{}"'`]+$/g, '').trimEnd();
     const candidatePhrase = `${base}${cleanRest}`.trim();
 
-    // เช็กกรณีพิมพ์บอกอารมณ์ "ขออะไรหวานๆ" (ไม่ใช่การกำหนดระดับความหวาน)
     const beforeStr = originalText.slice(Math.max(0, m.index - 12), m.index);
     const isAfterMoodCue = /(?:อะไร|แนว|แบบ)\s*$/.test(beforeStr);
 
     if (isAfterMoodCue && base === 'หวาน') {
       sweetWordUsedAsMood = true;
-      // หากพิมพ์แค่ "ขออะไรหวาน" หรือ "ขออะไรหวานๆ" ให้ถือเป็นหมวดอารมณ์ และใช้ความหวานเริ่มต้น "หวานปกติ"
       if (!cleanRest || /^ๆ+$/.test(cleanRest)) {
         continue;
       }
@@ -566,7 +599,6 @@ function extractCustomSweetness(originalText) {
 
     if (!customSweetness && candidatePhrase) {
       customSweetness = candidatePhrase;
-      // ลบเฉพาะช่วงคำความหวานที่สกัดได้ออกจากข้อความค้นหาเมนู
       const cutStart = m.index;
       const cutEnd = m.index + candidatePhrase.length;
       textWithoutSweetness = (
@@ -669,6 +701,13 @@ function getSynonymsForToken(tok) {
   return [];
 }
 
+function stripSafeFillers(fuzzyText) {
+  return fuzzyText
+    .replace(/อยากได|อยากกิน|อยากดืม|ขอสัง|ขอรับ|เอาเมนู|รับเมนู|สังเมนู|ทานคูกับ|กินคูกับ|แลวก็|แลวก|ดวยนะ|ดวยคะ|ดวยครับ|หนอยนะ|หนอยคะ|หนอยครับ|นะครับ|นะคะ|ครับ|หนอย|ดวย|ขอ|เอา|รับ|สัง|กับ|และ|คะ|นะ|เมนู|แกวนึง|แกว|อะไรก็ได|อะไร|สุม|แนะนำ|เลือกให|จัดมาเลย|จัดมา|ตามใจ|แลวแต/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
 function findBestCatalogMatch(fuzzyQuery, candidateNames, sortedTokens, options = {}) {
   const {
     stripToppingActionPrefix = false,
@@ -681,6 +720,16 @@ function findBestCatalogMatch(fuzzyQuery, candidateNames, sortedTokens, options 
   if (!cleanQuery || !candidateNames.length) return null;
 
   const queryTokens = extractDistinctTokens(cleanQuery, sortedTokens);
+
+  // หากผู้ใช้พิมพ์คำสั้นคำเดียวตรงกับเมนูมาตรฐานใน Default Classic ให้เลือกเมนูนั้นทันทีอย่างแม่นยำ
+  if (defaultByToken && queryTokens.length === 1) {
+    const bareQuery = stripSafeFillers(cleanQuery);
+    const defName = defaultByToken[queryTokens[0]];
+    if (defName && candidateNames.includes(defName) && (bareQuery === queryTokens[0] || cleanQuery === queryTokens[0])) {
+      return { name: defName, score: 120, matchedTokens: [queryTokens[0]] };
+    }
+  }
+
   const scoredList = [];
 
   for (const name of candidateNames) {
@@ -757,13 +806,6 @@ function maskTokensFromText(text, tokens) {
   return out.replace(/\s+/g, ' ').trim();
 }
 
-function stripSafeFillers(fuzzyText) {
-  return fuzzyText
-    .replace(/อยากได|อยากกิน|อยากดืม|ขอสัง|ขอรับ|เอาเมนู|รับเมนู|สังเมนู|ทานคูกับ|กินคูกับ|แลวก็|แลวก|ดวยนะ|ดวยคะ|ดวยครับ|หนอยนะ|หนอยคะ|หนอยครับ|นะครับ|นะคะ|ครับ|หนอย|ดวย|ขอ|เอา|รับ|สัง|กับ|และ|คะ|นะ|เมนู|แกวนึง|แกว|อะไรก็ได|อะไร|สุม|แนะนำ|เลือกให|จัดมาเลย|จัดมา|ตามใจ|แลวแต/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim();
-}
-
 let isSyncedWithDB = false;
 
 module.exports = {
@@ -783,7 +825,7 @@ module.exports = {
   getItemTier,
   getStructuredMenuCatalog,
 
-  // 🧠 ฟังก์ชันหลักสำหรับตีความข้อความสั่งเมนูในห้องแชทคาเฟ่ (v3 - ความหวานกำหนดเอง)
+  // 🧠 ฟังก์ชันหลักสำหรับตีความข้อความสั่งเมนูในห้องแชทคาเฟ่ (v4 - ความหวานกำหนดเอง + ท็อปปิ้ง 2 ระดับ)
   parseNaturalOrder(rawMessage, userDataDB = null) {
     if (!rawMessage || typeof rawMessage !== 'string') {
       return { intent: 'UNRECOGNIZED' };
@@ -854,12 +896,16 @@ module.exports = {
       }
     }
 
-    // 6. (Step B) ตรวจจับท็อปปิ้งเสริม
+    // 6. (Step B) ตรวจจับท็อปปิ้งเสริม 2 ระดับ
+    // ระดับที่ 1: จับคำสั้นทั้งหมดเมื่อมีคำเชื่อม ("ใส่", "เพิ่ม", "ท็อป", "โรย", "ราด", "ประดับ") นำหน้า
     if (!matchedTopping) {
-      const toppingCueRegex = /(?:ใส|เพิม|ทอปดวย|ทอป|โรย|ราด)\s*([^\s]+)/g;
+      const toppingCueRegex = /(?:ใส|เพิม|ทอปดวย|ทอป|โรย|ราด|ประดับ)\s*([^\s]+)/g;
       let cueMatch;
       while ((cueMatch = toppingCueRegex.exec(workingText)) !== null) {
         const candidateChunk = cueMatch[1];
+        // ป้องกันกรณีพิมพ์คำขนมติดคำเชื่อม เช่น "ใส่ชีสเค้ก" ไม่ให้ไปจับเป็นท็อปปิ้งชีส
+        if (candidateChunk.startsWith('ชีสเคก')) continue;
+
         const topTokensInChunk = extractDistinctTokens(candidateChunk, FUZZY_TOPPING_TOKENS);
         if (topTokensInChunk.length > 0) {
           const topRes = findBestCatalogMatch(candidateChunk, allToppingNames, FUZZY_TOPPING_TOKENS, {
@@ -877,6 +923,7 @@ module.exports = {
       }
     }
 
+    // ระดับที่ 2: ท็อปปิ้งที่ชัดเจนในตัวเอง (จับได้ทันทีแม้ไม่มีคำเชื่อม "ใส่/เพิ่ม")
     if (!matchedTopping) {
       const directTopTokens = extractDistinctTokens(workingText, UNAMBIGUOUS_TOPPING_TOKENS);
       if (directTopTokens.length > 0) {
