@@ -1,5 +1,7 @@
 module.exports = {
   sessionMsgCache: new Map(),
   sleepingUsers: new Set(),
-  cafeAudioPlayer: null
+  cafeAudioPlayer: null,
+  pendingOrders: new Map(),
+  kickedOrderReasons: new Map()
 };

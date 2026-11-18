@@ -363,6 +363,198 @@ const getStructuredMenuCatalog = () => {
   return categories;
 };
 
+// ==========================================
+// 🧠 6. ระบบวิเคราะห์บริบทประโยคและจับคู่เมนูอัจฉริยะ (Natural Language Order Parser)
+// ==========================================
+const SWEETNESS_CHOICES = [
+  'หวานน้อย 25%',
+  'หวานกำลังดี 50%',
+  'หวานปกติ 100%',
+  'ไม่ใส่น้ำตาล 0%',
+  'หวานละมุนสูตรบาริสต้า'
+];
+
+// คำพ้องและคำสะกดเพี้ยนยอดฮิต -> ชื่อเมนูหรือคีย์เวิร์ดหลัก
+const PHONETIC_ALIASES = [
+  { pattern: /นิวหยอก|นิวยอก|new\s*york/gi, replace: 'นิวยอร์กชีสเค้ก' },
+  { pattern: /คุ้กกี้|คุกกี้|cookie/gi, replace: 'ซอฟต์คุกกี้แมคคาเดเมีย' },
+  { pattern: /ครัวซองต์|ครัวซอง/gi, replace: 'ครัวซองต์' },
+  { pattern: /ฮันนี่โทส|โทสต์|โทส/gi, replace: 'บริยอชฮันนี่โทสต์' },
+  { pattern: /ชานมไข่มุก/gi, replace: 'ชานมไต้หวันรอยัล ใส่ไข่มุกบราวน์ชูการ์อุ่น' },
+  { pattern: /ชาไทย/gi, replace: 'ชาไทยสเลอปี้ซิกเนเจอร์' },
+  { pattern: /ชาเขียว/gi, replace: 'มัทฉะ' },
+  { pattern: /กาแฟดำ|อเมริกาโน/gi, replace: 'อเมริกาโน่' },
+  { pattern: /เอสเย็น|เอสเพรสโซ/gi, replace: 'เอสเพรสโซ่' },
+  { pattern: /คาปู/gi, replace: 'คาปูชิโน่' },
+  { pattern: /โกโก้/gi, replace: 'ซิกเนเจอร์ดาร์กโกโก้' },
+  { pattern: /น้ำผึ้งมะนาว|มะนาวโซดา/gi, replace: 'น้ำผึ้งมะนาวโซดาโรสแมรี่สกัดเย็น' },
+  { pattern: /วิปครีม/gi, replace: 'วิปปิ้งครีม' },
+  { pattern: /ไอติม/gi, replace: 'ไอศกรีม' }
+];
+
+// คีย์เวิร์ดสำคัญของแต่ละหมวดเพื่อใช้ถ่วงน้ำหนักความแม่นยำ
+const CORE_DRINK_TOKENS = [
+  'เอสเพรสโซ่', 'ริสเทรตโต้', 'อเมริกาโน่', 'พิคโคโล่', 'คาปูชิโน่', 'แฟลตไวท์', 'ลาเต้', 'มอคค่า',
+  'วานิลลา', 'คาราเมล', 'มัคคิอาโต้', 'ออเรนจ์', 'เดอร์ตี้', 'โรสแมรี่', 'เฮเซลนัท', 'พีช', 'โคโคนัท',
+  'ลิ้นจี่', 'ยูซุ', 'แมคคาเดเมีย', 'ทีรามิสุ', 'มัทฉะ', 'อัฟโฟกาโต้', 'โคลอมเบีย', 'โคลด์บรูว์', 'ดริป',
+  'เอธิโอเปีย', 'เคนยา', 'กัวเตมาลา', 'ไซฟอน', 'ปานามา', 'เกอิชา', 'เชคเกอร์ราโต้', 'เมเปิ้ล', 'พิสตาชิโอ',
+  'แซฟฟรอน', 'หญ้าฝรั่น', 'รวันดา', 'เยเมน', 'ฮาวายโคน่า', 'วิสกี้', 'ทรัฟเฟิล', 'จาเมกา', 'บลูเมาท์เทน',
+  'อิงลิชเบรกฟาสต์', 'ชานม', 'ไต้หวัน', 'เก็นไมฉะ', 'เอิร์ลเกรย์', 'ลาเวนเดอร์', 'ชาไทย', 'สเลอปี้',
+  'โฮจิฉะ', 'คาโมมายล์', 'ชาพีช', 'อู่หลง', 'กวนอิม', 'ไวท์ช็อกโกแลต', 'ชาเขียวมะลิ', 'มังกรขาว',
+  'ลูกแพร', 'สตรอว์เบอร์รี', 'ครีมชีส', 'ชากุหลาบ', 'หอมหมื่นลี้', 'คุโรมิตสึ', 'คินาโกะ', 'หลงจิ่ง',
+  'ดาร์จีลิ่ง', 'เข็มเงิน', 'ผู่เอ๋อร์', 'ต้าหงเผา', 'เกียวคุโระ', 'พลัม', 'สไปรท์', 'บลูฮาวาย',
+  'แอปเปิ้ล', 'กีวี', 'มิกซ์เบอร์รี่', 'แพชชั่นฟรุต', 'เสาวรส', 'เกรปฟรุต', 'โกโก้', 'เลมอน', 'แมงโก้',
+  'มะม่วง', 'สมูทตี้', 'มิ้นต์', 'เฟรปเป้', 'ฟองดูว์', 'น้ำผึ้งมะนาว', 'ราสป์เบอร์รี', 'แบล็คฟอเรสต์',
+  'เชอร์รี', 'เฟอร์เรโร่', 'ซากุระ', 'บลูคูราโซ่', 'อัญชัน', 'อะโวคาโด', 'มิลค์เชค', 'ทับทิม', 'โคโตกะ',
+  'ไชน์มัสแคท', 'เมล่อน', 'วัลโรนา', 'ช็อกโกแลต', 'กาแฟ', 'ชา'
+];
+
+const CORE_TOPPING_TOKENS = [
+  'ซินนามอน', 'เลมอนสไลซ์', 'โอรีโอ้', 'คอร์นเฟลกส์', 'คาราเมลซอส', 'ไข่มุก', 'บราวน์ชูการ์', 'บุก',
+  'คอฟฟี่เจลลี่', 'เอิร์ลเกรย์เจลลี่', 'เจลลี่', 'เยลลี่', 'อโลเวร่า', 'เพิร์ล', 'ป๊อป', 'กานาช',
+  'บิสคอฟ', 'โกโก้นิบส์', 'มาร์ชเมลโลว์', 'เพียวเร่', 'อัลมอนด์พราลีน', 'วิปปิ้งครีม', 'วิปครีม',
+  'มัคคิอาโต้โฟม', 'มิลค์โฟม', 'ครีมชีสโฟม', 'มัทฉะครีม', 'แมคคาเดเมียอบ', 'ไอศกรีม', 'รังผึ้ง',
+  'ทองคำเปลว', 'ครัมเบิลเนย', 'ซอสพิตาชิโอ', 'มินิมาการอง', 'สตรอว์เบอร์รีขาว', 'ครีมไวท์ทรัฟเฟิล'
+];
+
+const CORE_DESSERT_TOKENS = [
+  'ซอฟต์คุกกี้', 'คุกกี้', 'มาการอง', 'แคนเนเล่', 'ครัวซองต์', 'ครัฟเฟิล', 'บราวนี่', 'เอแคลร์',
+  'สโคน', 'ควินญ่าอามัน', 'พานาคอตต้า', 'ทาร์ตเลมอน', 'ทาร์ตผลไม้', 'ทาร์ต', 'แครอทเค้ก',
+  'แซนด์วิช', 'แฮมชีส', 'พานินี่', 'บาสก์ชีสเค้ก', 'นิวยอร์กชีสเค้ก', 'ชีสเค้ก', 'คร็อกเมอซิเยอร์',
+  'ทิรามิสุมาสคาโปน', 'ชอร์ตเค้ก', 'เลมอนยูซุทาร์ต', 'ปารีสเบรสต์', 'บริยอช', 'ฮันนี่โทสต์',
+  'มงบล็อง', 'เกาลัด', 'มิลเฟย', 'เค้ก'
+];
+
+const MOOD_POOLS = {
+  AWAKE: {
+    keywords: ['ตื่น', 'ง่วง', 'ดีด', 'เข้ม', 'แก้ง่วง', 'ตาค้าง', 'โต้รุ่ง', 'ขม', 'ทำงาน', 'คาเฟอีน'],
+    drinks: [
+      'เอสเพรสโซ่ซิกเนเจอร์เบลนด์', 'ริสเทรตโต้เพียวช็อต', 'อเมริกาโน่เฮาส์เบลนด์',
+      'เดอร์ตี้คอฟฟี่สกัดเย็น', 'โคลอมเบียซูพรีโม่โคลด์บรูว์', 'ยูซุอเมริกาโน่สปาร์คกลิ้ง',
+      'ลิ้นจี่เอสเพรสโซ่โทนิค', 'ซอลท์เท็ดคาราเมลเอสเพรสโซ่เชคเกอร์ราโต้', 'อูจิมัทฉะพรีเมียมลาเต้'
+    ]
+  },
+  SOUR_FRESH: {
+    keywords: ['เปรี้ยว', 'สดชื่น', 'ซ่า', 'จี๊ด', 'แก้เลี่ยน', 'คลายร้อน', 'ผลไม้', 'ชุ่มคอ'],
+    drinks: [
+      'ยูซุฮันนี่เลมอนสปาร์คกลิ้ง', 'น้ำผึ้งมะนาวโซดาโรสแมรี่สกัดเย็น', 'แพชชั่นฟรุตซันเซ็ตทวิสต์',
+      'มิกซ์เบอร์รี่โรสโซดา', 'พลัมสไปรท์สแปลช', 'ราสป์เบอร์รีโรสเลมอนทวิสต์',
+      'แอปเปิ้ลกีวีพาราไดซ์', 'ไวท์พีชซากุระคริสตัลโซดา', 'ยูซุโกลด์บลอสซั่มเอลเดอร์ฟลาวเวอร์ฟิซ'
+    ]
+  },
+  SWEET_COZY: {
+    keywords: ['หวาน', 'ละมุน', 'นุ่ม', 'นม', 'ฮีลใจ', 'เหนื่อย', 'อ้อน', 'ช็อกโกแลต', 'ครีมมี่'],
+    drinks: [
+      'คาราเมลมัคคิอาโต้ครัมเบิล', 'ซิกเนเจอร์ดาร์กโกโก้', 'ชานมไต้หวันรอยัล',
+      'ชาไทยสเลอปี้ซิกเนเจอร์', 'วานิลลาบีนลาเต้', 'สตรอว์เบอร์รีชีสเค้กเฟรปเป้',
+      'ไวท์ช็อกโกแลตมัทฉะ', 'ดาร์กช็อกโกแลตเฮเซลนัทเฟอร์เรโร่เฟรปเป้', 'เบลเยียมช็อกโกแลตฟองดูว์'
+    ],
+    defaultSweetness: 'หวานละมุนสูตรบาริสต้า'
+  },
+  LIGHT_RELAX: {
+    keywords: ['เบาๆ', 'ใสๆ', 'หอม', 'ผ่อนคลาย', 'สบายท้อง', 'อุ่นๆ', 'ชาใส', 'หลับสบาย'],
+    drinks: [
+      'ชาคาโมมายล์น้ำผึ้งป่า', 'เอิร์ลเกรย์ลาเวนเดอร์', 'ชาพีชขาวสกัดเย็น',
+      'ชากุหลาบดามัสก์ลิ้นจี่จักรพรรดิ', 'ชาอู่หลงหอมหมื่นลี้ทองคำสกัดเย็น', 'ชาขาวลูกแพรหิมะน้ำผึ้งป่า'
+    ]
+  },
+  LUXURY: {
+    keywords: ['แพง', 'หรู', 'จัดเต็ม', 'สุลต่าน', 'พรีเมียม', 'พิเศษสุด', 'แรร์'],
+    drinks: [
+      'จาเมกาบลูเมาท์เทนดริปทองคำ', 'อูจิเกียวคุโระมัทฉะเกรดจักรพรรดิ',
+      'ปานามาเกอิชาสเปเชียลตี้', 'ปานามาเกอิชาออโรร่าสกัดเย็น', 'วัลโรนาช็อกโกแลตโกลด์ทรัฟเฟิลฟองดูว์'
+    ]
+  }
+};
+
+function getBigrams(str) {
+  const s = str.replace(/\s+/g, '');
+  const bigrams = [];
+  for (let i = 0; i < s.length - 1; i++) {
+    bigrams.push(s.slice(i, i + 2));
+  }
+  return bigrams;
+}
+
+function diceSimilarity(a, b) {
+  if (!a || !b) return 0;
+  if (a === b) return 1;
+  const bg1 = getBigrams(a);
+  const bg2 = getBigrams(b);
+  if (!bg1.length || !bg2.length) return 0;
+  const set2 = new Map();
+  bg2.forEach(g => set2.set(g, (set2.get(g) || 0) + 1));
+  let matches = 0;
+  for (const g of bg1) {
+    const count = set2.get(g) || 0;
+    if (count > 0) {
+      matches++;
+      set2.set(g, count - 1);
+    }
+  }
+  return (2 * matches) / (bg1.length + bg2.length);
+}
+
+function findBestCatalogMatch(queryText, candidateNames, coreTokens = []) {
+  if (!queryText || !candidateNames.length) return null;
+  const cleanQuery = queryText.trim();
+  if (!cleanQuery) return null;
+
+  let bestName = null;
+  let bestScore = 0;
+
+  for (const name of candidateNames) {
+    if (name === 'เอิร์ลเกรย์ลาเวเดอร์') continue;
+    let score = 0;
+
+    // 1. กรณีพิมพ์ชื่อเมนูตรงเป๊ะ หรือมีชื่อเมนูเต็มๆ อยู่ในประโยค
+    if (cleanQuery.includes(name)) {
+      score += 100 + name.length;
+    } else if (name.includes(cleanQuery) && cleanQuery.length >= 3) {
+      score += 65 + (cleanQuery.length / name.length) * 30;
+    }
+
+    // 2. ตรวจจับคีย์เวิร์ดหลักที่ตรงกันทั้งในประโยคและในชื่อเมนู
+    let matchedTokenLen = 0;
+    for (const token of coreTokens) {
+      if (cleanQuery.includes(token) && name.includes(token)) {
+        score += 28 + token.length * 3;
+        matchedTokenLen += token.length;
+      }
+    }
+
+    // 3. คำนวณความคล้ายของตัวอักษร (Bigram Dice Similarity)
+    const sim = diceSimilarity(cleanQuery, name);
+    score += sim * 35;
+
+    // หากมีคีย์เวิร์ดตรงกัน ให้คะแนนพิเศษกับเมนูที่ชื่อกระชับใกล้เคียงคำที่พิมพ์มากที่สุด
+    if (matchedTokenLen > 0) {
+      score += (matchedTokenLen / name.length) * 18;
+    }
+
+    if (score > bestScore) {
+      bestScore = score;
+      bestName = name;
+    }
+  }
+
+  // ต้องมีคะแนนความมั่นใจขั้นต่ำจึงจะถือว่าเจอเมนู
+  return bestScore >= 24 ? { name: bestName, score: bestScore } : null;
+}
+
+function extractSweetnessFromText(text) {
+  if (/ไม่หวาน|ไม่ใส่น้ำตาล|ไม่เอาหวาน|หวาน\s*0|0\s*%/.test(text)) return 'ไม่ใส่น้ำตาล 0%';
+  if (/หวานน้อย|หวาน\s*25|25\s*%/.test(text)) return 'หวานน้อย 25%';
+  if (/หวานกำลังดี|หวานปานกลาง|หวาน\s*50|50\s*%/.test(text)) return 'หวานกำลังดี 50%';
+  if (/หวานมาก|หวานฉ่ำ|หวานเจี๊ยบ|หวานละมุน|หวาน\s*120|หวาน\s*150/.test(text)) return 'หวานละมุนสูตรบาริสต้า';
+  if (/หวานปกติ|หวาน\s*100|100\s*%/.test(text)) return 'หวานปกติ 100%';
+  return '';
+}
+
+function pickRandomFromList(arr) {
+  return arr[Math.floor(Math.random() * arr.length)];
+}
+
 let isSyncedWithDB = false;
 
 module.exports = {
@@ -380,6 +572,184 @@ module.exports = {
   isMysteryMenu,
   getItemTier,
   getStructuredMenuCatalog,
+
+  // 🧠 ฟังก์ชันหลักสำหรับตีความข้อความสั่งเมนูในห้องแชทคาเฟ่
+  parseNaturalOrder(rawMessage, userDataDB = null) {
+    if (!rawMessage || typeof rawMessage !== 'string') {
+      return { intent: 'UNRECOGNIZED' };
+    }
+
+    const originalText = rawMessage.trim();
+    if (!originalText || originalText.startsWith('!')) {
+      return { intent: 'IGNORE' };
+    }
+
+    let normalized = originalText.toLowerCase();
+
+    // 1. แยกคำสั่งความหวานออกมาก่อน (เพื่อไม่ให้คำว่า "ไม่เอาหวาน" ไปชนกับคำปฏิเสธ "ไม่เอา")
+    const explicitSweetness = extractSweetnessFromText(normalized);
+    const textWithoutSweetness = normalized
+      .replace(/ไม่เอาหวาน|ไม่ใส่น้ำตาล|ไม่หวาน|หวานน้อย|หวานกำลังดี|หวานปานกลาง|หวานปกติ|หวานมาก|หวานฉ่ำ/g, ' ')
+      .trim();
+
+    // 2. ตรวจจับเจตนา: ขอสุ่ม / ไม่รู้ / ปฏิเสธ
+    const hasRandomKeyword = /อะไรก็ได้|สุ่ม|แล้วแต่|เลือกให้|จัดมาเลย|ตามใจ|แนะนำหน่อย/.test(textWithoutSweetness);
+    const hasHesitateKeyword = /ไม่รู้|คิดไม่ออก|เลือกไม่ถูก|เอาไรดี|เอาอะไรดี|นึกไม่ออก/.test(textWithoutSweetness);
+    const hasRefuseKeyword = /^(ไม่รับ|ไม่สั่ง|ไม่เป็นไร|ไม่เอา|ไม่กิน|ไม่ดื่ม|ไม่หิว|ขี้เกียจสั่ง)(ครับ|ค่ะ|คะ|นะ|นะครับ|นะคะ|~|\s)*$/.test(textWithoutSweetness) ||
+      /(ไม่รับเมนู|ไม่สั่งเมนู|ไม่เอาอะไรเลย|ไม่สั่งค่ะ|ไม่สั่งครับ|ไม่รับค่ะ|ไม่รับครับ)/.test(textWithoutSweetness);
+
+    // กรณีบอกว่า "ไม่รู้ / ไม่รู้จะเอาอะไรดี"
+    if (hasHesitateKeyword && !hasRandomKeyword) {
+      return { intent: 'HESITATE_KICK' };
+    }
+
+    // กรณีปฏิเสธชัดเจน "ไม่รับ / ไม่สั่ง / ไม่เป็นไร / ไม่เอา"
+    if (hasRefuseKeyword && !hasRandomKeyword) {
+      return { intent: 'REFUSE_KICK' };
+    }
+
+    // 3. แปลงคำพ้องและคำสะกดเพี้ยน (เช่น "นิวหยอก" -> "นิวยอร์กชีสเค้ก")
+    let expandedText = textWithoutSweetness;
+    for (const alias of PHONETIC_ALIASES) {
+      expandedText = expandedText.replace(alias.pattern, alias.replace);
+    }
+
+    // ตัดคำฟุ่มเฟือยทั่วไปออกเพื่อให้จับชื่อเมนูแม่นขึ้น
+    const cleanedSearchText = expandedText
+      .replace(/อยากได้|อยากกิน|อยากดื่ม|ขอสั่ง|เอาเมนู|รับเมนู|สั่งเมนู|ด้วยนะ|ด้วยค่ะ|ด้วยครับ|หน่อยนะ|หน่อยค่ะ|หน่อยครับ|นะครับ|นะคะ|ครับ|ค่ะ|คะ/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+
+    const allDrinkNames = [...Object.keys(DRINK_PRICES), ...Array.from(MYSTERY_MENU_SET)];
+    const allToppingNames = Object.keys(TOPPING_PRICES);
+    const allDessertNames = Object.keys(DESSERT_PRICES);
+
+    // 4. ตรวจจับท็อปปิ้งเสริม (เช่น "ใส่ไข่มุก", "เพิ่มวิปครีม")
+    let matchedTopping = null;
+    const hasToppingCue = /ใส่|เพิ่ม|ท็อป|โรย|ราด/.test(expandedText) ||
+      CORE_TOPPING_TOKENS.some(t => expandedText.includes(t));
+    if (hasToppingCue) {
+      const topMatch = findBestCatalogMatch(cleanedSearchText, allToppingNames, CORE_TOPPING_TOKENS);
+      if (topMatch) matchedTopping = topMatch.name;
+    }
+
+    // 5. ตรวจจับขนมหวาน / ของทานเล่น (เช่น "ขอชีสเค้กนิวหยอกด้วยนะ", "ขนมคุกกี้")
+    let matchedDessert = null;
+    const hasDessertCue = /ขนม|ของว่าง|ของทานเล่น|ทานคู่|กินคู่/.test(expandedText) ||
+      CORE_DESSERT_TOKENS.some(t => expandedText.includes(t));
+    if (hasDessertCue) {
+      const desMatch = findBestCatalogMatch(cleanedSearchText, allDessertNames, CORE_DESSERT_TOKENS);
+      if (desMatch) {
+        matchedDessert = desMatch.name;
+      } else if (/ขนม/.test(expandedText)) {
+        matchedDessert = pickRandomFromList(allDessertNames);
+      }
+    }
+
+    // 6. ตรวจจับเครื่องดื่มหลัก (จากชื่อเมนูโดยตรง หรือจากรสชาติ/อารมณ์ หรือจากการขอสุ่ม)
+    let matchedDrink = null;
+    let moodSweetness = '';
+
+    // ตัดคำที่เป็นชื่อท็อปปิ้งและขนมที่จับได้แล้วออกชั่วคราว เพื่อไม่ให้คำว่า "ชีสเค้ก" หรือ "มัทฉะ" ในท็อปปิ้งไปกวนการค้นหาน้ำ
+    let drinkQueryText = cleanedSearchText;
+    if (matchedDessert) {
+      CORE_DESSERT_TOKENS.forEach(t => {
+        if (matchedDessert.includes(t)) drinkQueryText = drinkQueryText.replace(new RegExp(t, 'g'), ' ');
+      });
+    }
+
+    const directDrinkMatch = findBestCatalogMatch(drinkQueryText, allDrinkNames, CORE_DRINK_TOKENS);
+    if (directDrinkMatch) {
+      matchedDrink = directDrinkMatch.name;
+    }
+
+    // หากไม่เจอชื่อเมนูตรงๆ ให้เช็กหมวดรสชาติและอารมณ์ ("หวานๆ", "ตื่นๆ", "เปรี้ยวๆ", "เบาๆ", "หรูๆ")
+    if (!matchedDrink) {
+      for (const mood of Object.values(MOOD_POOLS)) {
+        if (mood.keywords.some(kw => expandedText.includes(kw))) {
+          // เช็กว่าเมนูโปรดของลูกค้าอยู่ในหมวดอารมณ์นี้หรือไม่
+          const userFavs = [
+            userDataDB?.favoriteMenu,
+            userDataDB?.likedMenu1,
+            userDataDB?.likedMenu2
+          ].filter(m => m && m !== 'ขอคิดดูก่อน' && mood.drinks.includes(m));
+
+          matchedDrink = userFavs.length > 0 ? pickRandomFromList(userFavs) : pickRandomFromList(mood.drinks);
+          if (mood.defaultSweetness) moodSweetness = mood.defaultSweetness;
+          break;
+        }
+      }
+    }
+
+    // กรณีลูกค้าขอให้สุ่ม ("อะไรก็ได้", "สุ่มเลย", "ไม่รู้จะเอาอะไรดีสุ่มให้หน่อย")
+    if (!matchedDrink && hasRandomKeyword) {
+      const userPool = [
+        userDataDB?.favoriteMenu,
+        userDataDB?.likedMenu1,
+        userDataDB?.likedMenu2
+      ].filter(m => m && m !== 'ขอคิดดูก่อน' && allDrinkNames.includes(m));
+
+      if (userPool.length > 0 && Math.random() <= 0.65) {
+        matchedDrink = pickRandomFromList(userPool);
+      } else {
+        matchedDrink = pickRandomFromList(allDrinkNames);
+      }
+
+      if (!matchedTopping && Math.random() <= 0.45) {
+        matchedTopping = pickRandomFromList(allToppingNames);
+      }
+      if (!matchedDessert && Math.random() <= 0.45) {
+        matchedDessert = pickRandomFromList(allDessertNames);
+      }
+    }
+
+    // กรณีลูกค้าสั่งเฉพาะขนมหรือท็อปปิ้งอย่างเดียว ให้จับคู่เครื่องดื่มประจำตัวหรือเครื่องดื่มซิกเนเจอร์ให้ครบชุด
+    if (!matchedDrink && (matchedDessert || matchedTopping)) {
+      const fav = userDataDB?.favoriteMenu && userDataDB.favoriteMenu !== 'ขอคิดดูก่อน'
+        ? userDataDB.favoriteMenu
+        : 'ชาไทยสเลอปี้ซิกเนเจอร์';
+      matchedDrink = fav;
+    }
+
+    if (!matchedDrink) {
+      return { intent: 'UNRECOGNIZED' };
+    }
+
+    // 7. คำนวณราคาและประกอบสร้างรายละเอียดออเดอร์
+    const drinkPrice = this.getItemPrice(matchedDrink, 'drink', 0) || 120;
+    const toppingName = matchedTopping || '';
+    const toppingPrice = toppingName ? (this.getItemPrice(toppingName, 'topping', 0) || 25) : 0;
+    const dessertName = matchedDessert || '';
+    const dessertPrice = dessertName ? (this.getItemPrice(dessertName, 'dessert', 0) || 95) : 0;
+    const sweetness = explicitSweetness || moodSweetness || pickRandomFromList(SWEETNESS_CHOICES);
+    const totalPrice = drinkPrice + toppingPrice + dessertPrice;
+
+    const dessertPhrase = dessertName ? ` ทานคู่กับ${dessertName}` : '';
+    const toppingPhrase = toppingName ? ` ${toppingName}` : '';
+    const orderText = `${matchedDrink} (${sweetness})${toppingPhrase}${dessertPhrase}`.replace(/\s+/g, ' ').trim();
+
+    // บรรทัดย่อยสำหรับแสดงใน Embed: - {เมนู} -{ท็อปปิ้ง} -{ขนม}
+    const embedSubParts = [`- ${matchedDrink} (${sweetness})`];
+    if (toppingName) embedSubParts.push(`-${toppingName}`);
+    if (dessertName) embedSubParts.push(`-${dessertName}`);
+    const embedOrderLine = embedSubParts.join(' ');
+
+    return {
+      intent: hasRandomKeyword ? 'RANDOM_ORDER' : 'ORDER',
+      orderDetails: {
+        orderText,
+        embedOrderLine,
+        drinkName: matchedDrink,
+        sweetness,
+        drinkPrice,
+        toppingName,
+        toppingPrice,
+        dessertName,
+        dessertPrice,
+        totalPrice
+      }
+    };
+  },
 
   async addMysteryMenuToCatalog(rawMenuName) {
     if (!rawMenuName || typeof rawMenuName !== 'string') {
