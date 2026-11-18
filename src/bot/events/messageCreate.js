@@ -14,10 +14,14 @@ module.exports = {
     const activeClient = client || message.client;
 
     // ==========================================
-    // 🍹 1. ตรวจจับการสั่งเมนูของสมาชิกที่เพิ่งเข้าห้องเสียงคาเฟ่ (ภายใน 1 นาที)
+    // 🍹 1. ตรวจจับการสั่งเมนูของสมาชิกที่เพิ่งเข้าห้องเสียงคาเฟ่ (เฉพาะในห้องแชทคาเฟ่ภายใน 1 นาที)
     // ==========================================
-    if (memory.pendingOrders && memory.pendingOrders.has(message.author.id) && !content.startsWith('!')) {
-      // รับข้อความเฉพาะที่พิมพ์ในห้องแชทของคาเฟ่ (หรือห้องแชทในเซิร์ฟเวอร์เดียวกัน)
+    if (
+      message.channel.id === CAFE_CHANNEL_ID &&
+      memory.pendingOrders &&
+      memory.pendingOrders.has(message.author.id) &&
+      !content.startsWith('!')
+    ) {
       const pending = memory.pendingOrders.get(message.author.id);
       const parsed = priceCatalog.parseNaturalOrder(content, pending.userDataDB);
 
@@ -36,16 +40,26 @@ module.exports = {
         return;
       }
 
-      // กรณีพิมพ์ข้อความอื่นที่บอทยังหาเมนูไม่เจอ และพิมพ์ในห้องคาเฟ่ ให้กระซิบแนะนำสั้นๆ แล้วลบออกใน 6 วินาที
-      if (message.channel.id === CAFE_CHANNEL_ID) {
-        const hintMsg = await message
-          .reply('☕ อเลสเทียยังหาชื่อเมนูในข้อความไม่เจอค่ะ ลองพิมพ์ชื่อเครื่องดื่ม (เช่น *ชาไทย, โกโก้ใส่ไข่มุก, ชีสเค้ก*) บอกแนวรสชาติ (*หวานๆ, ตื่นๆ, เปรี้ยวๆ*) หรือพิมพ์ว่า **"สุ่มเลย"** ได้นะคะ!')
+      if (parsed.intent === 'UNKNOWN_DRINK') {
+        const extras = [parsed.matchedTopping, parsed.matchedDessert].filter(Boolean).join(' + ');
+        const extraNote = extras ? ` (จดส่วนเสริม **${extras}** ไว้ให้แล้วค่ะ)` : '';
+        const unknownHint = await message
+          .reply(`☕ อเลสเทียไม่แน่ใจว่า **"${parsed.unknownText}"** คือเมนูเครื่องดื่มตัวไหนค่ะ${extraNote} ลองพิมพ์ชื่อน้ำอีกครั้ง หรือพิมพ์ว่า **"สุ่มเลย"** ให้บอทเลือกให้ได้นะคะ!`)
           .catch(() => null);
-        if (hintMsg) {
-          setTimeout(() => hintMsg.delete().catch(() => null), 6000);
+        if (unknownHint) {
+          setTimeout(() => unknownHint.delete().catch(() => null), 8000);
         }
         return;
       }
+
+      // กรณีพิมพ์ข้อความคุยทั่วไปที่ยังหาเมนูไม่เจอ ให้กระซิบแนะนำสั้นๆ แล้วลบออกใน 6 วินาที
+      const hintMsg = await message
+        .reply('☕ อเลสเทียยังหาชื่อเมนูในข้อความไม่เจอค่ะ ลองพิมพ์ชื่อเครื่องดื่ม (เช่น *ชาไทย, เลมอน, โกโก้ใส่ไข่มุก, ชีสเค้ก*) บอกแนวรสชาติ (*หวานๆ, ตื่นๆ, เปรี้ยวๆ*) หรือพิมพ์ว่า **"สุ่มเลย"** ได้นะคะ!')
+        .catch(() => null);
+      if (hintMsg) {
+        setTimeout(() => hintMsg.delete().catch(() => null), 6000);
+      }
+      return;
     }
 
     // ==========================================
