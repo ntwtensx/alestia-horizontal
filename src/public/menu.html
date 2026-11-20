@@ -1,0 +1,1027 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>สมุดเมนูพิเศษ — Horizontal Cafe</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&family=Prompt:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script type="importmap">
+    {
+      "imports": {
+        "react": "https://esm.sh/react@18.3.1",
+        "react-dom/client": "https://esm.sh/react-dom@18.3.1/client",
+        "@iconify/react": "https://esm.sh/@iconify/react@5.0.2?external=react,react-dom"
+      }
+    }
+  </script>
+  <script src="https://unpkg.com/@babel/standalone@7.25.6/babel.min.js"></script>
+  <style>
+    :root {
+      --font-display: 'Prompt', sans-serif;
+      --font-body: 'IBM Plex Sans Thai', sans-serif;
+    }
+    body {
+      font-family: var(--font-body);
+      margin: 0;
+      -webkit-tap-highlight-color: transparent;
+    }
+    h1, h2, h3, .font-display {
+      font-family: var(--font-display);
+    }
+    .no-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+    .no-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+    @keyframes shimmerHolo {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+    .holo-border {
+      background: linear-gradient(125deg, #ff7eb3, #ffd56b, #7afcff, #b892ff, #ff7eb3);
+      background-size: 280% 280%;
+      animation: shimmerHolo 6s ease infinite;
+    }
+    .ssr-border {
+      background: linear-gradient(135deg, #f5c35c, #fff1b8, #d48a27, #f9d976);
+      background-size: 220% 220%;
+      animation: shimmerHolo 5s ease infinite;
+    }
+    @keyframes popIn {
+      from { opacity: 0; transform: translateY(10px) scale(0.97); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+    .animate-pop {
+      animation: popIn 0.22s ease-out forwards;
+    }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script type="text/babel" data-type="module" data-presets="react">
+    import React, { useState, useEffect, useMemo, useCallback } from 'react';
+    import { createRoot } from 'react-dom/client';
+    import { Icon } from '@iconify/react';
+
+    // ==========================================
+    // 🔎 ตัวช่วยค้นหาภาษาไทยแบบยืดหยุ่นบนหน้าเว็บ (เพื่อให้หาชื่อเป๊ะๆ ได้ง่ายที่สุด)
+    // ==========================================
+    function normalizeSearchThai(str) {
+      if (!str) return '';
+      return String(str)
+        .toLowerCase()
+        .replace(/[\u0E47-\u0E4E]/g, '')
+        .replace(/[\s.,!?~()[\]{}"'`/\\-]/g, '')
+        .replace(/ชอคโกแลต|ชอกโกแลต|ชอคโคแลต|ชอกโคแลต|ชอคแลต/g, 'ชอกโกแลต')
+        .replace(/สตรอวเบอรี|สตรอเบอรี|สตอเบอรี|สตรอวเบอริ|สตรอเบอริ|สตอเบอริ/g, 'สตอเบอรี')
+        .replace(/ราสปเบอรี|ราสเบอรี|ราสปเบอริ|ราสเบอริ/g, 'ราสเบอรี')
+        .replace(/เบอรี|เบอริ/g, 'เบอรี')
+        .replace(/พิสตาชิโอ|พิตาชิโอ|พิซตาชิโอ/g, 'พิตาชิโอ')
+        .replace(/ทีรามิสุ|ทิรามิสุ|ทีรามิซู/g, 'ทีรามิสุ')
+        .replace(/วานิลลา|วานิลา|วนิลา/g, 'วานิลา')
+        .replace(/มัทฉะ|มัจฉะ|มัตฉะ|มัทชะ/g, 'มัทฉะ')
+        .replace(/เอสเพรสโซ|เอสเปรสโซ|เอสเพลสโซ|เอสเปลสโซ|เอสเย็น/g, 'เอสเพรสโซ')
+        .replace(/คาปูชิโน|คาปุชิโน|คาปู/g, 'คาปูชิโน')
+        .replace(/อเมริกาโน|อะเมอริกาโน|กาแฟดำ/g, 'อเมริกาโน')
+        .replace(/ลาเวนเดอร|ลาเวเดอร/g, 'ลาเวนเดอร')
+        .replace(/คุกกี|คุกกิ|cookie/g, 'คุกกี')
+        .replace(/เยลลี|เจลลี|เยลลิ|เจลลิ/g, 'เจลลี')
+        .replace(/ยูซุ|ยุสุ|ยูสุ/g, 'ยูซุ')
+        .replace(/นิวหยอก|นิวยอก|นิวยอรก|newyork/g, 'นิวยอรก')
+        .replace(/ครัวซองต|ครัวซอง/g, 'ครัวซอง')
+        .replace(/ฮันนีโทสต|ฮันนีโทส|โทสต/g, 'ฮันนีโทส')
+        .replace(/วิปปิงครีม|วิปครีม/g, 'วิปครีม')
+        .replace(/ไอศกรีม|ไอติม/g, 'ไอศกรีม')
+        .replace(/บราวนี|บราวนิ/g, 'บราวนี')
+        .replace(/เลมอน|มะนาว/g, 'เลมอน')
+        .replace(/กาแฟ/g, 'คอฟฟี')
+        .replace(/ชาเย็น/g, 'ชาไทย')
+        .replace(/ชาเขียว/g, 'มัทฉะ');
+    }
+
+    const SEARCH_SYNONYMS = {
+      'กาแฟสม': ['แบล็คออเรนจ์', 'อเมริกาโน่ส้ม', 'อเมริกาโน่น้ำส้ม', 'ยูซุอเมริกาโน่'],
+      'กาแฟมะพราว': ['โคโคนัทคลาวด์', 'อเมริกาโน่น้ำมะพร้าว', 'อเมริกาโน่มะพร้าว'],
+      'กาแฟพีช': ['พีชบลอสซั่ม', 'อเมริกาโน่พีช'],
+      'ชาเขียวกาแฟ': ['มัทฉะเอสเพรสโซ่'],
+      'ชาไทยกาแฟ': ['ชาไทยเอสเพรสโซ่', 'เดอร์ตี้ชาไทย'],
+      'มัทฉะโกโก': ['โกโก้มัทฉะ', 'ไวท์ช็อกโกแลตมัทฉะ'],
+      'ฟองนม': ['ฮอกไกโดมิลค์โฟม', 'คาราเมลมัคคิอาโต้โฟม'],
+      'ชีส': ['ครีมชีส', 'ชีสเค้ก', 'ชีสพาย']
+    };
+
+    function detectDrinkStyles(name) {
+      const styles = [];
+      if (/ปั่น|เฟรปเป้|สเลอปี้|สมูทตี้|เกล็ดหิมะ|มิลค์เชค|โฟลต/.test(name)) styles.push('blended');
+      if (/ร้อน|อุ่น/.test(name)) styles.push('hot');
+      if (/โซดา|สปาร์คกลิ้ง|โทนิค|ฟิซ|สไปรท์|เลมอนเนด/.test(name)) styles.push('soda');
+      if (/เดอร์ตี้|ฟิวชัน|ทูโทน|หยวนหยาง|เอสเพรสโซ่.*(มัทฉะ|ชาไทย|โฮจิฉะ|โกโก้)|(มัทฉะ|ชาไทย|โฮจิฉะ|โกโก้).*เอสเพรสโซ่|โกโก้มัทฉะ/.test(name)) {
+        styles.push('fusion');
+      }
+      if (/เย็น|โคลด์บรูว์|สกัดเย็น|ออนเดอะร็อก|แยกชั้น/.test(name) || (!styles.includes('hot') && !styles.includes('blended'))) {
+        styles.push('iced');
+      }
+      return styles;
+    }
+
+    async function copyToClipboard(text) {
+      try {
+        if (navigator.clipboard && window.isSecureContext) {
+          await navigator.clipboard.writeText(text);
+          return true;
+        }
+      } catch (_) {}
+      try {
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        ta.style.position = 'fixed';
+        ta.style.left = '-9999px';
+        document.body.appendChild(ta);
+        ta.focus();
+        ta.select();
+        const ok = document.execCommand('copy');
+        document.body.removeChild(ta);
+        return ok;
+      } catch (_) {
+        return false;
+      }
+    }
+
+    const CATEGORY_META = {
+      all: { label: 'ทั้งหมด', emojiIcon: 'fluent-emoji:sparkles' },
+      create_one: { label: 'Create one (?)', emojiIcon: 'fluent-emoji:rainbow' },
+      coffee: { label: 'กาแฟ & ฟิวชัน', emojiIcon: 'fluent-emoji:hot-beverage' },
+      tea: { label: 'ชา & มัทฉะ', emojiIcon: 'fluent-emoji:teacup-without-handle' },
+      other_drink: { label: 'น้ำหวาน & สมูทตี้', emojiIcon: 'fluent-emoji:tropical-drink' },
+      topping: { label: 'ท็อปปิ้ง', emojiIcon: 'fluent-emoji:bubble-tea' },
+      dessert: { label: 'ขนม & เบเกอรี', emojiIcon: 'fluent-emoji:shortcake' }
+    };
+
+    const STYLE_FILTERS = [
+      { id: 'all', label: 'ทุกสไตล์', icon: 'solar:cup-star-bold-duotone' },
+      { id: 'iced', label: 'เย็น', icon: 'solar:snowflake-bold-duotone' },
+      { id: 'blended', label: 'ปั่น / เฟรปเป้', icon: 'solar:tornado-bold-duotone' },
+      { id: 'hot', label: 'ร้อน / อุ่น', icon: 'solar:flame-bold-duotone' },
+      { id: 'soda', label: 'โซดา / ซ่า', icon: 'solar:bolt-circle-bold-duotone' },
+      { id: 'fusion', label: 'ฟิวชัน / เดอร์ตี้', icon: 'solar:magic-stick-3-bold-duotone' }
+    ];
+
+    const TIER_FILTERS = ['ALL', '?', 'SSR', 'SR', 'R', 'C'];
+
+    const SWEETNESS_PRESETS = [
+      'หวานปกติ',
+      'หวานน้อย 25%',
+      'หวานกำลังดี 50%',
+      'ไม่หวาน',
+      'หวานมากกกก'
+    ];
+
+    function getTierStyle(tierCode, dark) {
+      switch (tierCode) {
+        case '?':
+          return {
+            badge: 'bg-gradient-to-r from-pink-500 via-amber-400 to-cyan-400 text-white shadow-sm',
+            cardOuter: 'holo-border p-[1.5px]',
+            tagText: '? • Create one'
+          };
+        case 'SSR':
+          return {
+            badge: 'bg-gradient-to-r from-amber-500 to-yellow-400 text-amber-950 font-bold shadow-sm',
+            cardOuter: 'ssr-border p-[1.5px]',
+            tagText: 'SSR'
+          };
+        case 'SR':
+          return {
+            badge: dark
+              ? 'bg-fuchsia-500/25 text-fuchsia-200 border border-fuchsia-400/40'
+              : 'bg-rose-100 text-rose-700 border border-rose-200',
+            cardOuter: dark ? 'border border-fuchsia-400/30' : 'border border-rose-200/80',
+            tagText: 'SR'
+          };
+        case 'R':
+          return {
+            badge: dark
+              ? 'bg-sky-500/20 text-sky-200 border border-sky-400/35'
+              : 'bg-sky-50 text-sky-700 border border-sky-200',
+            cardOuter: dark ? 'border border-sky-400/25' : 'border border-sky-200/70',
+            tagText: 'R'
+          };
+        default:
+          return {
+            badge: dark
+              ? 'bg-stone-700/80 text-stone-200 border border-stone-600'
+              : 'bg-amber-50 text-amber-800 border border-amber-200/80',
+            cardOuter: dark ? 'border border-stone-700/80' : 'border border-stone-200/90',
+            tagText: 'C'
+          };
+      }
+    }
+
+    function App() {
+      const [dark, setDark] = useState(() => {
+        try {
+          const saved = localStorage.getItem('hc_menu_theme');
+          if (saved) return saved === 'dark';
+        } catch (_) {}
+        return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+      });
+
+      const [loading, setLoading] = useState(true);
+      const [errorMsg, setErrorMsg] = useState('');
+      const [categories, setCategories] = useState([]);
+      const [stats, setStats] = useState({ totalAll: 0, totalDrinks: 0, totalToppings: 0, totalDesserts: 0 });
+      const [coinText, setCoinText] = useState('เหรียญทอง');
+
+      // ฟิลเตอร์
+      const [search, setSearch] = useState('');
+      const [activeCat, setActiveCat] = useState('all');
+      const [activeStyle, setActiveStyle] = useState('all');
+      const [activeTier, setActiveTier] = useState('ALL');
+      const [onlyFavorites, setOnlyFavorites] = useState(false);
+
+      // ปักหมุดเมนูประจำตัว
+      const [favorites, setFavorites] = useState(() => {
+        try {
+          const raw = localStorage.getItem('hc_menu_favorites');
+          return raw ? JSON.parse(raw) : [];
+        } catch (_) {
+          return [];
+        }
+      });
+
+      // ถาดจัดชุดออเดอร์ (Order Builder)
+      const [selectedDrink, setSelectedDrink] = useState(null);
+      const [sweetness, setSweetness] = useState('หวานปกติ');
+      const [selectedTopping, setSelectedTopping] = useState(null);
+      const [selectedDessert, setSelectedDessert] = useState(null);
+      const [trayExpanded, setTrayExpanded] = useState(false);
+
+      // Toast & Copy state
+      const [toast, setToast] = useState(null);
+      const [justCopiedName, setJustCopiedName] = useState('');
+
+      useEffect(() => {
+        try { localStorage.setItem('hc_menu_theme', dark ? 'dark' : 'light'); } catch (_) {}
+      }, [dark]);
+
+      useEffect(() => {
+        try { localStorage.setItem('hc_menu_favorites', JSON.stringify(favorites)); } catch (_) {}
+      }, [favorites]);
+
+      const showToast = useCallback((text, sub = '') => {
+        setToast({ text, sub, id: Date.now() });
+      }, []);
+
+      useEffect(() => {
+        if (!toast) return;
+        const t = setTimeout(() => setToast(null), 2600);
+        return () => clearTimeout(t);
+      }, [toast]);
+
+      // โหลดข้อมูลสมุดเมนูจาก API
+      useEffect(() => {
+        let alive = true;
+        async function loadCatalog() {
+          try {
+            setLoading(true);
+            const res = await fetch('/api/menu/catalog', { cache: 'no-store' });
+            const data = await res.json();
+            if (!alive) return;
+            if (!data.ok) throw new Error(data.error || 'โหลดข้อมูลไม่สำเร็จ');
+            setCategories(Array.isArray(data.categories) ? data.categories : []);
+            setStats(data.stats || {});
+            if (data.coinText) setCoinText(data.coinText);
+          } catch (err) {
+            if (alive) setErrorMsg(err.message || 'ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้');
+          } finally {
+            if (alive) setLoading(false);
+          }
+        }
+        loadCatalog();
+        return () => { alive = false; };
+      }, []);
+
+      // รวมรายการทั้งหมดพร้อม metadata สำหรับกรอง
+      const allItems = useMemo(() => {
+        const list = [];
+        categories.forEach((cat) => {
+          (cat.items || []).forEach((item) => {
+            const typeKey = cat.typeKey || 'drink';
+            list.push({
+              ...item,
+              typeKey,
+              catId: cat.id,
+              fuzzyName: normalizeSearchThai(item.name),
+              styles: typeKey === 'drink' ? detectDrinkStyles(item.name) : []
+            });
+          });
+        });
+        return list;
+      }, [categories]);
+
+      const pinnedItems = useMemo(() => {
+        if (!favorites.length) return [];
+        const map = new Map(allItems.map((it) => [it.name, it]));
+        return favorites.map((name) => map.get(name)).filter(Boolean);
+      }, [favorites, allItems]);
+
+      // กรองรายการตามคำค้นหา หมวด สไตล์ และระดับ Tier
+      const filteredItems = useMemo(() => {
+        const qFuzzy = normalizeSearchThai(search);
+        const rawLower = search.trim().toLowerCase();
+
+        // คำพ้องพิเศษจากการค้นหา (เช่น กาแฟส้ม, มัทฉะโกโก้)
+        const extraMatchedTargets = [];
+        if (qFuzzy) {
+          Object.entries(SEARCH_SYNONYMS).forEach(([key, targets]) => {
+            if (qFuzzy.includes(key)) {
+              targets.forEach((t) => extraMatchedTargets.push(normalizeSearchThai(t)));
+            }
+          });
+        }
+
+        return allItems.filter((item) => {
+          if (onlyFavorites && !favorites.includes(item.name)) return false;
+          if (activeCat !== 'all' && item.catId !== activeCat) return false;
+          if (activeTier !== 'ALL' && item.tierCode !== activeTier) return false;
+          if (activeStyle !== 'all') {
+            if (item.typeKey !== 'drink') return false;
+            if (!item.styles.includes(activeStyle)) return false;
+          }
+          if (qFuzzy) {
+            const directHit = item.name.toLowerCase().includes(rawLower) || item.fuzzyName.includes(qFuzzy);
+            const synHit = extraMatchedTargets.some((t) => item.fuzzyName.includes(t));
+            if (!directHit && !synHit) return false;
+          }
+          return true;
+        });
+      }, [allItems, search, activeCat, activeStyle, activeTier, onlyFavorites, favorites]);
+
+      const toggleFavorite = (itemName, e) => {
+        if (e) e.stopPropagation();
+        setFavorites((prev) =>
+          prev.includes(itemName) ? prev.filter((n) => n !== itemName) : [itemName, ...prev]
+        );
+      };
+
+      const handleQuickCopy = async (item, e) => {
+        if (e) e.stopPropagation();
+        const ok = await copyToClipboard(item.name);
+        if (ok) {
+          setJustCopiedName(item.name);
+          setTimeout(() => setJustCopiedName((cur) => (cur === item.name ? '' : cur)), 1600);
+          showToast(`คัดลอก "${item.name}" แล้ว!`, 'นำไปวางส่งในห้องแชทคาเฟ่ได้เลยค่ะ');
+        }
+      };
+
+      const handleSelectForBuilder = (item) => {
+        if (item.typeKey === 'drink') {
+          setSelectedDrink((prev) => (prev?.name === item.name ? null : item));
+        } else if (item.typeKey === 'topping') {
+          setSelectedTopping((prev) => (prev?.name === item.name ? null : item));
+        } else if (item.typeKey === 'dessert') {
+          setSelectedDessert((prev) => (prev?.name === item.name ? null : item));
+        }
+      };
+
+      // สุ่มไอเดียฝั่งหน้าเว็บ (ทดแทนระบบสุ่มฝั่งบอท)
+      const handleRollIdea = (includeExtras = false) => {
+        const drinks = allItems.filter((i) => i.typeKey === 'drink' && !i.isMystery);
+        const toppings = allItems.filter((i) => i.typeKey === 'topping');
+        const desserts = allItems.filter((i) => i.typeKey === 'dessert');
+        if (!drinks.length) return;
+
+        const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
+        const d = pick(drinks);
+        setSelectedDrink(d);
+        setSweetness('หวานปกติ');
+
+        if (includeExtras) {
+          setSelectedTopping(toppings.length ? pick(toppings) : null);
+          setSelectedDessert(desserts.length ? pick(desserts) : null);
+        } else {
+          setSelectedTopping(null);
+          setSelectedDessert(null);
+        }
+        setTrayExpanded(true);
+        showToast('สุ่มไอเดียจัดลงถาดให้แล้ว!', 'กดปุ่มคัดลอกออเดอร์ด้านล่างเพื่อส่งให้บาริสต้าได้เลย');
+      };
+
+      // สร้างข้อความออเดอร์ที่ตรงตาม parseStrictOrder 100%
+      const builtOrderString = useMemo(() => {
+        if (!selectedDrink) return '';
+        const cleanSweet = sweetness.trim();
+        const drinkPart =
+          cleanSweet && cleanSweet !== 'หวานปกติ'
+            ? `${selectedDrink.name}${cleanSweet}`
+            : selectedDrink.name;
+
+        return [
+          drinkPart,
+          selectedTopping?.name || '',
+          selectedDessert?.name || ''
+        ]
+          .filter(Boolean)
+          .join(' ');
+      }, [selectedDrink, sweetness, selectedTopping, selectedDessert]);
+
+      const totalOrderPriceText = useMemo(() => {
+        if (!selectedDrink && !selectedTopping && !selectedDessert) return '0';
+        const extras = (selectedTopping?.price || 0) + (selectedDessert?.price || 0);
+        if (selectedDrink?.isMystery) {
+          return `${(199 + extras).toLocaleString()} - ${(999 + extras).toLocaleString()}`;
+        }
+        const total = (selectedDrink?.price || 0) + extras;
+        return total.toLocaleString();
+      }, [selectedDrink, selectedTopping, selectedDessert]);
+
+      const handleCopyBuiltOrder = async () => {
+        if (!builtOrderString) {
+          showToast('กรุณาเลือกเครื่องดื่มหลักอย่างน้อย 1 แก้วค่ะ', 'แตะที่การ์ดเครื่องดื่มเพื่อเพิ่มลงถาด');
+          return;
+        }
+        const ok = await copyToClipboard(builtOrderString);
+        if (ok) {
+          showToast('คัดลอกชุดออเดอร์เรียบร้อย!', builtOrderString);
+        }
+      };
+
+      const clearBuilder = () => {
+        setSelectedDrink(null);
+        setSelectedTopping(null);
+        setSelectedDessert(null);
+        setSweetness('หวานปกติ');
+        setTrayExpanded(false);
+      };
+
+      const hasBuilderItems = Boolean(selectedDrink || selectedTopping || selectedDessert);
+
+      const bgClass = dark
+        ? 'bg-[#121016] text-stone-100'
+        : 'bg-[#FAF6F0] text-stone-800';
+
+      const glassClass = dark
+        ? 'bg-[#1C1824]/85 border-white/10'
+        : 'bg-white/85 border-stone-200/80';
+
+      return (
+        <div className={`min-h-screen transition-colors duration-300 ${bgClass} ${hasBuilderItems ? 'pb-44' : 'pb-16'}`}>
+          {/* พื้นหลังละมุน */}
+          <div className="fixed inset-0 pointer-events-none overflow-hidden -z-10">
+            <div className={`absolute -top-24 -right-24 w-80 h-80 rounded-full blur-3xl opacity-25 ${dark ? 'bg-fuchsia-600' : 'bg-rose-300'}`} />
+            <div className={`absolute top-1/3 -left-24 w-80 h-80 rounded-full blur-3xl opacity-20 ${dark ? 'bg-amber-600' : 'bg-amber-200'}`} />
+          </div>
+
+          {/* Toast Notification */}
+          {toast && (
+            <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 w-[92%] max-w-md animate-pop">
+              <div className={`flex items-start gap-3 px-4 py-3 rounded-2xl shadow-xl border backdrop-blur-md ${
+                dark ? 'bg-emerald-950/95 border-emerald-400/40 text-emerald-50' : 'bg-stone-900/95 border-stone-700 text-white'
+              }`}>
+                <Icon icon="solar:check-circle-bold-duotone" width="24" className="text-emerald-400 shrink-0 mt-0.5" />
+                <div className="min-w-0 flex-1">
+                  <div className="font-display font-semibold text-sm">{toast.text}</div>
+                  {toast.sub && <div className="text-xs opacity-80 truncate mt-0.5">{toast.sub}</div>}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Header Bar */}
+          <header className={`sticky top-0 z-30 backdrop-blur-xl border-b ${glassClass}`}>
+            <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div className={`w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 ${
+                  dark ? 'bg-rose-500/20 text-rose-300' : 'bg-rose-100 text-rose-600'
+                }`}>
+                  <Icon icon="line-md:coffee-half-empty-filled-loop" width="26" />
+                </div>
+                <div className="min-w-0">
+                  <h1 className="font-display font-bold text-base sm:text-lg leading-tight truncate">
+                    สมุดเมนู Horizontal Cafe
+                  </h1>
+                  <p className={`text-xs truncate ${dark ? 'text-stone-400' : 'text-stone-500'}`}>
+                    แตะเลือกหรือกดคัดลอกชื่อเป๊ะๆ 100% เพื่อส่งสั่งในห้องเสียง
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+                <a
+                  href="/"
+                  className={`px-2.5 py-2 rounded-xl text-xs font-medium flex items-center gap-1.5 border transition ${
+                    dark ? 'border-white/10 hover:bg-white/10 text-stone-200' : 'border-stone-200 hover:bg-stone-100 text-stone-700'
+                  }`}
+                  title="หน้าบอร์ดใบเสร็จ"
+                >
+                  <Icon icon="solar:ticket-sale-bold-duotone" width="18" className="text-rose-500" />
+                  <span className="hidden sm:inline">บอร์ดใบเสร็จ</span>
+                </a>
+                <a
+                  href="/register"
+                  className={`px-2.5 py-2 rounded-xl text-xs font-medium flex items-center gap-1.5 border transition ${
+                    dark ? 'border-white/10 hover:bg-white/10 text-stone-200' : 'border-stone-200 hover:bg-stone-100 text-stone-700'
+                  }`}
+                  title="ลงทะเบียนบัตรสมาชิก"
+                >
+                  <Icon icon="solar:card-2-bold-duotone" width="18" className="text-amber-500" />
+                  <span className="hidden sm:inline">บัตรสมาชิก</span>
+                </a>
+                <button
+                  onClick={() => setDark((d) => !d)}
+                  className={`w-9 h-9 rounded-xl flex items-center justify-center border transition ${
+                    dark ? 'border-white/10 bg-white/5 hover:bg-white/10 text-amber-300' : 'border-stone-200 bg-white hover:bg-stone-100 text-indigo-600'
+                  }`}
+                  aria-label="สลับธีมกลางวัน/กลางคืน"
+                >
+                  <Icon icon={dark ? 'line-md:sunny-outline-loop' : 'line-md:moon-alt-loop'} width="20" />
+                </button>
+              </div>
+            </div>
+          </header>
+
+          <main className="max-w-6xl mx-auto px-4 pt-5 space-y-5">
+            {/* Search + Barista Idea Dice */}
+            <section className={`rounded-3xl p-4 sm:p-5 border shadow-sm ${glassClass}`}>
+              <div className="flex flex-col md:flex-row gap-3">
+                <div className="relative flex-1">
+                  <Icon
+                    icon="solar:magnifer-bold-duotone"
+                    width="22"
+                    className={`absolute left-3.5 top-1/2 -translate-y-1/2 ${dark ? 'text-rose-300' : 'text-rose-500'}`}
+                  />
+                  <input
+                    type="text"
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    placeholder="ค้นหาเมนูง่ายๆ เช่น ชาไทย, มัจฉะ, เลม่อน, กาแฟส้ม, ชีสเค้ก..."
+                    className={`w-full pl-11 pr-10 py-3 rounded-2xl text-sm outline-none border transition ${
+                      dark
+                        ? 'bg-[#121016] border-white/10 focus:border-rose-400 text-white placeholder-stone-500'
+                        : 'bg-[#FAF6F0] border-stone-200 focus:border-rose-400 text-stone-800 placeholder-stone-400'
+                    }`}
+                  />
+                  {search && (
+                    <button
+                      onClick={() => setSearch('')}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 opacity-60 hover:opacity-100"
+                    >
+                      <Icon icon="solar:close-circle-bold-duotone" width="20" />
+                    </button>
+                  )}
+                </div>
+
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => handleRollIdea(false)}
+                    className="flex-1 md:flex-none px-4 py-3 rounded-2xl text-xs sm:text-sm font-display font-semibold flex items-center justify-center gap-2 bg-gradient-to-r from-rose-500 to-amber-500 text-white shadow-md hover:brightness-105 active:scale-95 transition"
+                  >
+                    <Icon icon="solar:dice-five-bold-duotone" width="20" />
+                    <span>สุ่มน้ำ 1 แก้ว</span>
+                  </button>
+                  <button
+                    onClick={() => handleRollIdea(true)}
+                    className={`flex-1 md:flex-none px-4 py-3 rounded-2xl text-xs sm:text-sm font-display font-semibold flex items-center justify-center gap-2 border transition active:scale-95 ${
+                      dark
+                        ? 'bg-fuchsia-500/15 border-fuchsia-400/35 text-fuchsia-200 hover:bg-fuchsia-500/25'
+                        : 'bg-rose-50 border-rose-200 text-rose-700 hover:bg-rose-100'
+                    }`}
+                  >
+                    <Icon icon="solar:stars-minimalistic-bold-duotone" width="20" />
+                    <span>สุ่มครบชุด</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* แถบหมวดหมู่ */}
+              <div className="mt-4 flex items-center gap-2 overflow-x-auto no-scrollbar pb-1">
+                {['all', ...categories.map((c) => c.id)].map((catId) => {
+                  const meta = CATEGORY_META[catId] || { label: catId, emojiIcon: 'fluent-emoji:cup-with-straw' };
+                  const count =
+                    catId === 'all'
+                      ? allItems.length
+                      : (categories.find((c) => c.id === catId)?.items?.length || 0);
+                  const active = activeCat === catId && !onlyFavorites;
+                  return (
+                    <button
+                      key={catId}
+                      onClick={() => {
+                        setOnlyFavorites(false);
+                        setActiveCat(catId);
+                        if (catId === 'topping' || catId === 'dessert') setActiveStyle('all');
+                      }}
+                      className={`shrink-0 px-3.5 py-2 rounded-2xl text-xs font-medium flex items-center gap-2 border transition ${
+                        active
+                          ? 'bg-stone-900 text-white border-stone-900 dark:bg-rose-500 dark:border-rose-500 shadow-sm'
+                          : dark
+                            ? 'bg-white/5 border-white/10 text-stone-300 hover:bg-white/10'
+                            : 'bg-white border-stone-200 text-stone-700 hover:bg-stone-50'
+                      }`}
+                    >
+                      <Icon icon={meta.emojiIcon} width="18" />
+                      <span>{meta.label}</span>
+                      <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${active ? 'bg-white/20' : dark ? 'bg-white/10' : 'bg-stone-100'}`}>
+                        {count}
+                      </span>
+                    </button>
+                  );
+                })}
+
+                <button
+                  onClick={() => setOnlyFavorites((v) => !v)}
+                  className={`shrink-0 px-3.5 py-2 rounded-2xl text-xs font-medium flex items-center gap-1.5 border transition ${
+                    onlyFavorites
+                      ? 'bg-pink-500 text-white border-pink-500 shadow-sm'
+                      : dark
+                        ? 'bg-white/5 border-white/10 text-pink-300 hover:bg-white/10'
+                        : 'bg-pink-50/70 border-pink-200 text-pink-600 hover:bg-pink-100'
+                  }`}
+                >
+                  <Icon icon="solar:heart-bold-duotone" width="16" />
+                  <span>ที่ปักหมุด ({favorites.length})</span>
+                </button>
+              </div>
+
+              {/* แถบกรองสไตล์การชง + ระดับ Tier */}
+              <div className="mt-3 pt-3 border-t border-dashed border-stone-300/40 dark:border-white/10 flex flex-wrap items-center justify-between gap-2.5">
+                <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar">
+                  {STYLE_FILTERS.map((st) => {
+                    const active = activeStyle === st.id;
+                    return (
+                      <button
+                        key={st.id}
+                        onClick={() => {
+                          setActiveStyle(st.id);
+                          if (st.id !== 'all' && (activeCat === 'topping' || activeCat === 'dessert')) {
+                            setActiveCat('all');
+                          }
+                        }}
+                        className={`shrink-0 px-2.5 py-1.5 rounded-xl text-[11px] font-medium flex items-center gap-1 border transition ${
+                          active
+                            ? dark ? 'bg-amber-400/20 border-amber-400/50 text-amber-200' : 'bg-amber-100 border-amber-300 text-amber-900'
+                            : dark ? 'border-white/10 text-stone-400 hover:text-stone-200' : 'border-stone-200 text-stone-500 hover:text-stone-800'
+                        }`}
+                      >
+                        <Icon icon={st.icon} width="14" />
+                        <span>{st.label}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                <div className="flex items-center gap-1">
+                  <span className={`text-[11px] mr-1 ${dark ? 'text-stone-400' : 'text-stone-500'}`}>ระดับ:</span>
+                  {TIER_FILTERS.map((t) => {
+                    const active = activeTier === t;
+                    return (
+                      <button
+                        key={t}
+                        onClick={() => setActiveTier(t)}
+                        className={`px-2 py-1 rounded-lg text-[11px] font-bold border transition ${
+                          active
+                            ? 'bg-rose-500 text-white border-rose-500'
+                            : dark ? 'border-white/10 text-stone-400 hover:text-white' : 'border-stone-200 text-stone-600 hover:bg-stone-100'
+                        }`}
+                      >
+                        {t === 'ALL' ? 'ทั้งหมด' : t}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            </section>
+
+            {/* เมนูประจำตัวที่ปักหมุดไว้ (Quick Copy Bar 3 วินาที) */}
+            {pinnedItems.length > 0 && !onlyFavorites && !search && (
+              <section className={`rounded-3xl p-4 border ${dark ? 'bg-pink-950/20 border-pink-400/20' : 'bg-rose-50/70 border-rose-200/80'}`}>
+                <div className="flex items-center justify-between mb-2.5">
+                  <div className="flex items-center gap-2 font-display font-semibold text-sm">
+                    <Icon icon="solar:heart-bold-duotone" width="18" className="text-pink-500" />
+                    <span>เมนูประจำตัวของคุณ (กดคัดลอกด่วนได้ทันที)</span>
+                  </div>
+                </div>
+                <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1">
+                  {pinnedItems.map((item) => (
+                    <div
+                      key={item.name}
+                      onClick={() => handleSelectForBuilder(item)}
+                      className={`shrink-0 flex items-center gap-2 pl-3 pr-2 py-2 rounded-2xl border cursor-pointer transition ${
+                        dark ? 'bg-[#1C1824] border-white/10 hover:border-pink-400/50' : 'bg-white border-rose-200 hover:border-rose-400'
+                      }`}
+                    >
+                      <span className="text-xs font-medium max-w-[190px] truncate">{item.name}</span>
+                      <button
+                        onClick={(e) => handleQuickCopy(item, e)}
+                        className="px-2 py-1 rounded-xl bg-rose-500 text-white text-[11px] font-semibold hover:bg-rose-600 flex items-center gap-1"
+                      >
+                        <Icon icon={justCopiedName === item.name ? 'solar:check-read-bold' : 'solar:copy-bold-duotone'} width="13" />
+                        <span>{justCopiedName === item.name ? 'แล้ว' : 'ก๊อป'}</span>
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </section>
+            )}
+
+            {/* สถานะโหลด / Error */}
+            {loading && (
+              <div className="py-20 text-center space-y-3">
+                <Icon icon="line-md:loading-twotone-loop" width="42" className="mx-auto text-rose-500" />
+                <p className="text-sm opacity-70">อเลสเทียกำลังเปิดสมุดเมนูให้ค่ะ...</p>
+              </div>
+            )}
+
+            {errorMsg && !loading && (
+              <div className="p-6 rounded-3xl border border-red-400/40 bg-red-500/10 text-center space-y-2">
+                <Icon icon="solar:danger-triangle-bold-duotone" width="36" className="mx-auto text-red-400" />
+                <p className="font-display font-semibold text-sm">{errorMsg}</p>
+              </div>
+            )}
+
+            {/* ตารางแสดงผลรายการเมนู */}
+            {!loading && !errorMsg && (
+              <section>
+                <div className="flex items-center justify-between mb-3 px-1">
+                  <div className={`text-xs font-medium ${dark ? 'text-stone-400' : 'text-stone-500'}`}>
+                    พบทั้งหมด <strong className={dark ? 'text-white' : 'text-stone-900'}>{filteredItems.length}</strong> รายการ
+                    <span className="hidden sm:inline"> • แตะการ์ดเพื่อใส่ถาดจัดชุด หรือกดปุ่มก๊อปปี้เพื่อคัดลอกชื่อทันที</span>
+                  </div>
+                  {(search || activeCat !== 'all' || activeStyle !== 'all' || activeTier !== 'ALL' || onlyFavorites) && (
+                    <button
+                      onClick={() => {
+                        setSearch('');
+                        setActiveCat('all');
+                        setActiveStyle('all');
+                        setActiveTier('ALL');
+                        setOnlyFavorites(false);
+                      }}
+                      className="text-xs text-rose-500 hover:underline font-medium"
+                    >
+                      ล้างตัวกรองทั้งหมด
+                    </button>
+                  )}
+                </div>
+
+                {filteredItems.length === 0 ? (
+                  <div className={`rounded-3xl p-12 text-center border ${glassClass}`}>
+                    <Icon icon="fluent-emoji:thinking-face" width="44" className="mx-auto mb-2" />
+                    <p className="font-display font-semibold">ไม่พบเมนูที่ตรงกับเงื่อนไขค่ะ</p>
+                    <p className="text-xs opacity-65 mt-1">ลองพิมพ์คำสั้นลง หรือกดล้างตัวกรองด้านบนนะคะ</p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                    {filteredItems.map((item) => {
+                      const tierUI = getTierStyle(item.tierCode, dark);
+                      const isFav = favorites.includes(item.name);
+                      const isSelected =
+                        selectedDrink?.name === item.name ||
+                        selectedTopping?.name === item.name ||
+                        selectedDessert?.name === item.name;
+                      const catMeta = CATEGORY_META[item.catId] || { emojiIcon: 'fluent-emoji:cup-with-straw', label: item.categoryTitle };
+
+                      return (
+                        <div
+                          key={`${item.catId}-${item.name}`}
+                          onClick={() => handleSelectForBuilder(item)}
+                          className={`rounded-2xl transition-all duration-200 cursor-pointer ${tierUI.cardOuter} ${
+                            isSelected ? 'ring-2 ring-rose-500 scale-[1.01]' : 'hover:-translate-y-0.5'
+                          }`}
+                        >
+                          <div className={`h-full rounded-[14.5px] p-3.5 flex flex-col justify-between gap-3 ${
+                            dark ? 'bg-[#1A1622]' : 'bg-white'
+                          }`}>
+                            <div>
+                              <div className="flex items-start justify-between gap-2">
+                                <div className="flex items-center gap-1.5 flex-wrap">
+                                  <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold ${tierUI.badge}`}>
+                                    {tierUI.tagText}
+                                  </span>
+                                  <span className={`text-[10px] px-2 py-0.5 rounded-full flex items-center gap-1 ${
+                                    dark ? 'bg-white/5 text-stone-300' : 'bg-stone-100 text-stone-600'
+                                  }`}>
+                                    <Icon icon={catMeta.emojiIcon} width="12" />
+                                    {item.typeKey === 'drink' ? 'เครื่องดื่ม' : item.typeKey === 'topping' ? 'ท็อปปิ้ง' : 'ขนม'}
+                                  </span>
+                                </div>
+
+                                <button
+                                  onClick={(e) => toggleFavorite(item.name, e)}
+                                  className={`p-1 rounded-lg transition ${
+                                    isFav ? 'text-pink-500 scale-110' : 'text-stone-400 hover:text-pink-400'
+                                  }`}
+                                  title={isFav ? 'เอาออกจากที่ปักหมุด' : 'ปักหมุดเมนูประจำตัว'}
+                                >
+                                  <Icon icon={isFav ? 'solar:heart-bold' : 'solar:heart-linear'} width="18" />
+                                </button>
+                              </div>
+
+                              <h3 className="font-display font-semibold text-sm sm:text-[15px] mt-2 leading-snug break-words">
+                                {item.name}
+                              </h3>
+                            </div>
+
+                            <div className="flex items-center justify-between gap-2 pt-2 border-t border-stone-200/50 dark:border-white/5">
+                              <div className="flex items-center gap-1 font-display font-bold text-sm text-amber-500">
+                                <Icon icon="solar:dollar-minimalistic-bold-duotone" width="17" />
+                                <span>{item.isMystery ? (item.priceRangeText || '199 - 999') : item.price.toLocaleString()}</span>
+                                <span className={`text-[10px] font-normal ${dark ? 'text-stone-400' : 'text-stone-500'}`}>{coinText}</span>
+                              </div>
+
+                              <div className="flex items-center gap-1.5">
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleSelectForBuilder(item);
+                                  }}
+                                  className={`px-2.5 py-1.5 rounded-xl text-[11px] font-semibold flex items-center gap-1 transition ${
+                                    isSelected
+                                      ? 'bg-emerald-500 text-white'
+                                      : dark
+                                        ? 'bg-white/10 text-stone-200 hover:bg-white/15'
+                                        : 'bg-stone-100 text-stone-700 hover:bg-stone-200'
+                                  }`}
+                                >
+                                  <Icon icon={isSelected ? 'solar:check-circle-bold' : 'solar:add-circle-bold-duotone'} width="14" />
+                                  <span>{isSelected ? 'เลือกแล้ว' : 'ใส่ถาด'}</span>
+                                </button>
+
+                                <button
+                                  onClick={(e) => handleQuickCopy(item, e)}
+                                  className={`px-2.5 py-1.5 rounded-xl text-[11px] font-semibold flex items-center gap-1 transition ${
+                                    justCopiedName === item.name
+                                      ? 'bg-emerald-500 text-white'
+                                      : 'bg-rose-500 text-white hover:bg-rose-600'
+                                  }`}
+                                >
+                                  <Icon icon={justCopiedName === item.name ? 'solar:check-read-bold' : 'solar:copy-bold-duotone'} width="14" />
+                                  <span>{justCopiedName === item.name ? 'ก๊อปแล้ว' : 'คัดลอก'}</span>
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </section>
+            )}
+          </main>
+
+          {/* ถาดจัดชุดออเดอร์แบบเรียลไทม์ (Sticky Order Builder) */}
+          {hasBuilderItems && (
+            <div className="fixed bottom-0 inset-x-0 z-40 px-3 pb-3 pt-1 pointer-events-none">
+              <div className={`max-w-3xl mx-auto rounded-3xl border shadow-2xl backdrop-blur-xl pointer-events-auto transition-all ${
+                dark ? 'bg-[#1D1727]/95 border-rose-400/30 text-white' : 'bg-white/95 border-rose-200 text-stone-800'
+              }`}>
+                {/* หัวถาด */}
+                <div
+                  onClick={() => setTrayExpanded((v) => !v)}
+                  className="px-4 py-3 flex items-center justify-between gap-2 cursor-pointer"
+                >
+                  <div className="flex items-center gap-2 min-w-0">
+                    <Icon icon="solar:bag-smile-bold-duotone" width="22" className="text-rose-500 shrink-0" />
+                    <div className="min-w-0">
+                      <div className="font-display font-bold text-xs sm:text-sm flex items-center gap-2">
+                        <span>ถาดจัดชุดออเดอร์</span>
+                        <span className="text-amber-500 font-bold">{totalOrderPriceText} {coinText}</span>
+                      </div>
+                      <div className={`text-[11px] truncate ${dark ? 'text-stone-400' : 'text-stone-500'}`}>
+                        {builtOrderString || 'ยังไม่ได้เลือกเครื่องดื่มหลัก (กรุณาแตะเลือกน้ำ 1 แก้ว)'}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleCopyBuiltOrder();
+                      }}
+                      disabled={!selectedDrink}
+                      className={`px-3.5 py-2 rounded-2xl text-xs font-display font-semibold flex items-center gap-1.5 transition ${
+                        selectedDrink
+                          ? 'bg-gradient-to-r from-rose-500 to-amber-500 text-white shadow-md hover:brightness-105 active:scale-95'
+                          : 'bg-stone-300 text-stone-500 dark:bg-stone-700 dark:text-stone-400 cursor-not-allowed'
+                      }`}
+                    >
+                      <Icon icon="solar:copy-bold-duotone" width="16" />
+                      <span>คัดลอกออเดอร์</span>
+                    </button>
+                    <button
+                      className={`w-8 h-8 rounded-xl flex items-center justify-center ${dark ? 'bg-white/10' : 'bg-stone-100'}`}
+                      aria-label="เปิด/ปิดรายละเอียดถาด"
+                    >
+                      <Icon icon={trayExpanded ? 'solar:alt-arrow-down-bold' : 'solar:alt-arrow-up-bold'} width="16" />
+                    </button>
+                  </div>
+                </div>
+
+                {/* รายละเอียดถาดเมื่อกดขยาย */}
+                {trayExpanded && (
+                  <div className={`px-4 pb-4 pt-2 border-t space-y-3 ${dark ? 'border-white/10' : 'border-stone-200/80'}`}>
+                    {/* รายการที่เลือก */}
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
+                      <div className={`p-2.5 rounded-2xl border ${dark ? 'bg-white/5 border-white/10' : 'bg-stone-50 border-stone-200'}`}>
+                        <div className="text-[10px] opacity-60 mb-1">1. เครื่องดื่มหลัก (บังคับ)</div>
+                        {selectedDrink ? (
+                          <div className="flex items-center justify-between gap-1 font-semibold">
+                            <span className="truncate">{selectedDrink.name}</span>
+                            <button onClick={() => setSelectedDrink(null)} className="text-rose-400 hover:text-rose-500">
+                              <Icon icon="solar:close-circle-bold" width="15" />
+                            </button>
+                          </div>
+                        ) : (
+                          <span className="text-rose-400">ยังไม่ได้เลือก</span>
+                        )}
+                      </div>
+
+                      <div className={`p-2.5 rounded-2xl border ${dark ? 'bg-white/5 border-white/10' : 'bg-stone-50 border-stone-200'}`}>
+                        <div className="text-[10px] opacity-60 mb-1">2. ท็อปปิ้งเสริม (ไม่บังคับ)</div>
+                        {selectedTopping ? (
+                          <div className="flex items-center justify-between gap-1 font-semibold">
+                            <span className="truncate">{selectedTopping.name}</span>
+                            <button onClick={() => setSelectedTopping(null)} className="text-rose-400 hover:text-rose-500">
+                              <Icon icon="solar:close-circle-bold" width="15" />
+                            </button>
+                          </div>
+                        ) : (
+                          <span className="opacity-50">ไม่ได้ใส่ท็อปปิ้ง</span>
+                        )}
+                      </div>
+
+                      <div className={`p-2.5 rounded-2xl border ${dark ? 'bg-white/5 border-white/10' : 'bg-stone-50 border-stone-200'}`}>
+                        <div className="text-[10px] opacity-60 mb-1">3. ของทานเล่น (ไม่บังคับ)</div>
+                        {selectedDessert ? (
+                          <div className="flex items-center justify-between gap-1 font-semibold">
+                            <span className="truncate">{selectedDessert.name}</span>
+                            <button onClick={() => setSelectedDessert(null)} className="text-rose-400 hover:text-rose-500">
+                              <Icon icon="solar:close-circle-bold" width="15" />
+                            </button>
+                          </div>
+                        ) : (
+                          <span className="opacity-50">ไม่ได้รับขนม</span>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* เลือกระดับความหวานกำหนดเอง */}
+                    <div className="space-y-1.5">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[11px] font-medium opacity-75">ระดับความหวาน (พิมพ์เองได้ เช่น หวานมากกกก, ไม่หวาน)</span>
+                        <button onClick={clearBuilder} className="text-[11px] text-rose-500 hover:underline">ล้างถาด</button>
+                      </div>
+                      <div className="flex flex-wrap gap-1.5">
+                        {SWEETNESS_PRESETS.map((sw) => (
+                          <button
+                            key={sw}
+                            onClick={() => setSweetness(sw)}
+                            className={`px-2.5 py-1 rounded-xl text-[11px] font-medium border transition ${
+                              sweetness === sw
+                                ? 'bg-rose-500 text-white border-rose-500'
+                                : dark ? 'border-white/10 bg-white/5 text-stone-300' : 'border-stone-200 bg-white text-stone-600'
+                            }`}
+                          >
+                            {sw}
+                          </button>
+                        ))}
+                        <input
+                          type="text"
+                          value={sweetness}
+                          onChange={(e) => setSweetness(e.target.value)}
+                          placeholder="พิมพ์ความหวานเอง..."
+                          className={`flex-1 min-w-[140px] px-3 py-1 rounded-xl text-xs border outline-none ${
+                            dark ? 'bg-[#121016] border-white/15 text-white' : 'bg-stone-50 border-stone-200 text-stone-800'
+                          }`}
+                        />
+                      </div>
+                    </div>
+
+                    {/* ตัวอย่างข้อความจริงที่จะก๊อปไปวางใน Discord */}
+                    {builtOrderString && (
+                      <div className={`p-3 rounded-2xl text-xs font-mono break-all flex items-center justify-between gap-2 ${
+                        dark ? 'bg-[#121016] text-emerald-300 border border-emerald-500/30' : 'bg-emerald-50 text-emerald-900 border border-emerald-200'
+                      }`}>
+                        <span>{builtOrderString}</span>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    createRoot(document.getElementById('root')).render(<App />);
+  </script>
+</body>
+</html>

@@ -109,9 +109,21 @@ function createWebServer(botClient) {
   const publicPath = path.join(__dirname, '../public');
   const registerHtmlFile = path.join(publicPath, 'register.html');
   const dashboardHtmlFile = path.join(publicPath, 'dashboard.html');
+  const menuHtmlFile = path.join(publicPath, 'menu.html');
 
   if (fs.existsSync(publicPath)) {
     app.use(express.static(publicPath));
+  }
+
+  // หน้าสมุดเมนูพิเศษสำหรับกดคัดลอกออเดอร์ (/menu)
+  app.get(['/menu', '/menu/*'], (req, res) => {
+    res.set('Cache-Control', 'no-store');
+    if (fs.existsSync(menuHtmlFile)) return res.sendFile(menuHtmlFile);
+    res.status(404).send('⚠️ ไม่พบไฟล์ src/public/menu.html');
+  });
+
+  if (fs.existsSync(menuHtmlFile)) {
+    registeredWebLinks.push({ path: '/menu', label: 'หน้าสมุดเมนูพิเศษ & คัดลอกออเดอร์ด่วน' });
   }
 
   // หน้าลงทะเบียนบัตรสมาชิก (/register)
