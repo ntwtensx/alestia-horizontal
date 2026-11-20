@@ -3,5 +3,6 @@ module.exports = {
   sleepingUsers: new Set(),
   cafeAudioPlayer: null,
   pendingOrders: new Map(),
-  kickedOrderReasons: new Map()
+  kickedOrderReasons: new Map(),
+  pendingUnmuteUsers: new Set()
 };

@@ -8,7 +8,10 @@ const theme = require('../../config/theme');
 
 const CAFE_CHANNEL_ID = theme.discordConfig?.cafeVoiceChannelId || '995629374722297946';
 const FOOTER_ICON_URL = 'https://i.ibb.co/nMzNwcw0/119111-softbunnyinlove.png';
-const ORDER_TIMEOUT_MS = 60 * 1000; // 1 นาที
+const COOKIE_EMOJI_ID = '1562622101427323002';
+const COOKIE_EMOJI_TAG = '<a:59632cookie:1562622101427323002>';
+const ORDER_TIMEOUT_MS = 60 * 1000; // เริ่มต้น 1 นาที
+const EXTEND_DURATIONS_MS = [60 * 1000, 30 * 1000]; // ครั้งที่ 1: +1 นาที, ครั้งที่ 2: +30 วินาที
 const { COIN_TEXT } = priceCatalog;
 
 const FALLBACK_TEXTS = {
@@ -19,6 +22,7 @@ const FALLBACK_TEXTS = {
 if (!memory.sessionMsgCache) memory.sessionMsgCache = new Map();
 if (!memory.pendingOrders) memory.pendingOrders = new Map();
 if (!memory.kickedOrderReasons) memory.kickedOrderReasons = new Map();
+if (!memory.pendingUnmuteUsers) memory.pendingUnmuteUsers = new Set();
 
 let trackerQueue = Promise.resolve();
 
@@ -48,6 +52,24 @@ const getThaiDateTime = () => {
 };
 
 const getUnixTimestampStr = () => `[<t:${Math.floor(Date.now() / 1000)}:t>]`;
+
+const buildOrderPromptText = (userId, userName, deadlineMs, extendCount = 0) => {
+  const deadlineUnix = Math.floor(deadlineMs / 1000);
+  let footerLine = `สามารถกด ${COOKIE_EMOJI_TAG} เพื่อขอเวลาบาริสต้าในการรอเพิ่มได้ค่ะ แต่ไม่ใช่ว่าจะขอเพิ่มได้ตลอดนะคะ (เหลือสิทธิ์ขอเพิ่ม 2 ครั้ง)`;
+
+  if (extendCount === 1) {
+    footerLine = `ต่อเวลาเพิ่มครั้งที่ 1 (+1 นาที) แล้วค่ะ สามารถกด ${COOKIE_EMOJI_TAG} ขอเพิ่มได้อีก 1 ครั้งสุดท้าย (+30 วินาที)`;
+  } else if (extendCount >= 2) {
+    footerLine = `ต่อเวลาเพิ่มครบ 2 ครั้งแล้ว (+30 วินาที) ไม่สามารถขอเพิ่มได้อีกแล้วค่ะ หมดเวลาคือเชิญออกทันที!`;
+  }
+
+  return [
+    `<@${userId}>`,
+    `<a:spkran:1513650594546712706>แจ้งเตือน **${userName}** ภายในระยะเวลา <t:${deadlineUnix}:R> นี้คุณจะต้องสั่งออเดอร์เมนูมาอย่างน้อยหนึ่งเครื่องดื่ม เพื่อที่จะได้นั่งในคาเฟ่อย่างมีประสิทธิภาพที่สุดค่ะ`,
+    `- ชื่อเมนูจะต้องเขียนถูกต้องตรงตามชื่อในรายการเมนูทุกตัวอักษร ไม่ถูกก็เขียนใหม่ค่ะ`,
+    footerLine
+  ].join('\n');
+};
 
 const sendWithRetry = async (channel, payload, maxRetries = 2) => {
   for (let attempt = 1; attempt <= maxRetries + 1; attempt++) {
@@ -85,6 +107,14 @@ async function getCafeChannel(client, guildFallback = null) {
   if (!ch && guildFallback) ch = await guildFallback.channels.fetch(CAFE_CHANNEL_ID).catch(() => null);
   if (!ch && client) ch = await client.channels.fetch(CAFE_CHANNEL_ID).catch(() => null);
   return ch;
+}
+
+function cleanupPendingEntry(pending) {
+  if (!pending) return;
+  if (pending.timer) clearTimeout(pending.timer);
+  if (pending.collector && !pending.collector.ended) {
+    pending.collector.stop('cleanup');
+  }
 }
 
 async function renderAndSaveSessionEmbed(cafeChannel, session, isClosing = false) {
@@ -220,7 +250,6 @@ const updateSessionLog = async ({ cafeChannel, cId, cName, txt, isClosing = fals
       if (!Array.isArray(session.receipts)) session.receipts = [];
       if (!Array.isArray(session.logLines)) session.logLines = [];
 
-      // กรณีสั่งเมนูสำเร็จ ให้แทรกบรรทัด - {เมนู}{ความหวาน} -{ท็อปปิ้ง} -{ขนม} ถัดจากบรรทัดแจ้งเข้าคาเฟ่ของคนนั้น
       if (insertBelowEntryLine) {
         let targetIdx = -1;
         for (let i = session.logLines.length - 1; i >= 0; i--) {
@@ -282,12 +311,12 @@ const updateSessionLog = async ({ cafeChannel, cId, cName, txt, isClosing = fals
   }
 };
 
-// ✅ ฟังก์ชันยืนยันออเดอร์เมื่อสมาชิกพิมพ์สั่งเมนูในแชทสำเร็จ
-async function confirmMemberOrder(userId, orderDetails, client) {
+// ✅ ยืนยันออเดอร์: ปลด Mute -> ลบข้อความแจ้งเตือนเดิมของบอท -> Reply ข้อความของสมาชิกแทน
+async function confirmMemberOrder(userId, orderDetails, client, memberMessage = null) {
   const pending = memory.pendingOrders.get(userId);
   if (!pending) return false;
 
-  if (pending.timer) clearTimeout(pending.timer);
+  cleanupPendingEntry(pending);
   memory.pendingOrders.delete(userId);
 
   return (trackerQueue = trackerQueue.then(async () => {
@@ -295,14 +324,28 @@ async function confirmMemberOrder(userId, orderDetails, client) {
       const cafeChannel = await getCafeChannel(client);
       if (!cafeChannel) return false;
 
-      // 1. แก้ไขข้อความทวงออเดอร์ของอเลสเทียเป็นข้อความยืนยันถาวรตามรูปแบบใหม่
+      // 1. ปลด Server Mute ให้สมาชิกทันทีที่สั่งเมนูสำเร็จ
+      const guild = cafeChannel.guild || client?.guilds?.cache?.first();
+      const member = guild?.members?.cache?.get(userId) || (guild ? await guild.members.fetch(userId).catch(() => null) : null);
+      if (member?.voice?.channelId) {
+        await member.voice.setMute(false, 'สั่งออเดอร์เมนูคาเฟ่สำเร็จแล้ว').catch(() => null);
+      }
+      memory.pendingUnmuteUsers.delete(userId);
+
+      // 2. ลบข้อความแจ้งเตือนเดิมของบอทออก
       if (pending.promptMsg) {
-        await pending.promptMsg
-          .edit(`☕ ได้ทำการรับออเดอร์ของ **${pending.userName}** เป็น **${orderDetails.orderText}** เรียบร้อยแล้วค่ะ~✦`)
-          .catch(() => null);
+        await pending.promptMsg.delete().catch(() => null);
       }
 
-      // 2. หักเหรียญทองจากกระเป๋าจริง (หากลงทะเบียนไว้แล้ว)
+      // 3. Reply ข้อความของสมาชิกคนนั้นด้วยข้อความยืนยันออเดอร์ถาวร
+      const confirmText = `☕ ได้ทำการรับออเดอร์ของ **${pending.userName}** เป็น **${orderDetails.orderText}** เรียบร้อยแล้วค่ะ~✦`;
+      if (memberMessage && typeof memberMessage.reply === 'function') {
+        await memberMessage.reply(confirmText).catch(() => sendWithRetry(cafeChannel, confirmText).catch(() => null));
+      } else {
+        await sendWithRetry(cafeChannel, confirmText).catch(() => null);
+      }
+
+      // 4. หักเหรียญทองจากกระเป๋าจริง (หากลงทะเบียนไว้แล้ว)
       if (orderDetails.totalPrice > 0) {
         const userDoc = await UserDB.findOne({ discordId: userId }).lean().catch(() => null);
         if (userDoc && typeof userDoc.walletBalance === 'number') {
@@ -311,7 +354,7 @@ async function confirmMemberOrder(userId, orderDetails, client) {
         }
       }
 
-      // 3. บันทึกบรรทัดย่อย - {เมนู}{ความหวาน} -{ท็อปปิ้ง} -{ขนม} ลงใน Embed ถัดจากบรรทัดเข้าคาเฟ่
+      // 5. บันทึกบรรทัดย่อย - {เมนู}{ความหวาน} -{ท็อปปิ้ง} -{ขนม} ลงใน Embed
       await updateSessionLog({
         cafeChannel,
         cId: CAFE_CHANNEL_ID,
@@ -332,12 +375,12 @@ async function confirmMemberOrder(userId, orderDetails, client) {
   }));
 }
 
-// 🚫 ฟังก์ชันปฏิเสธการให้บริการและดีดสมาชิกออกจากห้องเสียง (หมดเวลา 1 นาที / บอกไม่รู้ / บอกไม่สั่ง)
+// 🚫 ปฏิเสธการให้บริการและดีดสมาชิกออกจากห้องเสียง (หมดเวลา / บอกไม่รู้ / ปฏิเสธ)
 async function rejectAndKickMember(userId, reasonType, client) {
   const pending = memory.pendingOrders.get(userId);
   if (!pending) return false;
 
-  if (pending.timer) clearTimeout(pending.timer);
+  cleanupPendingEntry(pending);
   memory.pendingOrders.delete(userId);
 
   if (pending.promptMsg) {
@@ -352,6 +395,8 @@ async function rejectAndKickMember(userId, reasonType, client) {
   }
 
   memory.kickedOrderReasons.set(userId, reasonPhrase);
+  // จำคิวปลด Mute ไว้เพื่อให้ปลดไมค์อัตโนมัติในครั้งถัดไปที่เข้าห้องเสียง
+  memory.pendingUnmuteUsers.add(userId);
 
   try {
     const cafeChannel = await getCafeChannel(client);
@@ -363,10 +408,17 @@ async function rejectAndKickMember(userId, reasonType, client) {
       return true;
     }
   } catch (kickErr) {
+    // กรณีเตะไม่ได้ (เช่น เจ้าของเซิร์ฟเวอร์) ให้ปลด Mute คืนแล้วลงบันทึกใน Embed
     memory.kickedOrderReasons.delete(userId);
     trackerQueue = trackerQueue.then(async () => {
       const cafeChannel = await getCafeChannel(client);
       if (!cafeChannel) return;
+      const guild = cafeChannel.guild || client?.guilds?.cache?.first();
+      const member = guild?.members?.cache?.get(userId);
+      if (member?.voice?.channelId) {
+        await member.voice.setMute(false, 'ปลดไมค์คืนเมื่อไม่สามารถตัดการเชื่อมต่อได้').catch(() => null);
+        memory.pendingUnmuteUsers.delete(userId);
+      }
       const timeStr = getUnixTimestampStr();
       const logText = `${timeStr} <a:1162greytick:1562617731583311872>**${pending.userName}** ${reasonPhrase}ค่ะ~✦`;
       await updateSessionLog({
@@ -423,11 +475,16 @@ const processCafeEvent = async (oldState, newState, userName, userDataDB, client
   if (joinedCafe) {
     if (memory.pendingOrders.has(userId)) {
       const oldPending = memory.pendingOrders.get(userId);
-      if (oldPending.timer) clearTimeout(oldPending.timer);
+      cleanupPendingEntry(oldPending);
       if (oldPending.promptMsg) oldPending.promptMsg.delete().catch(() => null);
       memory.pendingOrders.delete(userId);
     }
     memory.kickedOrderReasons.delete(userId);
+
+    // 🔇 สั่ง Server Mute ทันทีจนกว่าจะสั่งออเดอร์ได้สำเร็จ
+    if (memberObj?.voice?.channelId === CAFE_CHANNEL_ID) {
+      await memberObj.voice.setMute(true, 'รอสั่งออเดอร์เมนูคาเฟ่').catch(() => null);
+    }
 
     const hMembers = cafeChannel.members.filter(m => !m.user.bot);
     const isFirstMember = hMembers.size <= 1;
@@ -448,15 +505,15 @@ const processCafeEvent = async (oldState, newState, userName, userDataDB, client
       orderDetails: null
     });
 
-    const deadlineUnix = Math.floor((Date.now() + ORDER_TIMEOUT_MS) / 1000);
-    const promptText = `<@${userId}> รับอะไรดีคะ เข้ามาแล้วต้องสั่งเมนูนะคะไม่งั้นจะไม่ให้ใช้บริการค่ะ กรุณาให้ออเดอร์ภายใน <t:${deadlineUnix}:R> นี้ด้วยค่ะ`;
+    const deadlineMs = Date.now() + ORDER_TIMEOUT_MS;
+    const promptText = buildOrderPromptText(userId, userName, deadlineMs, 0);
     const promptMsg = await sendWithRetry(cafeChannel, promptText).catch(() => null);
 
     const timer = setTimeout(() => {
       rejectAndKickMember(userId, 'TIMEOUT', client).catch(() => null);
     }, ORDER_TIMEOUT_MS);
 
-    memory.pendingOrders.set(userId, {
+    const pendingRecord = {
       userId,
       userName,
       userDataDB,
@@ -464,8 +521,59 @@ const processCafeEvent = async (oldState, newState, userName, userDataDB, client
       promptMsg,
       entryLogLine,
       timer,
+      collector: null,
+      deadlineMs,
+      extendCount: 0,
       joinedAt: Date.now()
-    });
+    };
+
+    memory.pendingOrders.set(userId, pendingRecord);
+
+    // 🍪 ใส่อิโมจิคุกกี้และตั้ง Reaction Collector สำหรับขอเวลาเพิ่ม (สูงสุด 2 ครั้ง: +1 นาที และ +30 วิ)
+    if (promptMsg) {
+      await promptMsg.react(COOKIE_EMOJI_ID).catch(() => null);
+
+      const collector = promptMsg.createReactionCollector({
+        filter: (reaction, user) =>
+          !user.bot && (reaction.emoji.id === COOKIE_EMOJI_ID || reaction.emoji.name === '59632cookie'),
+        time: 4 * 60 * 1000
+      });
+
+      pendingRecord.collector = collector;
+
+      collector.on('collect', async (reaction, user) => {
+        // ลบรีแอ็กชันที่คนกดออกเสมอ (ถ้าเป็นคนอื่นคือกันกดมั่ว ถ้าเป็นเจ้าของคือให้กดครั้งที่ 2 ได้สะดวก)
+        await reaction.users.remove(user.id).catch(() => null);
+
+        if (user.id !== userId) return;
+        const activePending = memory.pendingOrders.get(userId);
+        if (!activePending || activePending.extendCount >= EXTEND_DURATIONS_MS.length) {
+          collector.stop('max_extensions');
+          return;
+        }
+
+        const addMs = EXTEND_DURATIONS_MS[activePending.extendCount];
+        activePending.extendCount += 1;
+        activePending.deadlineMs = Math.max(Date.now(), activePending.deadlineMs) + addMs;
+
+        // รีเซ็ตตัวจับเวลาใหม่ตามเวลาที่ต่อรองเพิ่ม
+        if (activePending.timer) clearTimeout(activePending.timer);
+        const remainingMs = Math.max(1000, activePending.deadlineMs - Date.now());
+        activePending.timer = setTimeout(() => {
+          rejectAndKickMember(userId, 'TIMEOUT', client).catch(() => null);
+        }, remainingMs);
+
+        // อัปเดตเวลานับถอยหลังและข้อความในแชทแจ้งเตือน
+        const updatedText = buildOrderPromptText(userId, userName, activePending.deadlineMs, activePending.extendCount);
+        await promptMsg.edit(updatedText).catch(() => null);
+
+        // หากกดครบ 2 ครั้งแล้ว ให้ปิดสิทธิ์และเอาอิโมจิคุกกี้ออกทันที
+        if (activePending.extendCount >= EXTEND_DURATIONS_MS.length) {
+          collector.stop('max_extensions');
+          await promptMsg.reactions.removeAll().catch(() => null);
+        }
+      });
+    }
   }
 
   // ==========================================
@@ -475,10 +583,18 @@ const processCafeEvent = async (oldState, newState, userName, userDataDB, client
     let leftBeforeOrdering = false;
     if (memory.pendingOrders.has(userId)) {
       const pending = memory.pendingOrders.get(userId);
-      if (pending.timer) clearTimeout(pending.timer);
+      cleanupPendingEntry(pending);
       if (pending.promptMsg) await pending.promptMsg.delete().catch(() => null);
       memory.pendingOrders.delete(userId);
       leftBeforeOrdering = true;
+
+      // ถ้าย้ายไปห้องเสียงอื่นให้ปลด Mute ทันที ถ้าตัดการเชื่อมต่อให้เก็บคิวปลดไว้รอบหน้า
+      if (newState.channelId && newState.member?.voice?.channelId) {
+        await newState.member.voice.setMute(false, 'ย้ายออกจากห้องคาเฟ่แล้ว').catch(() => null);
+        memory.pendingUnmuteUsers.delete(userId);
+      } else {
+        memory.pendingUnmuteUsers.add(userId);
+      }
     }
 
     const hMembers = cafeChannel.members.filter(m => !m.user.bot);

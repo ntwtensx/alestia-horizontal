@@ -1,6 +1,7 @@
 const voiceManager = require('../modules/voiceManager');
 const voiceTracker = require('../modules/voiceTracker');
 const UserDB = require('../../models/User');
+const memory = require('../../utils/sharedMemory');
 const theme = require('../../config/theme');
 
 const CAFE_CHANNEL_ID = theme.discordConfig?.cafeVoiceChannelId || '995629374722297946';
@@ -27,6 +28,16 @@ module.exports = {
       // ข้ามบอทตัวอื่น
       if (member.user?.bot) return;
       if (oldState.channelId === newState.channelId) return;
+
+      // 🔊 ปลด Server Mute ค้างอัตโนมัติเมื่อสมาชิกเข้าห้องเสียงอื่นที่ไม่ใช่คาเฟ่
+      if (
+        newState.channelId &&
+        newState.channelId !== CAFE_CHANNEL_ID &&
+        memory.pendingUnmuteUsers?.has(member.id)
+      ) {
+        memory.pendingUnmuteUsers.delete(member.id);
+        await member.voice.setMute(false, 'ปลดไมค์อัตโนมัติหลังพ้นคิวคาเฟ่').catch(() => null);
+      }
 
       // 🔊 เล่นเสียงต้อนรับเมื่อมีลูกค้าเดินเข้าห้องคาเฟ่
       if (newState.channelId === CAFE_CHANNEL_ID) {

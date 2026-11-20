@@ -1,4 +1,4 @@
-const { Client, GatewayIntentBits, Collection } = require('discord.js');
+const { Client, GatewayIntentBits, Partials, Collection } = require('discord.js');
 const fs = require('fs');
 const path = require('path');
 
@@ -8,8 +8,14 @@ function createBotClient() {
       GatewayIntentBits.Guilds,
       GatewayIntentBits.GuildMembers,
       GatewayIntentBits.GuildMessages,
+      GatewayIntentBits.GuildMessageReactions,
       GatewayIntentBits.GuildVoiceStates,
       GatewayIntentBits.MessageContent
+    ],
+    partials: [
+      Partials.Message,
+      Partials.Channel,
+      Partials.Reaction
     ]
   });
 

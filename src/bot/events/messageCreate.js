@@ -4,6 +4,15 @@ const voiceTracker = require('../modules/voiceTracker');
 const theme = require('../../config/theme');
 
 const CAFE_CHANNEL_ID = theme.discordConfig?.cafeVoiceChannelId || '995629374722297946';
+const WARN_DELETE_MS = 3000;
+
+async function replyAndCleanupIn3s(message, warnText) {
+  const warnMsg = await message.reply(warnText).catch(() => null);
+  setTimeout(() => {
+    if (warnMsg) warnMsg.delete().catch(() => null);
+    message.delete().catch(() => null);
+  }, WARN_DELETE_MS);
+}
 
 module.exports = {
   name: 'messageCreate',
@@ -14,7 +23,7 @@ module.exports = {
     const activeClient = client || message.client;
 
     // ==========================================
-    // 🍹 1. ตรวจจับการสั่งเมนูของสมาชิกที่เพิ่งเข้าห้องเสียงคาเฟ่ (เฉพาะในห้องแชทคาเฟ่ภายใน 1 นาที)
+    // 🎯 1. ตรวจจับการสั่งเมนูแบบเข้มงวดในห้องแชทคาเฟ่
     // ==========================================
     if (
       message.channel.id === CAFE_CHANNEL_ID &&
@@ -22,43 +31,44 @@ module.exports = {
       memory.pendingOrders.has(message.author.id) &&
       !content.startsWith('!')
     ) {
-      const pending = memory.pendingOrders.get(message.author.id);
-      const parsed = priceCatalog.parseNaturalOrder(content, pending.userDataDB);
+      const parsed = priceCatalog.parseStrictOrder(content);
 
-      if (parsed.intent === 'ORDER' || parsed.intent === 'RANDOM_ORDER') {
-        await voiceTracker.confirmMemberOrder(message.author.id, parsed.orderDetails, activeClient);
+      if (parsed.intent === 'ORDER') {
+        await voiceTracker.confirmMemberOrder(message.author.id, parsed.orderDetails, activeClient, message);
+        return;
+      }
+
+      if (parsed.intent === 'RANDOM_DENIED') {
+        await replyAndCleanupIn3s(
+          message,
+          'ไม่มีการสุ่มแล้วค่ะ ขี้เกียจคิดเอง กรุณาพิมพ์ออเดอร์มาด้วยค่ะ'
+        );
         return;
       }
 
       if (parsed.intent === 'HESITATE_KICK') {
+        await replyAndCleanupIn3s(
+          message,
+          'ไม่รู้จะสั่งอะไรดี งั้นลองออกไปคิดดูก่อนนะคะ'
+        );
         await voiceTracker.rejectAndKickMember(message.author.id, 'HESITATE', activeClient);
         return;
       }
 
       if (parsed.intent === 'REFUSE_KICK') {
+        await replyAndCleanupIn3s(
+          message,
+          'เข้ามาแล้วไม่ยอมสั่งเมนู อเลสเทียของดให้บริการนะคะ'
+        );
         await voiceTracker.rejectAndKickMember(message.author.id, 'REFUSE', activeClient);
         return;
       }
 
-      if (parsed.intent === 'UNKNOWN_DRINK') {
-        const extras = [parsed.matchedTopping, parsed.matchedDessert].filter(Boolean).join(' + ');
-        const extraNote = extras ? ` (จดส่วนเสริม **${extras}** ไว้ให้แล้วค่ะ)` : '';
-        const unknownHint = await message
-          .reply(`☕ อเลสเทียไม่แน่ใจว่า **"${parsed.unknownText}"** คือเมนูเครื่องดื่มตัวไหนค่ะ${extraNote} ลองพิมพ์ชื่อน้ำอีกครั้ง หรือพิมพ์ว่า **"สุ่มเลย"** ให้บอทเลือกให้ได้นะคะ!`)
-          .catch(() => null);
-        if (unknownHint) {
-          setTimeout(() => unknownHint.delete().catch(() => null), 8000);
-        }
-        return;
-      }
-
-      // กรณีพิมพ์ข้อความคุยทั่วไปที่ยังหาเมนูไม่เจอ ให้กระซิบแนะนำสั้นๆ แล้วลบออกใน 6 วินาที
-      const hintMsg = await message
-        .reply('☕ อเลสเทียยังหาชื่อเมนูในข้อความไม่เจอค่ะ ลองพิมพ์ชื่อเครื่องดื่ม (เช่น *ชาไทย, เลมอน, โกโก้ใส่ไข่มุก, ชีสเค้ก*) บอกแนวรสชาติ (*หวานๆ, ตื่นๆ, เปรี้ยวๆ*) หรือพิมพ์ว่า **"สุ่มเลย"** ได้นะคะ!')
-        .catch(() => null);
-      if (hintMsg) {
-        setTimeout(() => hintMsg.delete().catch(() => null), 6000);
-      }
+      // กรณีเขียนชื่อเมนูไม่ตรงทุกตัวอักษร
+      await replyAndCleanupIn3s(
+        message,
+        'เขียนชื่อเมนูไม่ถูกต้องนะคะ กรุณาพิมพ์ชื่อเมนูให้ตรงตามรายการทุกตัวอักษรแล้วเขียนใหม่ค่ะ!'
+      );
       return;
     }
 
