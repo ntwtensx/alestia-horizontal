@@ -12,6 +12,7 @@ const COOKIE_EMOJI_ID = '1562622101427323002';
 const COOKIE_EMOJI_TAG = '<a:59632cookie:1562622101427323002>';
 const ORDER_TIMEOUT_MS = 60 * 1000; // เริ่มต้น 1 นาที
 const EXTEND_DURATIONS_MS = [60 * 1000, 30 * 1000]; // ครั้งที่ 1: +1 นาที, ครั้งที่ 2: +30 วินาที
+const FAILED_SESSION_PURGE_DELAY_MS = 5000; // ดีเลย์ 5 วินาทีก่อนลบประวัติและ Embed กรณีคนแรกสั่งไม่สำเร็จ
 const { COIN_TEXT } = priceCatalog;
 
 const FALLBACK_TEXTS = {
@@ -23,6 +24,9 @@ if (!memory.sessionMsgCache) memory.sessionMsgCache = new Map();
 if (!memory.pendingOrders) memory.pendingOrders = new Map();
 if (!memory.kickedOrderReasons) memory.kickedOrderReasons = new Map();
 if (!memory.pendingUnmuteUsers) memory.pendingUnmuteUsers = new Set();
+
+// เก็บรายชื่อคนที่เข้าห้องคนแรกไม่สำเร็จ (หลุดออกก่อนเปิดรอบเสร็จ) เพื่อไม่ให้ leftCafe สร้างประวัติซ้ำ
+const abortedFirstEntries = new Set();
 
 let trackerQueue = Promise.resolve();
 
@@ -117,6 +121,46 @@ function cleanupPendingEntry(pending) {
   }
 }
 
+function markAbortedFirstEntry(userId) {
+  if (!userId) return;
+  abortedFirstEntries.add(userId);
+  setTimeout(() => abortedFirstEntries.delete(userId), 15000);
+}
+
+// 🧹 ลบทั้งข้อความ Embed และเอกสารประวัติ CafeSession ใน MongoDB เหมือนไม่มีอะไรเกิดขึ้น
+async function purgeSessionNow(cafeChannel, sessionId, messageId) {
+  try {
+    if (messageId) {
+      const cachedMsg = memory.sessionMsgCache.get(CAFE_CHANNEL_ID);
+      if (cachedMsg && cachedMsg.id === messageId) {
+        await cachedMsg.delete().catch(() => null);
+        memory.sessionMsgCache.delete(CAFE_CHANNEL_ID);
+      } else if (cafeChannel) {
+        const targetMsg = await cafeChannel.messages.fetch(messageId).catch(() => null);
+        if (targetMsg) {
+          await targetMsg.delete().catch(() => null);
+        }
+      }
+    }
+
+    if (sessionId) {
+      await CafeSession.deleteOne({ _id: sessionId }).catch(() => null);
+    }
+
+    console.log(`[Cafe Session Purge] 🧹 ลบประวัติเซสชัน (${sessionId || '-'}) และ Embed (${messageId || '-'}) เรียบร้อยแล้ว`);
+  } catch (err) {
+    console.error('❌ [purgeSessionNow Error]:', err.message);
+  }
+}
+
+// ⏳ ดีเลย์ตามเวลาที่กำหนด (ค่าเริ่มต้น 5 วินาที) แล้วลบประวัติและ Embed ของรอบที่ล้มเหลวทิ้ง
+function schedulePurgeFailedSession(cafeChannel, sessionId, messageId, delayMs = FAILED_SESSION_PURGE_DELAY_MS) {
+  if (!sessionId && !messageId) return;
+  setTimeout(() => {
+    purgeSessionNow(cafeChannel, sessionId, messageId).catch(() => null);
+  }, delayMs);
+}
+
 async function renderAndSaveSessionEmbed(cafeChannel, session, isClosing = false) {
   const defAvatar = 'https://cdn.discordapp.com/embed/avatars/0.png';
   const defName = 'ไม่ทราบชื่อ';
@@ -155,6 +199,7 @@ async function renderAndSaveSessionEmbed(cafeChannel, session, isClosing = false
 
   if (isClosing) memory.sessionMsgCache.delete(CAFE_CHANNEL_ID);
   await session.save();
+  return session;
 }
 
 const updateSessionLog = async ({ cafeChannel, cId, cName, txt, isClosing = false, actorUser = null, isFirstMember = false, orderDetails = null, insertBelowEntryLine = '', leaveReasonText = '' }) => {
@@ -183,6 +228,11 @@ const updateSessionLog = async ({ cafeChannel, cId, cName, txt, isClosing = fals
       await session.save().catch(() => null);
       memory.sessionMsgCache.delete(cId);
       session = null;
+    }
+
+    // ป้องกันการสร้างเซสชันเปล่าตอนมีเหตุการณ์ออกห้องโดยที่ไม่มีรอบเปิดอยู่จริง
+    if (!session && isClosing && !orderDetails) {
+      return null;
     }
 
     const activeColor = '#C89670';
@@ -229,7 +279,7 @@ const updateSessionLog = async ({ cafeChannel, cId, cName, txt, isClosing = fals
 
       const msg = await sendWithRetry(cafeChannel, { embeds: [embed], components: [webButtonRow] });
 
-      await CafeSession.create({
+      const createdSession = await CafeSession.create({
         channelId: cId,
         messageId: msg.id,
         dateKey,
@@ -245,6 +295,7 @@ const updateSessionLog = async ({ cafeChannel, cId, cName, txt, isClosing = fals
       });
 
       if (!isClosing) memory.sessionMsgCache.set(cId, msg);
+      return createdSession;
     } else {
       if (!session.dateKey) session.dateKey = dateKey;
       if (!Array.isArray(session.receipts)) session.receipts = [];
@@ -304,10 +355,11 @@ const updateSessionLog = async ({ cafeChannel, cId, cName, txt, isClosing = fals
         session.isActive = true;
       }
 
-      await renderAndSaveSessionEmbed(cafeChannel, session, isClosing);
+      return await renderAndSaveSessionEmbed(cafeChannel, session, isClosing);
     }
   } catch (err) {
     console.error('[DB Update Session Error] ❌:', err.message);
+    return null;
   }
 };
 
@@ -408,7 +460,7 @@ async function rejectAndKickMember(userId, reasonType, client) {
       return true;
     }
   } catch (kickErr) {
-    // กรณีเตะไม่ได้ (เช่น เจ้าของเซิร์ฟเวอร์) ให้ปลด Mute คืนแล้วลงบันทึกใน Embed
+    // กรณีเตะไม่ได้ (เช่น เจ้าของเซิร์ฟเวอร์) ให้ปลด Mute คืน ลงบันทึก แล้วหากเป็นคนแรกที่ไม่มีออเดอร์เลยให้ลบออกใน 5 วินาที
     memory.kickedOrderReasons.delete(userId);
     trackerQueue = trackerQueue.then(async () => {
       const cafeChannel = await getCafeChannel(client);
@@ -419,17 +471,34 @@ async function rejectAndKickMember(userId, reasonType, client) {
         await member.voice.setMute(false, 'ปลดไมค์คืนเมื่อไม่สามารถตัดการเชื่อมต่อได้').catch(() => null);
         memory.pendingUnmuteUsers.delete(userId);
       }
+
+      const hMembers = cafeChannel.members.filter(m => !m.user.bot);
+      const isOnlyFailedFirstMember = Boolean(pending.isFirstMember) && hMembers.size <= 1;
+
       const timeStr = getUnixTimestampStr();
       const logText = `${timeStr} <a:1162greytick:1562617731583311872>**${pending.userName}** ${reasonPhrase}ค่ะ~✦`;
-      await updateSessionLog({
+      const savedSession = await updateSessionLog({
         cafeChannel,
         cId: CAFE_CHANNEL_ID,
         cName: cafeChannel.name,
         txt: logText,
-        isClosing: false,
+        isClosing: isOnlyFailedFirstMember,
         actorUser: pending.actorUser,
         leaveReasonText: reasonPhrase
       });
+
+      if (
+        isOnlyFailedFirstMember &&
+        savedSession &&
+        (!savedSession.receipts || savedSession.receipts.length === 0)
+      ) {
+        schedulePurgeFailedSession(
+          cafeChannel,
+          savedSession._id,
+          savedSession.messageId,
+          FAILED_SESSION_PURGE_DELAY_MS
+        );
+      }
     });
   }
   return true;
@@ -473,6 +542,8 @@ const processCafeEvent = async (oldState, newState, userName, userDataDB, client
   // 🌸 1. เมื่อสมาชิกเดินเข้าห้องเสียงคาเฟ่
   // ==========================================
   if (joinedCafe) {
+    abortedFirstEntries.delete(userId);
+
     if (memory.pendingOrders.has(userId)) {
       const oldPending = memory.pendingOrders.get(userId);
       cleanupPendingEntry(oldPending);
@@ -481,20 +552,29 @@ const processCafeEvent = async (oldState, newState, userName, userDataDB, client
     }
     memory.kickedOrderReasons.delete(userId);
 
+    const hMembers = cafeChannel.members.filter(m => !m.user.bot);
+    const stillInCafe = cafeChannel.members.has(userId) && memberObj?.voice?.channelId === CAFE_CHANNEL_ID;
+    const isFirstMember = hMembers.size <= 1;
+
+    // 🚫 กรณีสมาชิกคนแรกเชื่อมต่อเข้าห้องเสียงไม่สำเร็จ / หลุดออกทันทีก่อนเปิดรอบ -> ยกเลิกทันทีเหมือนไม่มีอะไรเกิดขึ้น
+    if (!stillInCafe) {
+      if (hMembers.size === 0) {
+        markAbortedFirstEntry(userId);
+      }
+      return;
+    }
+
     // 🔇 สั่ง Server Mute ทันทีจนกว่าจะสั่งออเดอร์ได้สำเร็จ
     if (memberObj?.voice?.channelId === CAFE_CHANNEL_ID) {
       await memberObj.voice.setMute(true, 'รอสั่งออเดอร์เมนูคาเฟ่').catch(() => null);
     }
 
-    const hMembers = cafeChannel.members.filter(m => !m.user.bot);
-    const isFirstMember = hMembers.size <= 1;
     const timeStr = getUnixTimestampStr();
-
     const entryLogLine = isFirstMember
       ? `${timeStr} <a:9887greentick:1562617728005705799>**${userName}** ได้เข้ามานั่งในคาเฟ่เป็นคนแรกค่ะ~✦`
       : `${timeStr} <a:9887greentick:1562617728005705799>**${userName}** ได้เข้ามานั่งในคาเฟ่แล้วค่ะ~✦`;
 
-    await updateSessionLog({
+    const activeSession = await updateSessionLog({
       cafeChannel,
       cId: CAFE_CHANNEL_ID,
       cName: cafeChannel.name,
@@ -509,6 +589,24 @@ const processCafeEvent = async (oldState, newState, userName, userDataDB, client
     const promptText = buildOrderPromptText(userId, userName, deadlineMs, 0);
     const promptMsg = await sendWithRetry(cafeChannel, promptText).catch(() => null);
 
+    // 🚫 เช็กซ้ำหลังเปิดรอบ: หากสมาชิกคนแรกหลุดออกไประหว่างสร้างเซสชัน หรือส่งข้อความทวงออเดอร์ไม่สำเร็จ -> ลบเซสชันและ Embed ทันที
+    const stillPresentAfterSetup = cafeChannel.members.has(userId) && memberObj?.voice?.channelId === CAFE_CHANNEL_ID;
+    if (isFirstMember && (!stillPresentAfterSetup || !promptMsg)) {
+      if (promptMsg) await promptMsg.delete().catch(() => null);
+
+      if (stillPresentAfterSetup) {
+        await memberObj.voice.setMute(false, 'ยกเลิกการเปิดรอบเนื่องจากส่งข้อความไม่สำเร็จ').catch(() => null);
+      } else {
+        memory.pendingUnmuteUsers.add(userId);
+        markAbortedFirstEntry(userId);
+      }
+
+      if (activeSession && (!activeSession.receipts || activeSession.receipts.length === 0)) {
+        await purgeSessionNow(cafeChannel, activeSession._id, activeSession.messageId);
+      }
+      return;
+    }
+
     const timer = setTimeout(() => {
       rejectAndKickMember(userId, 'TIMEOUT', client).catch(() => null);
     }, ORDER_TIMEOUT_MS);
@@ -520,6 +618,8 @@ const processCafeEvent = async (oldState, newState, userName, userDataDB, client
       actorUser,
       promptMsg,
       entryLogLine,
+      isFirstMember,
+      sessionId: activeSession?._id || null,
       timer,
       collector: null,
       deadlineMs,
@@ -580,6 +680,16 @@ const processCafeEvent = async (oldState, newState, userName, userDataDB, client
   // 🚪 2. เมื่อสมาชิกออกจากห้องเสียงคาเฟ่ (หรือถูกบอทดีดออก)
   // ==========================================
   if (leftCafe) {
+    // หากเป็นการหลุดออกตั้งแต่ตอนเข้าห้องคนแรกไม่สำเร็จ ให้จบเงียบๆ เหมือนไม่มีอะไรเกิดขึ้น
+    if (abortedFirstEntries.has(userId)) {
+      abortedFirstEntries.delete(userId);
+      if (newState.channelId && newState.member?.voice?.channelId) {
+        await newState.member.voice.setMute(false, 'ปลดไมค์หลังยกเลิกรอบคาเฟ่').catch(() => null);
+        memory.pendingUnmuteUsers.delete(userId);
+      }
+      return;
+    }
+
     let leftBeforeOrdering = false;
     if (memory.pendingOrders.has(userId)) {
       const pending = memory.pendingOrders.get(userId);
@@ -604,10 +714,12 @@ const processCafeEvent = async (oldState, newState, userName, userDataDB, client
     let logText = '';
     let isClosing = isLastMember;
     let leaveReasonText = '';
+    let wasKickedForOrder = false;
 
     if (memory.kickedOrderReasons.has(userId)) {
       const kickReason = memory.kickedOrderReasons.get(userId);
       memory.kickedOrderReasons.delete(userId);
+      wasKickedForOrder = true;
       logText = `${timeStr} <a:1162greytick:1562617731583311872>**${userName}** ${kickReason}${isLastMember ? ' (ปิดรอบบริการค่ะ)' : ''}~✦`;
       leaveReasonText = kickReason;
     } else if (memory.sleepingUsers.has(userId)) {
@@ -632,7 +744,7 @@ const processCafeEvent = async (oldState, newState, userName, userDataDB, client
       }
     }
 
-    await updateSessionLog({
+    const savedSession = await updateSessionLog({
       cafeChannel,
       cId: CAFE_CHANNEL_ID,
       cName: cafeChannel.name,
@@ -643,6 +755,22 @@ const processCafeEvent = async (oldState, newState, userName, userDataDB, client
       orderDetails: null,
       leaveReasonText
     });
+
+    // ⏳ หากปิดรอบโดยที่สมาชิกคนแรกสั่งออเดอร์ไม่สำเร็จ (ไม่มียอดสั่งซื้อในรอบนี้เลย) -> ดีเลย์ 5 วินาทีแล้วลบประวัติและ Embed ทิ้งทันที
+    const hasNoCompletedOrders = !savedSession?.receipts || savedSession.receipts.length === 0;
+    if (
+      savedSession &&
+      isLastMember &&
+      hasNoCompletedOrders &&
+      (wasKickedForOrder || leftBeforeOrdering)
+    ) {
+      schedulePurgeFailedSession(
+        cafeChannel,
+        savedSession._id,
+        savedSession.messageId,
+        FAILED_SESSION_PURGE_DELAY_MS
+      );
+    }
   }
 };
 
