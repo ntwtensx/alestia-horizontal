@@ -137,8 +137,8 @@ function createWebServer(botClient) {
     registeredWebLinks.push({ path: '/register', label: 'หน้าลงทะเบียนบัตรสมาชิกโฮโลแกรม' });
   }
 
-  // หน้าบอร์ดสมุดบันทึก & ใบเสร็จคาเฟ่ + ทำเนียบสมาชิก (/, /members, /bank)
-  app.get(['/', '/members', '/bank'], (req, res) => {
+  // หน้าบอร์ดสมุดบันทึก & ใบเสร็จคาเฟ่ + ทำเนียบสมาชิก (/, /members)
+  app.get(['/', '/members'], (req, res) => {
     res.set('Cache-Control', 'no-store');
     if (fs.existsSync(dashboardHtmlFile)) return res.sendFile(dashboardHtmlFile);
     if (fs.existsSync(registerHtmlFile)) return res.sendFile(registerHtmlFile);
@@ -148,8 +148,7 @@ function createWebServer(botClient) {
   if (fs.existsSync(dashboardHtmlFile)) {
     registeredWebLinks.push(
       { path: '/', label: 'หน้าหลัก บอร์ดใบเสร็จคาเฟ่' },
-      { path: '/members', label: 'หน้าทำเนียบสมาชิกโฮโลแกรม' },
-      { path: '/bank', label: 'หน้าสมุดบัญชี & อันดับสุลต่าน' }
+      { path: '/members', label: 'หน้าทำเนียบสมาชิกโฮโลแกรม' }
     );
   }
 

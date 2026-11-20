@@ -86,10 +86,6 @@
       50% { background-position: 100% 50%; }
       100% { background-position: 0% 50%; }
     }
-    @keyframes floatCrown {
-      0%, 100% { transform: translateY(0px) rotate(-6deg); }
-      50% { transform: translateY(-5px) rotate(6deg); }
-    }
 
     body {
       font-family: 'Kanit', 'Outfit', sans-serif;
@@ -142,8 +138,12 @@
       position: relative; border: none; background: transparent;
       color: var(--text-main); font-family: inherit; font-size: 0.84rem; font-weight: 700;
       padding: 8px 16px; border-radius: 999px; cursor: pointer;
+      text-decoration: none;
       display: inline-flex; align-items: center; gap: 6px; z-index: 1;
-      transition: color 0.2s ease;
+      transition: color 0.2s ease, background 0.2s ease;
+    }
+    .nav-tab-btn.menu-link-btn:hover {
+      background: rgba(181, 101, 118, 0.18);
     }
     .nav-tab-btn.active { color: #FFF; }
     .nav-tab-pill-bg {
@@ -261,7 +261,6 @@
       box-shadow: 0 10px 24px rgba(80, 45, 55, 0.08);
       display: flex; flex-direction: column; justify-content: space-between; gap: 10px;
     }
-    /* รอยปรุตั๋วซ้าย-ขวา */
     .specialty-ticket::before, .specialty-ticket::after {
       content: ''; position: absolute; top: 58%; width: 18px; height: 18px;
       border-radius: 50%; background: var(--bg-grad-1);
@@ -340,22 +339,10 @@
       transform-style: preserve-3d; will-change: transform;
       display: flex; flex-direction: column; justify-content: space-between; gap: 10px;
     }
-    .collector-card.sultan-gold {
-      border: 2.5px solid #FFD56B;
-      box-shadow: 0 20px 44px -10px rgba(212, 138, 39, 0.35);
-    }
     .card-glare {
       position: absolute; inset: 0; pointer-events: none; z-index: 3;
       background: radial-gradient(circle at var(--gx, 50%) var(--gy, 50%), rgba(255,255,255,0.65) 0%, rgba(255,182,193,0.2) 35%, transparent 70%);
       opacity: var(--gop, 0); transition: opacity 0.2s ease;
-    }
-    .sultan-crown-badge {
-      position: absolute; top: 12px; left: 12px; z-index: 4;
-      background: linear-gradient(135deg, #FFD700, #F39C12); color: #3D2300;
-      font-size: 0.72rem; font-weight: 800; padding: 3px 10px; border-radius: 999px;
-      box-shadow: 0 4px 12px rgba(243, 156, 18, 0.4);
-      display: inline-flex; align-items: center; gap: 4px;
-      animation: floatCrown 3s ease-in-out infinite;
     }
     .enamel-role-pin {
       display: inline-flex; align-items: center; gap: 5px;
@@ -435,8 +422,8 @@
     import { createRoot } from 'react-dom/client';
     import { motion, AnimatePresence } from 'framer-motion';
     import {
-      Coffee, Users, Receipt, BookOpen, Sparkles, Volume2, VolumeX,
-      Sun, Sunset, Moon, Search, Crown, ShieldCheck, Calendar, RefreshCw, Lock, Edit3, X
+      Coffee, Users, Receipt, Sparkles, Volume2, VolumeX, Headphones,
+      Sun, Sunset, Moon, Search, Calendar, RefreshCw, Lock, Edit3, X
     } from 'lucide-react';
     import confetti from 'canvas-confetti';
 
@@ -537,8 +524,6 @@
         });
       };
 
-      const isSultan = Boolean(member.sultanRank && member.sultanRank <= 3);
-
       return (
         <motion.div
           ref={cardRef}
@@ -548,16 +533,10 @@
           whileHover={{ y: -4 }}
           onMouseMove={handleMove}
           onMouseLeave={handleLeave}
-          className={`collector-card ${isSultan ? 'sultan-gold' : ''}`}
+          className="collector-card"
           style={{ ...tilt, '--role-color': member.roleColor || '#F4978E' }}
         >
           <div className="card-glare" />
-
-          {isSultan && (
-            <div className="sultan-crown-badge">
-              👑 สุลต่านอันดับ #{member.sultanRank}
-            </div>
-          )}
 
           <div style={{ display: 'flex', justifyContent: 'flex-end', position: 'relative', zIndex: 2 }}>
             <span className="enamel-role-pin">
@@ -767,8 +746,7 @@
             <nav className="nav-pills-wrap">
               {[
                 { id: 'receipts', label: '🧾 บอร์ดใบเสร็จคาเฟ่', icon: Receipt },
-                { id: 'members', label: `🪪 ทำเนียบสมาชิก (${stats.registeredCount})`, icon: Users },
-                { id: 'passbook', label: '📖 สมุดเมนู & อันดับสุลต่าน', icon: BookOpen }
+                { id: 'members', label: `🪪 ทำเนียบสมาชิก (${stats.registeredCount})`, icon: Users }
               ].map(t => (
                 <button
                   key={t.id}
@@ -782,6 +760,14 @@
                   <span>{t.label}</span>
                 </button>
               ))}
+
+              <a
+                href="/menu"
+                onClick={() => sfx.playPop(620)}
+                className="nav-tab-btn menu-link-btn"
+              >
+                <span>📖 สมุดเมนู</span>
+              </a>
             </nav>
 
             <div className="header-actions">
@@ -854,7 +840,7 @@
             </motion.div>
 
             <motion.div whileHover={{ y: -3 }} className="bento-stat-card acrylic-panel">
-              <div className="bento-stat-label"><Crown size={15} /> กำลังนั่งในห้องเสียงคาเฟ่</div>
+              <div className="bento-stat-label"><Headphones size={15} /> กำลังนั่งในห้องเสียงคาเฟ่</div>
               <div className="bento-stat-value" style={{ color: '#27AE60' }}>
                 🎧 <RollingNumber value={stats.liveVoiceCount} />
               </div>
@@ -1018,7 +1004,7 @@
                   />
                 </div>
                 <div style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-muted)' }}>
-                  👑 สุลต่าน 3 อันดับแรกจะได้รับมงกุฎทองคำบนบัตรสมาชิกอัตโนมัติ
+                  🪪 สมาชิกทั้งหมด {filteredMembers.length} ท่าน
                 </div>
               </div>
 
@@ -1030,80 +1016,6 @@
                     onOpenEdit={openEditModal}
                   />
                 ))}
-              </div>
-            </motion.div>
-          )}
-
-          {/* ================= แท็บที่ 3: สมุดเมนู & อันดับสุลต่าน ================= */}
-          {activeTab === 'passbook' && (
-            <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 18 }}>
-              <div className="acrylic-panel" style={{ padding: 22 }}>
-                <h2 style={{ fontSize: '1.12rem', fontWeight: 800, marginBottom: 12, display: 'flex', alignItems: 'center', gap: 8 }}>
-                  👑 หอเกียรติยศสุลต่านประจำคาเฟ่ (Top 10)
-                </h2>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                  {[...(overview?.members || [])]
-                    .sort((a, b) => (b.totalSpent + b.walletBalance) - (a.totalSpent + a.walletBalance))
-                    .slice(0, 10)
-                    .map((m, idx) => (
-                      <div
-                        key={m.discordId}
-                        style={{
-                          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                          padding: '10px 14px', borderRadius: 16, background: 'var(--surface-card)',
-                          border: idx < 3 ? '2px solid #FFD56B' : '1px solid var(--border-soft)'
-                        }}
-                      >
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                          <span style={{ fontWeight: 800, width: 24 }}>{idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : `#${idx + 1}`}</span>
-                          <img src={m.avatarUrl} style={{ width: 36, height: 36, borderRadius: '50%' }} alt="" />
-                          <div>
-                            <div style={{ fontWeight: 800, fontSize: '0.88rem' }}>{m.nickname ? `คุณ${m.nickname}` : m.displayName}</div>
-                            <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>เข้าคาเฟ่ {m.visitCount || 0} ครั้ง</div>
-                          </div>
-                        </div>
-                        <div style={{ textAlign: 'right' }}>
-                          <div style={{ fontWeight: 800, fontSize: '0.86rem', color: 'var(--accent-gold)' }}>
-                            🧾 อุดหนุน {Number(m.totalSpent || 0).toLocaleString()} 🪙
-                          </div>
-                          <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
-                            กระเป๋า {Number(m.walletBalance || 0).toLocaleString()} 🪙
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                </div>
-              </div>
-
-              <div className="acrylic-panel" style={{ padding: 22 }}>
-                <h2 style={{ fontSize: '1.12rem', fontWeight: 800, marginBottom: 12 }}>
-                  🍹 สมุดแคตตาล็อกเมนูบาริสต้าอเลสเทีย
-                </h2>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 12, maxHeight: 540, overflowY: 'auto', paddingRight: 4 }}>
-                  {catalogCategories.map(cat => (
-                    <div key={cat.id} style={{ background: 'var(--surface-card)', borderRadius: 16, padding: 14, border: '1px solid var(--border-soft)' }}>
-                      <div style={{ fontWeight: 800, fontSize: '0.92rem', marginBottom: 8 }}>
-                        {cat.icon} {cat.title} ({(cat.items || []).length} เมนู)
-                      </div>
-                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                        {(cat.items || []).map(it => (
-                          <span
-                            key={it.name}
-                            onMouseEnter={() => sfx.playPop(820, 0.03)}
-                            style={{
-                              fontSize: '0.75rem', padding: '4px 10px', borderRadius: 999,
-                              background: 'rgba(181,101,118,0.08)', border: '1px solid var(--border-soft)',
-                              display: 'inline-flex', alignItems: 'center', gap: 5
-                            }}
-                          >
-                            <span>{it.name}</span>
-                            <b style={{ color: 'var(--accent-gold)' }}>{it.isMystery ? '199-999' : it.price} 🪙</b>
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
-                </div>
               </div>
             </motion.div>
           )}
