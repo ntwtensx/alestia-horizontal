@@ -1,5 +1,4 @@
 const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
-const CafeEvent = require('../../models/CafeEvent');
 const CafeSession = require('../../models/CafeSession');
 const UserDB = require('../../models/User');
 const memory = require('../../utils/sharedMemory');
@@ -8,25 +7,15 @@ const theme = require('../../config/theme');
 
 const CAFE_CHANNEL_ID = theme.discordConfig?.cafeVoiceChannelId || '995629374722297946';
 const FOOTER_ICON_URL = 'https://i.ibb.co/nMzNwcw0/119111-softbunnyinlove.png';
-const COOKIE_EMOJI_ID = '1562622101427323002';
-const COOKIE_EMOJI_TAG = '<a:59632cookie:1562622101427323002>';
-const ORDER_TIMEOUT_MS = 60 * 1000; // เริ่มต้น 1 นาที
-const EXTEND_DURATIONS_MS = [60 * 1000, 30 * 1000]; // ครั้งที่ 1: +1 นาที, ครั้งที่ 2: +30 วินาที
-const FAILED_SESSION_PURGE_DELAY_MS = 5000; // ดีเลย์ 5 วินาทีก่อนลบประวัติและ Embed กรณีคนแรกสั่งไม่สำเร็จ
-const { COIN_TEXT } = priceCatalog;
+const CONFIRM_DELETE_MS = 7000; // ลบข้อความยืนยันออเดอร์หลัง 7 วินาที
+const MIN_VALID_STAY_MS = 60 * 1000; // อยู่ต่ำกว่า 1 นาทีถือเป็นข้อมูลขยะ -> ลบประวัติทิ้ง
+const MAX_EMBED_FIELDS = 25; // ขีดจำกัดสูงสุดของ Discord Embed Fields
 
-const FALLBACK_TEXTS = {
-  leave_normal: ['เดินโบกมือลา', 'เก็บของเดินยิ้มออก', 'อิ่มอร่อยแล้วเดินออก', 'จิบกาแฟหยดสุดท้ายแล้วเดินออก'],
-  leave_rare: ['แอบวางทิปทองคำไว้บนโต๊ะแล้ววาร์ปหายไป', 'ได้รับการ์ดเชิญลับแล้วเดินยิ้มออก']
-};
+const { COIN_EMOJI, COIN_TEXT, DEFAULT_SWEETNESS } = priceCatalog;
 
 if (!memory.sessionMsgCache) memory.sessionMsgCache = new Map();
 if (!memory.pendingOrders) memory.pendingOrders = new Map();
-if (!memory.kickedOrderReasons) memory.kickedOrderReasons = new Map();
 if (!memory.pendingUnmuteUsers) memory.pendingUnmuteUsers = new Set();
-
-// เก็บรายชื่อคนที่เข้าห้องคนแรกไม่สำเร็จ (หลุดออกก่อนเปิดรอบเสร็จ) เพื่อไม่ให้ leftCafe สร้างประวัติซ้ำ
-const abortedFirstEntries = new Set();
 
 let trackerQueue = Promise.resolve();
 
@@ -48,31 +37,27 @@ const createWebButtonRow = () => {
 
 const getThaiDateTime = () => {
   const now = new Date();
-  const dateKey = now.toLocaleDateString('en-CA', { timeZone: 'Asia/Bangkok' });
+  const dateKey = now.toLocaleDateString('en-CA', { timeZone: 'Asia/Bangkok' }); // YYYY-MM-DD
+  const dateDisplay = now.toLocaleDateString('en-GB', { timeZone: 'Asia/Bangkok' }); // DD/MM/YYYY
   const timeText = now.toLocaleTimeString('th-TH', {
-    timeZone: 'Asia/Bangkok', hour: '2-digit', minute: '2-digit', hour12: false
+    timeZone: 'Asia/Bangkok',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false
   });
-  return { now, dateKey, timeText };
+  return { now, dateKey, dateDisplay, timeText };
 };
 
-const getUnixTimestampStr = () => `[<t:${Math.floor(Date.now() / 1000)}:t>]`;
+const formatDateKeyToDDMMYYYY = (dateKey) => {
+  if (!dateKey || typeof dateKey !== 'string') return getThaiDateTime().dateDisplay;
+  const parts = dateKey.split('-');
+  if (parts.length === 3) return `${parts[2]}/${parts[1]}/${parts[0]}`;
+  return dateKey;
+};
 
-const buildOrderPromptText = (userId, userName, deadlineMs, extendCount = 0) => {
-  const deadlineUnix = Math.floor(deadlineMs / 1000);
-  let footerLine = `-# สามารถกด ${COOKIE_EMOJI_TAG} เพื่อขอเวลาบาริสต้าในการรอเพิ่มได้ค่ะ แต่ไม่ใช่ว่าจะขอเพิ่มได้ตลอดนะคะ`;
-
-  if (extendCount === 1) {
-    footerLine = `-# ต่อเวลาเพิ่มครั้งที่ 1 (+1 นาที) แล้วค่ะ สามารถกด ${COOKIE_EMOJI_TAG} ขอเพิ่มได้อีก 1 ครั้งสุดท้าย (+30 วินาที)`;
-  } else if (extendCount >= 2) {
-    footerLine = `-# ต่อเวลาเพิ่มครบ 2 ครั้งแล้ว (+30 วินาที) ไม่สามารถขอเพิ่มได้อีกแล้วค่ะ หมดเวลาคือเชิญออกทันที!`;
-  }
-
-  return [
-    `-# <@${userId}>`,
-    `<a:spkran:1513650594546712706>แจ้งเตือน **${userName}** ภายในระยะเวลา <t:${deadlineUnix}:R> นี้คุณจะต้องสั่งออเดอร์เมนูมาอย่างน้อยหนึ่งเครื่องดื่ม เพื่อที่จะได้นั่งในคาเฟ่อย่างมีประสิทธิภาพที่สุดค่ะ`,
-    `- ชื่อเมนูจะต้องเขียนถูกต้องตรงตามชื่อในรายการเมนูทุกตัวอักษร ไม่ถูกก็เขียนใหม่ค่ะ`,
-    footerLine
-  ].join('\n');
+const toUnixSec = (dateVal) => {
+  const ms = dateVal ? new Date(dateVal).getTime() : Date.now();
+  return Math.floor((Number.isNaN(ms) ? Date.now() : ms) / 1000);
 };
 
 const sendWithRetry = async (channel, payload, maxRetries = 2) => {
@@ -81,7 +66,7 @@ const sendWithRetry = async (channel, payload, maxRetries = 2) => {
       return await channel.send(payload);
     } catch (err) {
       if (attempt > maxRetries) throw err;
-      await new Promise(res => setTimeout(res, 1000 * attempt));
+      await new Promise((res) => setTimeout(res, 1000 * attempt));
     }
   }
 };
@@ -90,7 +75,9 @@ const calculateDurationText = (session, stTimeFallback = '') => {
   if (!session) return stTimeFallback ? `เพิ่งเริ่มบริการ (เปิดรอบ ${stTimeFallback} น.)` : 'เพิ่งเริ่มบริการ';
   let startMs = session.createdAt ? new Date(session.createdAt).getTime() : null;
   if (!startMs && session.messageId && /^\d+$/.test(session.messageId)) {
-    try { startMs = Number((BigInt(session.messageId) >> 22n) + 1420070400000n); } catch (e) {}
+    try {
+      startMs = Number((BigInt(session.messageId) >> 22n) + 1420070400000n);
+    } catch (_) {}
   }
   if (!startMs) return 'ไม่ทราบระยะเวลา';
 
@@ -113,21 +100,85 @@ async function getCafeChannel(client, guildFallback = null) {
   return ch;
 }
 
-function cleanupPendingEntry(pending) {
-  if (!pending) return;
-  if (pending.timer) clearTimeout(pending.timer);
-  if (pending.collector && !pending.collector.ended) {
-    pending.collector.stop('cleanup');
+// ==========================================
+// 🎲 1. ระบบสุ่มเมนูอัตโนมัติ (เครื่องดื่ม + ท็อปปิ้ง + ของทานเล่น)
+// ==========================================
+function rollRandomCafeMenu(userDataDB = null) {
+  const allDrinkNames = [
+    ...Object.keys(priceCatalog.DRINK_PRICES || {}).filter((n) => n !== 'เอิร์ลเกรย์ลาเวเดอร์'),
+    ...Array.from(priceCatalog.MYSTERY_MENU_SET || [])
+  ];
+  const allToppingNames = Object.keys(priceCatalog.TOPPING_PRICES || {});
+  const allDessertNames = Object.keys(priceCatalog.DESSERT_PRICES || {});
+
+  const pickRandom = (arr) => (arr.length > 0 ? arr[Math.floor(Math.random() * arr.length)] : '');
+
+  // โอกาส 20% สุ่มติดเมนูโปรดของสมาชิก (ถ้าลงทะเบียนไว้และมีชื่ออยู่ในคลัง)
+  let drinkName = '';
+  const fav = userDataDB?.favoriteMenu ? String(userDataDB.favoriteMenu).trim() : '';
+  if (fav && fav !== 'ขอคิดดูก่อน' && allDrinkNames.includes(fav) && Math.random() < 0.2) {
+    drinkName = fav;
+  } else {
+    drinkName = pickRandom(allDrinkNames) || 'ลาเต้อาร์ตมาสเตอร์พีซ';
   }
+
+  // สุ่มท็อปปิ้ง (โอกาส 55%) และของทานเล่น (โอกาส 50%)
+  const toppingName = allToppingNames.length > 0 && Math.random() < 0.55 ? pickRandom(allToppingNames) : '';
+  const dessertName = allDessertNames.length > 0 && Math.random() < 0.50 ? pickRandom(allDessertNames) : '';
+
+  const drinkPrice = priceCatalog.getItemPrice(drinkName, 'drink', 0) || 120;
+  const toppingPrice = toppingName ? priceCatalog.getItemPrice(toppingName, 'topping', 0) || 25 : 0;
+  const dessertPrice = dessertName ? priceCatalog.getItemPrice(dessertName, 'dessert', 0) || 95 : 0;
+  const totalPrice = drinkPrice + toppingPrice + dessertPrice;
+
+  return {
+    drinkName,
+    drinkPrice,
+    toppingName,
+    toppingPrice,
+    dessertName,
+    dessertPrice,
+    totalPrice
+  };
 }
 
-function markAbortedFirstEntry(userId) {
-  if (!userId) return;
-  abortedFirstEntries.add(userId);
-  setTimeout(() => abortedFirstEntries.delete(userId), 15000);
+// ==========================================
+// 🍯 2. ระบบจัดรูปแบบระดับความหวานแบบมือโปร
+// ==========================================
+function formatProfessionalSweetness(rawInput) {
+  if (!rawInput || typeof rawInput !== 'string') return DEFAULT_SWEETNESS;
+
+  // ลบช่องว่างเกิน ลบบรรทัดใหม่ และตัดความยาวกัน Embed แตก
+  const cleaned = rawInput
+    .replace(/[\r\n]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .replace(/^["'`]+|["'`]+$/g, '')
+    .trim()
+    .slice(0, 40);
+
+  if (!cleaned) return DEFAULT_SWEETNESS;
+
+  // 1. หากมีคำว่า "หวาน" อยู่แล้ว (เช่น หวานมากก, หวานตัดขา, ไม่หวานเลย, หวานน้อยนิดจิดเดียว) -> ใช้ตามจริงเลย
+  if (cleaned.includes('หวาน')) {
+    return cleaned;
+  }
+
+  // 2. หากเป็นประโยคระบุปริมาณน้ำตาลหรือแบบจืดชัดเจน (เช่น น้ำตาลเม็ดเดียว, น้ำตาลนิดเดียว, ไม่ใส่น้ำตาล, จืดๆ) -> ต่อท้ายได้ทันทีอย่างเป็นธรรมชาติ
+  if (/^(น้ำตาล|ไม่ใส่|ไม่เอา|งด|จืด|ไร้)/.test(cleaned)) {
+    return cleaned;
+  }
+
+  // 3. หากเป็นคำขยายระดับหรือเปอร์เซ็นต์ (เช่น มากกก, น้อย, ปกติ, ตัดขา, 50%, นิดเดียว) -> เติมคำว่า "หวาน" นำหน้าให้
+  if (/^\d+\s*%?$/.test(cleaned)) {
+    return `หวาน ${cleaned}`;
+  }
+
+  return `หวาน${cleaned}`;
 }
 
-// 🧹 ลบทั้งข้อความ Embed และเอกสารประวัติ CafeSession ใน MongoDB เหมือนไม่มีอะไรเกิดขึ้น
+// ==========================================
+// 🧹 3. ลบเซสชันขยะออกจากทั้ง Discord Embed และ MongoDB
+// ==========================================
 async function purgeSessionNow(cafeChannel, sessionId, messageId) {
   try {
     if (messageId) {
@@ -137,9 +188,7 @@ async function purgeSessionNow(cafeChannel, sessionId, messageId) {
         memory.sessionMsgCache.delete(CAFE_CHANNEL_ID);
       } else if (cafeChannel) {
         const targetMsg = await cafeChannel.messages.fetch(messageId).catch(() => null);
-        if (targetMsg) {
-          await targetMsg.delete().catch(() => null);
-        }
+        if (targetMsg) await targetMsg.delete().catch(() => null);
       }
     }
 
@@ -147,41 +196,81 @@ async function purgeSessionNow(cafeChannel, sessionId, messageId) {
       await CafeSession.deleteOne({ _id: sessionId }).catch(() => null);
     }
 
-    console.log(`[Cafe Session Purge] 🧹 ลบประวัติเซสชัน (${sessionId || '-'}) และ Embed (${messageId || '-'}) เรียบร้อยแล้ว`);
+    console.log(`[Cafe Garbage Purge] 🧹 ลบเซสชันขยะ (${sessionId || '-'}) และ Embed (${messageId || '-'}) เรียบร้อยแล้ว`);
   } catch (err) {
     console.error('❌ [purgeSessionNow Error]:', err.message);
   }
 }
 
-// ⏳ ดีเลย์ตามเวลาที่กำหนด (ค่าเริ่มต้น 5 วินาที) แล้วลบประวัติและ Embed ของรอบที่ล้มเหลวทิ้ง
-function schedulePurgeFailedSession(cafeChannel, sessionId, messageId, delayMs = FAILED_SESSION_PURGE_DELAY_MS) {
-  if (!sessionId && !messageId) return;
-  setTimeout(() => {
-    purgeSessionNow(cafeChannel, sessionId, messageId).catch(() => null);
-  }, delayMs);
-}
-
-async function renderAndSaveSessionEmbed(cafeChannel, session, isClosing = false) {
-  const defAvatar = 'https://cdn.discordapp.com/embed/avatars/0.png';
-  const defName = 'ไม่ทราบชื่อ';
+// ==========================================
+// 🎨 4. สร้าง Embed รูปแบบใหม่ (Inline Fields รายบุคคล)
+// ==========================================
+function buildSessionEmbed(cafeChannel, session, isClosing = false) {
   const activeColor = '#C89670';
   const closingColor = '#535294';
-  const webButtonRow = createWebButtonRow();
+  const channelLabel = cafeChannel?.name || '☕⟆﹕ᴄᴀꜰᴇ・:';
 
-  const formattedRevenue = (session.totalRevenue || 0).toLocaleString('en-US');
-  const safeName = session.authorName || defName;
-  const safeAvatar = session.authorAvatar?.startsWith('http') ? session.authorAvatar : defAvatar;
+  const receipts = Array.isArray(session.receipts) ? session.receipts : [];
+  const presentCount = receipts.filter((r) => r.isPresent).length;
+  const formattedRevenue = Number(session.totalRevenue || 0).toLocaleString('en-US');
   const durationStr = calculateDurationText(session, session.startTimeText);
+  const dateDisplay = formatDateKeyToDDMMYYYY(session.dateKey);
+  const startTimeDisplay = session.startTimeText || getThaiDateTime().timeText;
+
+  // รองรับสูงสุด 25 Fields ตามข้อจำกัดของ Discord โดยยังคงเลขลำดับ R# เดิมของแต่ละคนไว้ครบ
+  const startIndex = Math.max(0, receipts.length - MAX_EMBED_FIELDS);
+  const visibleReceipts = receipts.slice(startIndex);
+
+  const fields = visibleReceipts.map((r, offset) => {
+    const seqNumber = String(startIndex + offset + 1).padStart(2, '0');
+    const userIdPrefix4 = String(r.userId || '0000').slice(0, 4);
+    const enterUnix = toUnixSec(r.enteredAt || session.createdAt);
+    const exitUnix = toUnixSec(r.exitedAt || Date.now());
+
+    const fieldName = r.isPresent
+      ? `<a:9887greentick:1562617728005705799>[<t:${enterUnix}:t>] กำลังอยู่ในคาเฟ่`
+      : `<a:1162greytick:1562617731583311872>[<t:${enterUnix}:t>-<t:${exitUnix}:t>] ออกไปแล้ว`;
+
+    const drinkLine = `${r.drinkName || 'เมนูซิกเนเจอร์'}${r.sweetness || DEFAULT_SWEETNESS}${r.toppingName ? ` ${r.toppingName}` : ''}`;
+    const valueLines = [
+      `**"${r.userName || 'ลูกค้าคาเฟ่'}"**`,
+      `> ~✦${drinkLine}`
+    ];
+
+    if (r.dessertName) {
+      valueLines.push(`> ~✦${r.dessertName}`);
+    }
+
+    valueLines.push(`**R#${seqNumber}${userIdPrefix4} ราคา ${Number(r.totalPrice || 0).toLocaleString('en-US')} ${COIN_EMOJI}**`);
+
+    return {
+      name: fieldName,
+      value: valueLines.join('\n').slice(0, 1024),
+      inline: true
+    };
+  });
 
   const embed = new EmbedBuilder()
     .setColor(isClosing ? closingColor : activeColor)
-    .setTitle(`<a:spkran:1513650594546712706>${cafeChannel.name}<:694406valentinecupcake:1561353493984313424>บันทึกการเข้าใช้งาน`)
-    .setAuthor({ name: safeName, iconURL: safeAvatar })
-    .setDescription((session.logLines || []).join('\n'))
+    .setTitle(`<a:spkran:1513650594546712706>${channelLabel}<a:greenrollingstar:1524672296344752128>บันทึกการเข้าใช้งาน`)
+    .setDescription(
+      `<:14618bunnyoutline:1570084097622155365>ประจำวันที่ ${dateDisplay} เวลา ${startTimeDisplay}\n- **สมาชิกที่อยู่ทั้งสิ้น ${presentCount} คน**`
+    )
     .setFooter({
-      text: `สถานะ: ${isClosing ? 'ปิดรอบบริการแล้ว' : 'กำลังให้บริการ'} | ยอดขายรวม ${formattedRevenue} ${COIN_TEXT}\n[ ใช้เวลาทั้งสิ้น ${durationStr} ]`,
+      text: `สถานะ : ${isClosing ? 'ปิดรอบบริการแล้ว' : 'กำลังให้บริการ'}\n| ยอดขายรวม ${formattedRevenue} ${COIN_TEXT}\n[ ใช้เวลาทั้งสิ้น ${durationStr} ]`,
       iconURL: FOOTER_ICON_URL
     });
+
+  if (fields.length > 0) {
+    embed.setFields(fields);
+  }
+
+  return embed;
+}
+
+async function renderAndSaveSessionEmbed(cafeChannel, session, isClosing = false) {
+  const webButtonRow = createWebButtonRow();
+  const embed = buildSessionEmbed(cafeChannel, session, isClosing);
 
   try {
     let targetMsg = memory.sessionMsgCache.get(CAFE_CHANNEL_ID);
@@ -190,185 +279,27 @@ async function renderAndSaveSessionEmbed(cafeChannel, session, isClosing = false
       memory.sessionMsgCache.set(CAFE_CHANNEL_ID, targetMsg);
     }
     await targetMsg.edit({ embeds: [embed], components: [webButtonRow] });
-  } catch (e) {
-    embed.setTitle(`<a:spkran:1513650594546712706>${cafeChannel.name}<:694406valentinecupcake:1561353493984313424>บันทึกการเข้าใช้งาน (ข้อมูลกู้คืน)`);
+  } catch (_) {
     const newMsg = await sendWithRetry(cafeChannel, { embeds: [embed], components: [webButtonRow] });
     session.messageId = newMsg.id;
     memory.sessionMsgCache.set(CAFE_CHANNEL_ID, newMsg);
   }
 
-  if (isClosing) memory.sessionMsgCache.delete(CAFE_CHANNEL_ID);
+  if (isClosing) {
+    memory.sessionMsgCache.delete(CAFE_CHANNEL_ID);
+  }
+
   await session.save();
   return session;
 }
 
-const updateSessionLog = async ({ cafeChannel, cId, cName, txt, isClosing = false, actorUser = null, isFirstMember = false, orderDetails = null, insertBelowEntryLine = '', leaveReasonText = '' }) => {
-  try {
-    const { now, dateKey, timeText } = getThaiDateTime();
-    const defAvatar = 'https://cdn.discordapp.com/embed/avatars/0.png';
-    const defName = 'ไม่ทราบชื่อ';
-
-    let session = await CafeSession.findOne({ channelId: cId, isActive: { $ne: false } }).sort({ createdAt: -1 });
-
-    if (session && isFirstMember) {
-      if (!session.dateKey) session.dateKey = dateKey;
-      session.isActive = false;
-      session.endTimeText = timeText;
-      session.endedAt = now;
-      if (Array.isArray(session.receipts)) {
-        session.receipts.forEach(r => {
-          if (r.isPresent) {
-            r.isPresent = false;
-            r.exitTimeText = timeText;
-            r.exitedAt = now;
-            r.exitReason = 'ปิดรอบระบบอัตโนมัติ';
-          }
-        });
-      }
-      await session.save().catch(() => null);
-      memory.sessionMsgCache.delete(cId);
-      session = null;
-    }
-
-    // ป้องกันการสร้างเซสชันเปล่าตอนมีเหตุการณ์ออกห้องโดยที่ไม่มีรอบเปิดอยู่จริง
-    if (!session && isClosing && !orderDetails) {
-      return null;
-    }
-
-    const activeColor = '#C89670';
-    const closingColor = '#535294';
-    const webButtonRow = createWebButtonRow();
-
-    const newReceiptObj = orderDetails
-      ? {
-          userId: actorUser?.id || 'unknown',
-          userName: actorUser?.name || defName,
-          userAvatar: actorUser?.avatar || defAvatar,
-          enterTimeText: timeText,
-          enteredAt: now,
-          exitTimeText: '',
-          exitedAt: null,
-          exitReason: '',
-          isPresent: true,
-          drinkName: orderDetails.drinkName,
-          sweetness: orderDetails.sweetness,
-          drinkPrice: orderDetails.drinkPrice,
-          toppingName: orderDetails.toppingName,
-          toppingPrice: orderDetails.toppingPrice,
-          dessertName: orderDetails.dessertName,
-          dessertPrice: orderDetails.dessertPrice,
-          totalPrice: orderDetails.totalPrice
-        }
-      : null;
-
-    if (!session) {
-      const aName = actorUser?.name || defName;
-      const aAvatar = actorUser?.avatar?.startsWith('http') ? actorUser.avatar : defAvatar;
-      const durationStr = calculateDurationText(null, timeText);
-      const initialRevenue = orderDetails ? orderDetails.totalPrice : 0;
-
-      const embed = new EmbedBuilder()
-        .setColor(isClosing ? closingColor : activeColor)
-        .setTitle(`<a:spkran:1513650594546712706>${cName}<:694406valentinecupcake:1561353493984313424>บันทึกการเข้าใช้งาน`)
-        .setAuthor({ name: aName, iconURL: aAvatar })
-        .setDescription(txt)
-        .setFooter({
-          text: `สถานะ: ${isClosing ? 'ปิดรอบบริการแล้ว' : 'กำลังให้บริการ'} | ยอดขายรวม ${initialRevenue.toLocaleString('en-US')} ${COIN_TEXT}\n[ ใช้เวลาทั้งสิ้น ${durationStr} ]`,
-          iconURL: FOOTER_ICON_URL
-        });
-
-      const msg = await sendWithRetry(cafeChannel, { embeds: [embed], components: [webButtonRow] });
-
-      const createdSession = await CafeSession.create({
-        channelId: cId,
-        messageId: msg.id,
-        dateKey,
-        isActive: !isClosing,
-        logLines: [txt],
-        startTimeText: timeText,
-        endTimeText: isClosing ? timeText : '',
-        endedAt: isClosing ? now : null,
-        authorName: aName,
-        authorAvatar: aAvatar,
-        totalRevenue: initialRevenue,
-        receipts: newReceiptObj ? [newReceiptObj] : []
-      });
-
-      if (!isClosing) memory.sessionMsgCache.set(cId, msg);
-      return createdSession;
-    } else {
-      if (!session.dateKey) session.dateKey = dateKey;
-      if (!Array.isArray(session.receipts)) session.receipts = [];
-      if (!Array.isArray(session.logLines)) session.logLines = [];
-
-      if (insertBelowEntryLine) {
-        let targetIdx = -1;
-        for (let i = session.logLines.length - 1; i >= 0; i--) {
-          if (session.logLines[i] === insertBelowEntryLine || (actorUser?.name && session.logLines[i].includes(`**${actorUser.name}** ได้เข้ามานั่งในคาเฟ่`))) {
-            targetIdx = i;
-            break;
-          }
-        }
-        if (targetIdx !== -1) {
-          session.logLines.splice(targetIdx + 1, 0, txt);
-        } else {
-          session.logLines.push(txt);
-        }
-      } else {
-        session.logLines.push(txt);
-      }
-
-      if (session.logLines.length > 26) {
-        session.logLines = session.logLines.slice(-26);
-      }
-
-      if (newReceiptObj) {
-        session.receipts.push(newReceiptObj);
-        session.totalRevenue = (session.totalRevenue || 0) + newReceiptObj.totalPrice;
-      }
-
-      if (!orderDetails && actorUser?.id && session.receipts.length > 0) {
-        for (let i = session.receipts.length - 1; i >= 0; i--) {
-          if (session.receipts[i].userId === actorUser.id && session.receipts[i].isPresent) {
-            session.receipts[i].isPresent = false;
-            session.receipts[i].exitTimeText = timeText;
-            session.receipts[i].exitedAt = now;
-            session.receipts[i].exitReason = leaveReasonText || 'ออกจากคาเฟ่';
-            break;
-          }
-        }
-      }
-
-      if (isClosing) {
-        session.isActive = false;
-        session.endTimeText = timeText;
-        session.endedAt = now;
-        session.receipts.forEach(r => {
-          if (r.isPresent) {
-            r.isPresent = false;
-            r.exitTimeText = timeText;
-            r.exitedAt = now;
-            r.exitReason = leaveReasonText || 'ปิดรอบบริการ';
-          }
-        });
-      } else {
-        session.isActive = true;
-      }
-
-      return await renderAndSaveSessionEmbed(cafeChannel, session, isClosing);
-    }
-  } catch (err) {
-    console.error('[DB Update Session Error] ❌:', err.message);
-    return null;
-  }
-};
-
-// ✅ ยืนยันออเดอร์: ปลด Mute -> ลบข้อความแจ้งเตือนเดิมของบอท -> Reply ข้อความของสมาชิกแทน
-async function confirmMemberOrder(userId, orderDetails, client, memberMessage = null) {
+// ==========================================
+// ✅ 5. ยืนยันระดับความหวาน -> ปลด Mute -> ลบข้อความเดิม -> แจ้งยืนยัน (ลบใน 7 วิ) -> อัปเดต Embed
+// ==========================================
+async function confirmMemberSweetness(userId, rawSweetnessText, client, memberMessage = null) {
   const pending = memory.pendingOrders.get(userId);
   if (!pending) return false;
 
-  cleanupPendingEntry(pending);
   memory.pendingOrders.delete(userId);
 
   return (trackerQueue = trackerQueue.then(async () => {
@@ -376,134 +307,177 @@ async function confirmMemberOrder(userId, orderDetails, client, memberMessage = 
       const cafeChannel = await getCafeChannel(client);
       if (!cafeChannel) return false;
 
-      // 1. ปลด Server Mute ให้สมาชิกทันทีที่สั่งเมนูสำเร็จ
+      const sweetness = formatProfessionalSweetness(rawSweetnessText);
+      const { rolledMenu, userName, actorUser, joinedAt } = pending;
+      const drinkWithSweetness = `${rolledMenu.drinkName}${sweetness}`;
+
+      // 1. ปลด Server Mute ให้สมาชิกทันที
       const guild = cafeChannel.guild || client?.guilds?.cache?.first();
-      const member = guild?.members?.cache?.get(userId) || (guild ? await guild.members.fetch(userId).catch(() => null) : null);
+      const member =
+        guild?.members?.cache?.get(userId) ||
+        (guild ? await guild.members.fetch(userId).catch(() => null) : null);
+
       if (member?.voice?.channelId) {
-        await member.voice.setMute(false, 'สั่งออเดอร์เมนูคาเฟ่สำเร็จแล้ว').catch(() => null);
+        await member.voice.setMute(false, 'ระบุความหวานและรับเมนูคาเฟ่เรียบร้อยแล้ว').catch(() => null);
       }
       memory.pendingUnmuteUsers.delete(userId);
 
-      // 2. ลบข้อความแจ้งเตือนเดิมของบอทออก
+      // 2. ลบทั้งข้อความแจ้งเตือนของบอทและข้อความระบุความหวานของสมาชิก
       if (pending.promptMsg) {
         await pending.promptMsg.delete().catch(() => null);
       }
+      if (memberMessage && typeof memberMessage.delete === 'function') {
+        await memberMessage.delete().catch(() => null);
+      }
 
-      // 3. Reply ข้อความของสมาชิกคนนั้นด้วยข้อความยืนยันออเดอร์ถาวร
-      const confirmText = `☕ ได้ทำการรับออเดอร์ของ **${pending.userName}** เป็น **${orderDetails.orderText}** เรียบร้อยแล้วค่ะ~✦`;
-      if (memberMessage && typeof memberMessage.reply === 'function') {
-        await memberMessage.reply(confirmText).catch(() => sendWithRetry(cafeChannel, confirmText).catch(() => null));
-      } else {
-        await sendWithRetry(cafeChannel, confirmText).catch(() => null);
+      // เช็กเผื่อสมาชิกหลุดออกห้องเสียงไปพอดีในจังหวะพิมพ์ส่ง
+      const stillInCafe = cafeChannel.members.has(userId) && member?.voice?.channelId === CAFE_CHANNEL_ID;
+      if (!stillInCafe) return false;
+
+      // 3. ส่งข้อความยืนยันรับออเดอร์ขึ้นใหม่ และลบออกใน 7 วินาที
+      const confirmText = [
+        `-# <@${userId}>`,
+        `☕ ได้ทำการส่งเมนูให้คุณ${userName} เป็น ${drinkWithSweetness} เรียบร้อยแล้วค่ะ~✦`
+      ].join('\n');
+
+      const confirmMsg = await sendWithRetry(cafeChannel, confirmText).catch(() => null);
+      if (confirmMsg) {
+        setTimeout(() => {
+          confirmMsg.delete().catch(() => null);
+        }, CONFIRM_DELETE_MS);
       }
 
       // 4. หักเหรียญทองจากกระเป๋าจริง (หากลงทะเบียนไว้แล้ว)
-      if (orderDetails.totalPrice > 0) {
+      let walletDeducted = 0;
+      if (rolledMenu.totalPrice > 0) {
         const userDoc = await UserDB.findOne({ discordId: userId }).lean().catch(() => null);
         if (userDoc && typeof userDoc.walletBalance === 'number') {
-          const nextBal = Math.max(0, userDoc.walletBalance - orderDetails.totalPrice);
+          const nextBal = Math.max(0, userDoc.walletBalance - rolledMenu.totalPrice);
+          walletDeducted = Math.max(0, userDoc.walletBalance - nextBal);
           await UserDB.updateOne({ discordId: userId }, { $set: { walletBalance: nextBal } }).catch(() => null);
         }
       }
 
-      // 5. บันทึกบรรทัดย่อย - {เมนู}{ความหวาน} -{ท็อปปิ้ง} -{ขนม} ลงใน Embed
-      await updateSessionLog({
-        cafeChannel,
-        cId: CAFE_CHANNEL_ID,
-        cName: cafeChannel.name,
-        txt: orderDetails.embedOrderLine,
-        isClosing: false,
-        actorUser: pending.actorUser,
-        isFirstMember: false,
-        orderDetails,
-        insertBelowEntryLine: pending.entryLogLine
+      // 5. บันทึกลง CafeSession และสร้าง/อัปเดต Embed ใหม่
+      const { now, dateKey, timeText } = getThaiDateTime();
+      const enteredDate = joinedAt ? new Date(joinedAt) : now;
+      const enterTimeText = enteredDate.toLocaleTimeString('th-TH', {
+        timeZone: 'Asia/Bangkok',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false
       });
+
+      const receiptObj = {
+        userId,
+        userName,
+        userAvatar: actorUser.avatar,
+        enterTimeText,
+        enteredAt: enteredDate,
+        exitTimeText: '',
+        exitedAt: null,
+        exitReason: '',
+        isPresent: true,
+        drinkName: rolledMenu.drinkName,
+        sweetness,
+        drinkPrice: rolledMenu.drinkPrice,
+        toppingName: rolledMenu.toppingName,
+        toppingPrice: rolledMenu.toppingPrice,
+        dessertName: rolledMenu.dessertName,
+        dessertPrice: rolledMenu.dessertPrice,
+        totalPrice: rolledMenu.totalPrice
+      };
+
+      const logSummaryLine = `• ${userName}: ${drinkWithSweetness}${rolledMenu.toppingName ? ` + ${rolledMenu.toppingName}` : ''}${rolledMenu.dessertName ? ` + ${rolledMenu.dessertName}` : ''} (${rolledMenu.totalPrice} ${COIN_TEXT})`;
+
+      let session = await CafeSession.findOne({ channelId: CAFE_CHANNEL_ID, isActive: { $ne: false } }).sort({ createdAt: -1 });
+
+      // หากมีเซสชันเก่าค้างอยู่แต่ไม่มีใครนั่งอยู่ในเซสชันนั้นแล้ว ให้ปิดรอบเก่าก่อนเริ่มรอบใหม่
+      if (session) {
+        const hasOtherPresentInVoice = (session.receipts || []).some(
+          (r) => r.isPresent && r.userId !== userId && cafeChannel.members.has(r.userId)
+        );
+        const hMembers = cafeChannel.members.filter((m) => !m.user.bot);
+        if (!hasOtherPresentInVoice && hMembers.size <= 1) {
+          session.isActive = false;
+          session.endTimeText = timeText;
+          session.endedAt = now;
+          (session.receipts || []).forEach((r) => {
+            if (r.isPresent) {
+              r.isPresent = false;
+              r.exitTimeText = timeText;
+              r.exitedAt = now;
+              r.exitReason = 'ปิดรอบระบบอัตโนมัติ';
+            }
+          });
+          await session.save().catch(() => null);
+          memory.sessionMsgCache.delete(CAFE_CHANNEL_ID);
+          session = null;
+        }
+      }
+
+      if (!session) {
+        const tempSession = {
+          channelId: CAFE_CHANNEL_ID,
+          dateKey,
+          isActive: true,
+          startTimeText: enterTimeText,
+          createdAt: enteredDate,
+          authorName: actorUser.name,
+          authorAvatar: actorUser.avatar,
+          totalRevenue: rolledMenu.totalPrice,
+          receipts: [receiptObj],
+          logLines: [logSummaryLine]
+        };
+
+        const embed = buildSessionEmbed(cafeChannel, tempSession, false);
+        const msg = await sendWithRetry(cafeChannel, { embeds: [embed], components: [createWebButtonRow()] });
+
+        await CafeSession.create({
+          channelId: CAFE_CHANNEL_ID,
+          messageId: msg.id,
+          dateKey,
+          isActive: true,
+          logLines: [logSummaryLine],
+          startTimeText: enterTimeText,
+          endTimeText: '',
+          endedAt: null,
+          authorName: actorUser.name,
+          authorAvatar: actorUser.avatar,
+          totalRevenue: rolledMenu.totalPrice,
+          receipts: [receiptObj]
+        });
+
+        memory.sessionMsgCache.set(CAFE_CHANNEL_ID, msg);
+      } else {
+        if (!session.dateKey) session.dateKey = dateKey;
+        if (!Array.isArray(session.receipts)) session.receipts = [];
+        if (!Array.isArray(session.logLines)) session.logLines = [];
+
+        session.receipts.push(receiptObj);
+        session.logLines.push(logSummaryLine);
+        if (session.logLines.length > 40) session.logLines = session.logLines.slice(-40);
+        session.totalRevenue = Number(session.totalRevenue || 0) + rolledMenu.totalPrice;
+        session.isActive = true;
+
+        await renderAndSaveSessionEmbed(cafeChannel, session, false);
+      }
+
+      // จำยอดที่หักจริงไว้ใน memory เผื่อออกก่อน 1 นาทีจะได้คืนเงินได้ถูกต้อง
+      if (!memory.activeDeductions) memory.activeDeductions = new Map();
+      memory.activeDeductions.set(userId, walletDeducted);
 
       return true;
     } catch (err) {
-      console.error('❌ [confirmMemberOrder Error]:', err.message);
+      console.error('❌ [confirmMemberSweetness Error]:', err.message);
       return false;
     }
   }));
 }
 
-// 🚫 ปฏิเสธการให้บริการและดีดสมาชิกออกจากห้องเสียง (หมดเวลา / บอกไม่รู้ / ปฏิเสธ)
-async function rejectAndKickMember(userId, reasonType, client) {
-  const pending = memory.pendingOrders.get(userId);
-  if (!pending) return false;
-
-  cleanupPendingEntry(pending);
-  memory.pendingOrders.delete(userId);
-
-  if (pending.promptMsg) {
-    await pending.promptMsg.delete().catch(() => null);
-  }
-
-  let reasonPhrase = 'ไม่ยอมสั่งเมนูอะไรเลยจึงของดให้บริการ';
-  if (reasonType === 'HESITATE') {
-    reasonPhrase = 'ไม่รู้จะสั่งเมนูอะไรดี งั้นลองออกไปคิดดูก่อนนะคะ';
-  } else if (reasonType === 'REFUSE') {
-    reasonPhrase = 'ปฏิเสธการสั่งเมนูจึงของดให้บริการ';
-  }
-
-  memory.kickedOrderReasons.set(userId, reasonPhrase);
-  // จำคิวปลด Mute ไว้เพื่อให้ปลดไมค์อัตโนมัติในครั้งถัดไปที่เข้าห้องเสียง
-  memory.pendingUnmuteUsers.add(userId);
-
-  try {
-    const cafeChannel = await getCafeChannel(client);
-    const guild = cafeChannel?.guild || client?.guilds?.cache?.first();
-    const member = guild?.members?.cache?.get(userId) || (guild ? await guild.members.fetch(userId).catch(() => null) : null);
-
-    if (member?.voice?.channelId === CAFE_CHANNEL_ID) {
-      await member.voice.disconnect(reasonPhrase);
-      return true;
-    }
-  } catch (kickErr) {
-    // กรณีเตะไม่ได้ (เช่น เจ้าของเซิร์ฟเวอร์) ให้ปลด Mute คืน ลงบันทึก แล้วหากเป็นคนแรกที่ไม่มีออเดอร์เลยให้ลบออกใน 5 วินาที
-    memory.kickedOrderReasons.delete(userId);
-    trackerQueue = trackerQueue.then(async () => {
-      const cafeChannel = await getCafeChannel(client);
-      if (!cafeChannel) return;
-      const guild = cafeChannel.guild || client?.guilds?.cache?.first();
-      const member = guild?.members?.cache?.get(userId);
-      if (member?.voice?.channelId) {
-        await member.voice.setMute(false, 'ปลดไมค์คืนเมื่อไม่สามารถตัดการเชื่อมต่อได้').catch(() => null);
-        memory.pendingUnmuteUsers.delete(userId);
-      }
-
-      const hMembers = cafeChannel.members.filter(m => !m.user.bot);
-      const isOnlyFailedFirstMember = Boolean(pending.isFirstMember) && hMembers.size <= 1;
-
-      const timeStr = getUnixTimestampStr();
-      const logText = `${timeStr} <a:1162greytick:1562617731583311872>**${pending.userName}** ${reasonPhrase}ค่ะ~✦`;
-      const savedSession = await updateSessionLog({
-        cafeChannel,
-        cId: CAFE_CHANNEL_ID,
-        cName: cafeChannel.name,
-        txt: logText,
-        isClosing: isOnlyFailedFirstMember,
-        actorUser: pending.actorUser,
-        leaveReasonText: reasonPhrase
-      });
-
-      if (
-        isOnlyFailedFirstMember &&
-        savedSession &&
-        (!savedSession.receipts || savedSession.receipts.length === 0)
-      ) {
-        schedulePurgeFailedSession(
-          cafeChannel,
-          savedSession._id,
-          savedSession.messageId,
-          FAILED_SESSION_PURGE_DELAY_MS
-        );
-      }
-    });
-  }
-  return true;
-}
-
+// ==========================================
+// 🚪 6. จัดการเหตุการณ์เข้า-ออกห้องเสียงคาเฟ่
+// ==========================================
 const processCafeEvent = async (oldState, newState, userName, userDataDB, client) => {
   const isChannelChange = oldState.channelId !== newState.channelId;
   const joinedCafe = isChannelChange && newState.channelId === CAFE_CHANNEL_ID;
@@ -516,261 +490,152 @@ const processCafeEvent = async (oldState, newState, userName, userDataDB, client
   const cafeChannel = await getCafeChannel(client, guild);
   if (!cafeChannel) return;
 
-  const getMenuPartObj = async (category) => {
-    try {
-      const res = await CafeEvent.aggregate([{ $match: { category } }, { $sample: { size: 1 } }]);
-      if (res.length > 0 && res[0].text) {
-        return { text: res[0].text, price: 0 };
-      }
-    } catch (e) {}
-    if (FALLBACK_TEXTS[category]) {
-      const arr = FALLBACK_TEXTS[category];
-      return { text: arr[Math.floor(Math.random() * arr.length)], price: 0 };
-    }
-    return { text: '', price: 0 };
-  };
-
   const memberObj = newState.member || oldState.member;
   const userId = memberObj?.id || '';
   const actorUser = {
     id: userId,
     name: userName,
-    avatar: memberObj?.user?.displayAvatarURL({ extension: 'png', size: 128 }) || 'https://cdn.discordapp.com/embed/avatars/0.png'
+    avatar:
+      memberObj?.user?.displayAvatarURL({ extension: 'png', size: 128 }) ||
+      'https://cdn.discordapp.com/embed/avatars/0.png'
   };
 
   // ==========================================
-  // 🌸 1. เมื่อสมาชิกเดินเข้าห้องเสียงคาเฟ่
+  // 🌸 ขาเข้า: สุ่มเมนู -> Mute ไมค์ -> ส่งข้อความขอระดับความหวาน
   // ==========================================
   if (joinedCafe) {
-    abortedFirstEntries.delete(userId);
-
     if (memory.pendingOrders.has(userId)) {
       const oldPending = memory.pendingOrders.get(userId);
-      cleanupPendingEntry(oldPending);
-      if (oldPending.promptMsg) oldPending.promptMsg.delete().catch(() => null);
+      if (oldPending.promptMsg) await oldPending.promptMsg.delete().catch(() => null);
       memory.pendingOrders.delete(userId);
     }
-    memory.kickedOrderReasons.delete(userId);
 
-    const hMembers = cafeChannel.members.filter(m => !m.user.bot);
     const stillInCafe = cafeChannel.members.has(userId) && memberObj?.voice?.channelId === CAFE_CHANNEL_ID;
-    const isFirstMember = hMembers.size <= 1;
+    if (!stillInCafe) return;
 
-    // 🚫 กรณีสมาชิกคนแรกเชื่อมต่อเข้าห้องเสียงไม่สำเร็จ / หลุดออกทันทีก่อนเปิดรอบ -> ยกเลิกทันทีเหมือนไม่มีอะไรเกิดขึ้น
-    if (!stillInCafe) {
-      if (hMembers.size === 0) {
-        markAbortedFirstEntry(userId);
-      }
-      return;
-    }
+    // 1. สั่ง Server Mute จนกว่าจะระบุความหวาน
+    await memberObj.voice.setMute(true, 'รอระบุความหวานสำหรับเมนูคาเฟ่').catch(() => null);
 
-    // 🔇 สั่ง Server Mute ทันทีจนกว่าจะสั่งออเดอร์ได้สำเร็จ
-    if (memberObj?.voice?.channelId === CAFE_CHANNEL_ID) {
-      await memberObj.voice.setMute(true, 'รอสั่งออเดอร์เมนูคาเฟ่').catch(() => null);
-    }
+    // 2. สุ่มเมนูเครื่องดื่ม (พร้อมท็อปปิ้ง/ขนม)
+    const rolledMenu = rollRandomCafeMenu(userDataDB);
 
-    const timeStr = getUnixTimestampStr();
-    const entryLogLine = isFirstMember
-      ? `${timeStr} <a:9887greentick:1562617728005705799>**${userName}** ได้เข้ามานั่งในคาเฟ่เป็นคนแรกค่ะ~✦`
-      : `${timeStr} <a:9887greentick:1562617728005705799>**${userName}** ได้เข้ามานั่งในคาเฟ่แล้วค่ะ~✦`;
+    // 3. ส่งข้อความแจ้งเตือนถามระดับความหวานเฉพาะชื่อเครื่องดื่ม
+    const promptText = [
+      `-# <@${userId}>`,
+      `<a:mloader:1570077645624971356> คุณ${userName} กรุณาระบุความหวานให้กับ${rolledMenu.drinkName}ด้วยนะคะ~✦`,
+      `-# พิมพ์ข้อความส่งมาในแชทได้เลยค่ะ`
+    ].join('\n');
 
-    const activeSession = await updateSessionLog({
-      cafeChannel,
-      cId: CAFE_CHANNEL_ID,
-      cName: cafeChannel.name,
-      txt: entryLogLine,
-      isClosing: false,
-      actorUser,
-      isFirstMember,
-      orderDetails: null
-    });
-
-    const deadlineMs = Date.now() + ORDER_TIMEOUT_MS;
-    const promptText = buildOrderPromptText(userId, userName, deadlineMs, 0);
     const promptMsg = await sendWithRetry(cafeChannel, promptText).catch(() => null);
 
-    // 🚫 เช็กซ้ำหลังเปิดรอบ: หากสมาชิกคนแรกหลุดออกไประหว่างสร้างเซสชัน หรือส่งข้อความทวงออเดอร์ไม่สำเร็จ -> ลบเซสชันและ Embed ทันที
-    const stillPresentAfterSetup = cafeChannel.members.has(userId) && memberObj?.voice?.channelId === CAFE_CHANNEL_ID;
-    if (isFirstMember && (!stillPresentAfterSetup || !promptMsg)) {
+    // เช็กซ้ำเผื่อหลุดออกระหว่างส่งข้อความ -> ลบข้อความแจ้งเตือนทันทีเหมือนไม่มีอะไรเกิดขึ้น
+    const stillPresentAfterSend = cafeChannel.members.has(userId) && memberObj?.voice?.channelId === CAFE_CHANNEL_ID;
+    if (!stillPresentAfterSend) {
       if (promptMsg) await promptMsg.delete().catch(() => null);
-
-      if (stillPresentAfterSetup) {
-        await memberObj.voice.setMute(false, 'ยกเลิกการเปิดรอบเนื่องจากส่งข้อความไม่สำเร็จ').catch(() => null);
-      } else {
-        memory.pendingUnmuteUsers.add(userId);
-        markAbortedFirstEntry(userId);
-      }
-
-      if (activeSession && (!activeSession.receipts || activeSession.receipts.length === 0)) {
-        await purgeSessionNow(cafeChannel, activeSession._id, activeSession.messageId);
-      }
+      memory.pendingUnmuteUsers.add(userId);
       return;
     }
 
-    const timer = setTimeout(() => {
-      rejectAndKickMember(userId, 'TIMEOUT', client).catch(() => null);
-    }, ORDER_TIMEOUT_MS);
-
-    const pendingRecord = {
+    memory.pendingOrders.set(userId, {
       userId,
       userName,
       userDataDB,
       actorUser,
+      rolledMenu,
       promptMsg,
-      entryLogLine,
-      isFirstMember,
-      sessionId: activeSession?._id || null,
-      timer,
-      collector: null,
-      deadlineMs,
-      extendCount: 0,
       joinedAt: Date.now()
-    };
-
-    memory.pendingOrders.set(userId, pendingRecord);
-
-    // 🍪 ใส่อิโมจิคุกกี้และตั้ง Reaction Collector สำหรับขอเวลาเพิ่ม (สูงสุด 2 ครั้ง: +1 นาที และ +30 วิ)
-    if (promptMsg) {
-      await promptMsg.react(COOKIE_EMOJI_ID).catch(() => null);
-
-      const collector = promptMsg.createReactionCollector({
-        filter: (reaction, user) =>
-          !user.bot && (reaction.emoji.id === COOKIE_EMOJI_ID || reaction.emoji.name === '59632cookie'),
-        time: 4 * 60 * 1000
-      });
-
-      pendingRecord.collector = collector;
-
-      collector.on('collect', async (reaction, user) => {
-        // ลบรีแอ็กชันที่คนกดออกเสมอ (ถ้าเป็นคนอื่นคือกันกดมั่ว ถ้าเป็นเจ้าของคือให้กดครั้งที่ 2 ได้สะดวก)
-        await reaction.users.remove(user.id).catch(() => null);
-
-        if (user.id !== userId) return;
-        const activePending = memory.pendingOrders.get(userId);
-        if (!activePending || activePending.extendCount >= EXTEND_DURATIONS_MS.length) {
-          collector.stop('max_extensions');
-          return;
-        }
-
-        const addMs = EXTEND_DURATIONS_MS[activePending.extendCount];
-        activePending.extendCount += 1;
-        activePending.deadlineMs = Math.max(Date.now(), activePending.deadlineMs) + addMs;
-
-        // รีเซ็ตตัวจับเวลาใหม่ตามเวลาที่ต่อรองเพิ่ม
-        if (activePending.timer) clearTimeout(activePending.timer);
-        const remainingMs = Math.max(1000, activePending.deadlineMs - Date.now());
-        activePending.timer = setTimeout(() => {
-          rejectAndKickMember(userId, 'TIMEOUT', client).catch(() => null);
-        }, remainingMs);
-
-        // อัปเดตเวลานับถอยหลังและข้อความในแชทแจ้งเตือน
-        const updatedText = buildOrderPromptText(userId, userName, activePending.deadlineMs, activePending.extendCount);
-        await promptMsg.edit(updatedText).catch(() => null);
-
-        // หากกดครบ 2 ครั้งแล้ว ให้ปิดสิทธิ์และเอาอิโมจิคุกกี้ออกทันที
-        if (activePending.extendCount >= EXTEND_DURATIONS_MS.length) {
-          collector.stop('max_extensions');
-          await promptMsg.reactions.removeAll().catch(() => null);
-        }
-      });
-    }
+    });
+    return;
   }
 
   // ==========================================
-  // 🚪 2. เมื่อสมาชิกออกจากห้องเสียงคาเฟ่ (หรือถูกบอทดีดออก)
+  // 🚪 ขาออก: เคลียร์คิวรอความหวาน / กรองประวัติขยะ (< 1 นาที) / อัปเดตหรือปิดรอบ Embed
   // ==========================================
   if (leftCafe) {
-    // หากเป็นการหลุดออกตั้งแต่ตอนเข้าห้องคนแรกไม่สำเร็จ ให้จบเงียบๆ เหมือนไม่มีอะไรเกิดขึ้น
-    if (abortedFirstEntries.has(userId)) {
-      abortedFirstEntries.delete(userId);
-      if (newState.channelId && newState.member?.voice?.channelId) {
-        await newState.member.voice.setMute(false, 'ปลดไมค์หลังยกเลิกรอบคาเฟ่').catch(() => null);
-        memory.pendingUnmuteUsers.delete(userId);
-      }
-      return;
-    }
-
-    let leftBeforeOrdering = false;
+    // 1. หากยังไม่ได้ระบุความหวานก็ออกไปแล้ว -> ลบข้อความถามและจัดการปลด Mute
     if (memory.pendingOrders.has(userId)) {
       const pending = memory.pendingOrders.get(userId);
-      cleanupPendingEntry(pending);
       if (pending.promptMsg) await pending.promptMsg.delete().catch(() => null);
       memory.pendingOrders.delete(userId);
-      leftBeforeOrdering = true;
 
-      // ถ้าย้ายไปห้องเสียงอื่นให้ปลด Mute ทันที ถ้าตัดการเชื่อมต่อให้เก็บคิวปลดไว้รอบหน้า
       if (newState.channelId && newState.member?.voice?.channelId) {
-        await newState.member.voice.setMute(false, 'ย้ายออกจากห้องคาเฟ่แล้ว').catch(() => null);
+        await newState.member.voice.setMute(false, 'ออกจากห้องคาเฟ่แล้ว').catch(() => null);
         memory.pendingUnmuteUsers.delete(userId);
       } else {
         memory.pendingUnmuteUsers.add(userId);
       }
     }
 
-    const hMembers = cafeChannel.members.filter(m => !m.user.bot);
+    const session = await CafeSession.findOne({ channelId: CAFE_CHANNEL_ID, isActive: { $ne: false } }).sort({ createdAt: -1 });
+    if (!session) return;
+
+    const { now, timeText } = getThaiDateTime();
+    const hMembers = cafeChannel.members.filter((m) => !m.user.bot);
     const isLastMember = hMembers.size === 0;
-    const suffix = isLastMember ? 'เป็นคนสุดท้ายค่ะ~✦' : 'ค่ะ~✦';
-    const timeStr = getUnixTimestampStr();
-    let logText = '';
-    let isClosing = isLastMember;
-    let leaveReasonText = '';
-    let wasKickedForOrder = false;
+    const isSleeping = memory.sleepingUsers?.has(userId);
+    if (isSleeping) memory.sleepingUsers.delete(userId);
 
-    if (memory.kickedOrderReasons.has(userId)) {
-      const kickReason = memory.kickedOrderReasons.get(userId);
-      memory.kickedOrderReasons.delete(userId);
-      wasKickedForOrder = true;
-      logText = `${timeStr} <a:1162greytick:1562617731583311872>**${userName}** ${kickReason}${isLastMember ? ' (ปิดรอบบริการค่ะ)' : ''}~✦`;
-      leaveReasonText = kickReason;
-    } else if (memory.sleepingUsers.has(userId)) {
-      memory.sleepingUsers.delete(userId);
-      const sleepSuffix = isLastMember ? ' เป็นคนสุดท้ายค่ะ' : '';
-      logText = `${timeStr} <a:1162greytick:1562617731583311872>**${userName}** หลับแล้วค่ะอเลสเทียจึงส่งไปห้องนอน${sleepSuffix}~✦`;
-      leaveReasonText = `หลับแล้วค่ะอเลสเทียจึงส่งไปห้องนอน${sleepSuffix}~✦`;
-    } else if (leftBeforeOrdering) {
-      logText = `${timeStr} <a:1162greytick:1562617731583311872>**${userName}** เดินออกจากคาเฟ่ไปก่อนสั่งเมนู${suffix}`;
-      leaveReasonText = `เดินออกจากคาเฟ่ไปก่อนสั่งเมนู${suffix}`;
-    } else {
-      const isRareEvent = Math.random() <= 0.10;
-      const leaveObj = await getMenuPartObj(isRareEvent ? 'leave_rare' : 'leave_normal');
-      const leaveData = leaveObj.text || 'เดินโบกมือลา';
-
-      if (isLastMember) {
-        logText = `${timeStr} <a:1162greytick:1562617731583311872>**${userName}** ${leaveData}จากคาเฟ่เป็นคนสุดท้ายค่ะ~✦`;
-        leaveReasonText = `${leaveData}จากคาเฟ่เป็นคนสุดท้ายค่ะ~✦`;
-      } else {
-        logText = `${timeStr} <a:1162greytick:1562617731583311872>**${userName}** ${leaveData}จากคาเฟ่แล้วค่ะ~✦`;
-        leaveReasonText = `${leaveData}จากคาเฟ่แล้วค่ะ~✦`;
+    // 2. ค้นหาใบเสร็จล่าสุดของสมาชิกคนนี้ที่ยังอยู่ในสถานะกำลังนั่งในร้าน
+    if (!Array.isArray(session.receipts)) session.receipts = [];
+    let targetIdx = -1;
+    for (let i = session.receipts.length - 1; i >= 0; i--) {
+      if (session.receipts[i].userId === userId && session.receipts[i].isPresent) {
+        targetIdx = i;
+        break;
       }
     }
 
-    const savedSession = await updateSessionLog({
-      cafeChannel,
-      cId: CAFE_CHANNEL_ID,
-      cName: cafeChannel.name,
-      txt: logText,
-      isClosing,
-      actorUser,
-      isFirstMember: false,
-      orderDetails: null,
-      leaveReasonText
-    });
+    if (targetIdx !== -1) {
+      const receipt = session.receipts[targetIdx];
+      const enteredMs = receipt.enteredAt ? new Date(receipt.enteredAt).getTime() : Date.now();
+      const stayDurationMs = Math.max(0, Date.now() - enteredMs);
 
-    // ⏳ หากปิดรอบโดยที่สมาชิกคนแรกสั่งออเดอร์ไม่สำเร็จ (ไม่มียอดสั่งซื้อในรอบนี้เลย) -> ดีเลย์ 5 วินาทีแล้วลบประวัติและ Embed ทิ้งทันที
-    const hasNoCompletedOrders = !savedSession?.receipts || savedSession.receipts.length === 0;
-    if (
-      savedSession &&
-      isLastMember &&
-      hasNoCompletedOrders &&
-      (wasKickedForOrder || leftBeforeOrdering)
-    ) {
-      schedulePurgeFailedSession(
-        cafeChannel,
-        savedSession._id,
-        savedSession.messageId,
-        FAILED_SESSION_PURGE_DELAY_MS
-      );
+      if (stayDurationMs < MIN_VALID_STAY_MS) {
+        // 🧹 อยู่ห้องเสียงต่ำกว่า 1 นาที -> ถือเป็นข้อมูลขยะ ลบประวัตินี้ทิ้งและคืนเหรียญทอง
+        session.receipts.splice(targetIdx, 1);
+        session.totalRevenue = Math.max(0, Number(session.totalRevenue || 0) - Number(receipt.totalPrice || 0));
+
+        const refundAmount = memory.activeDeductions?.get(userId) || 0;
+        if (memory.activeDeductions) memory.activeDeductions.delete(userId);
+        if (refundAmount > 0) {
+          await UserDB.updateOne({ discordId: userId }, { $inc: { walletBalance: refundAmount } }).catch(() => null);
+        }
+
+        console.log(
+          `[Cafe Garbage Filter] 🧹 ลบประวัติของ ${userName} เนื่องจากอยู่ในห้องเสียงเพียง ${Math.round(stayDurationMs / 1000)} วินาที (< 1 นาที)`
+        );
+      } else {
+        // ✅ อยู่ครบ 1 นาทีขึ้นไป -> บันทึกเวลาออกและเปลี่ยนสถานะเป็น "ออกไปแล้ว"
+        if (memory.activeDeductions) memory.activeDeductions.delete(userId);
+        receipt.isPresent = false;
+        receipt.exitTimeText = timeText;
+        receipt.exitedAt = now;
+        receipt.exitReason = isSleeping ? 'หลับแล้วจึงส่งไปห้องนอน' : 'ออกจากคาเฟ่แล้ว';
+      }
     }
+
+    // 3. หากไม่มีประวัติที่ผ่านเกณฑ์เหลืออยู่เลยในรอบนี้ -> ลบทั้ง Embed และเอกสารเซสชันทิ้งทันที
+    if (session.receipts.length === 0) {
+      await purgeSessionNow(cafeChannel, session._id, session.messageId);
+      return;
+    }
+
+    // 4. หากเป็นคนสุดท้ายที่ออกจากห้องเสียง ให้ปิดรอบบริการ
+    if (isLastMember) {
+      session.isActive = false;
+      session.endTimeText = timeText;
+      session.endedAt = now;
+      session.receipts.forEach((r) => {
+        if (r.isPresent) {
+          r.isPresent = false;
+          r.exitTimeText = timeText;
+          r.exitedAt = now;
+          r.exitReason = 'ปิดรอบบริการ';
+        }
+      });
+    }
+
+    await renderAndSaveSessionEmbed(cafeChannel, session, isLastMember);
   }
 };
 
@@ -778,9 +643,10 @@ module.exports = {
   async handleCafeWelcome(oldState, newState, userName, userDataDB, client) {
     trackerQueue = trackerQueue
       .then(() => processCafeEvent(oldState, newState, userName, userDataDB, client))
-      .catch(err => console.error('[Cafe Tracker Queue Error] ❌', err.message));
+      .catch((err) => console.error('[Cafe Tracker Queue Error] ❌', err.message));
     return trackerQueue;
   },
-  confirmMemberOrder,
-  rejectAndKickMember
+  confirmMemberSweetness,
+  confirmMemberOrder: confirmMemberSweetness,
+  formatProfessionalSweetness
 };
