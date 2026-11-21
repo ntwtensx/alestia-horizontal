@@ -25,52 +25,21 @@
 
   <style>
     :root {
-      --bg-grad-1: #FBEED2;
-      --bg-grad-2: #FFD6E0;
-      --bg-grad-3: #E5D4FF;
-      --bg-grad-4: #DCF5DC;
-      --surface-glass: rgba(255, 251, 247, 0.86);
-      --surface-card: rgba(255, 255, 255, 0.92);
-      --border-soft: rgba(181, 101, 118, 0.34);
-      --text-main: #4A2530;
-      --text-muted: #8C5361;
+      --canvas-top: #FAF6F0;
+      --canvas-mid: #F4ECE2;
+      --canvas-bottom: #F8EFE6;
+      --surface-glass: rgba(255, 253, 249, 0.90);
+      --surface-card: rgba(255, 253, 249, 0.96);
+      --border-soft: rgba(181, 101, 118, 0.28);
+      --text-main: #3A231E;
+      --text-muted: #6F534B;
       --accent-primary: #B56576;
       --accent-gold: #D48A27;
-      --shadow-soft: 0 18px 42px -10px rgba(80, 45, 55, 0.14);
-    }
-
-    body[data-ambiance="sunset"] {
-      --bg-grad-1: #FFE5D9;
-      --bg-grad-2: #FFCAD4;
-      --bg-grad-3: #F4ACB7;
-      --bg-grad-4: #FBEED2;
-      --surface-glass: rgba(255, 248, 244, 0.88);
-      --text-main: #43202A;
-      --accent-primary: #C95B72;
-    }
-
-    body[data-ambiance="night"] {
-      --bg-grad-1: #1F1118;
-      --bg-grad-2: #2D1824;
-      --bg-grad-3: #1B162A;
-      --bg-grad-4: #2A1B18;
-      --surface-glass: rgba(40, 23, 33, 0.88);
-      --surface-card: rgba(52, 30, 43, 0.92);
-      --border-soft: rgba(255, 213, 107, 0.32);
-      --text-main: #FFF8EB;
-      --text-muted: #D8B4C4;
-      --accent-primary: #FF8DA1;
-      --accent-gold: #FFD56B;
-      --shadow-soft: 0 22px 50px -12px rgba(0, 0, 0, 0.55);
+      --shadow-soft: 0 16px 38px -12px rgba(74, 37, 48, 0.12);
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
 
-    @keyframes auroraFlow {
-      0% { background-position: 0% 50%; }
-      50% { background-position: 100% 50%; }
-      100% { background-position: 0% 50%; }
-    }
     @keyframes steamRise {
       0% { transform: translateY(4px) scale(0.85); opacity: 0; }
       50% { opacity: 0.85; }
@@ -90,27 +59,27 @@
     body {
       font-family: 'Kanit', 'Outfit', sans-serif;
       color: var(--text-main);
-      background: linear-gradient(-45deg, var(--bg-grad-1), var(--bg-grad-2), var(--bg-grad-3), var(--bg-grad-4));
-      background-size: 350% 350%;
-      animation: auroraFlow 18s ease infinite;
+      background:
+        radial-gradient(circle at 88% 8%, rgba(250, 220, 217, 0.55) 0%, transparent 38%),
+        radial-gradient(circle at 8% 36%, rgba(248, 231, 200, 0.55) 0%, transparent 40%),
+        linear-gradient(165deg, var(--canvas-top) 0%, var(--canvas-mid) 55%, var(--canvas-bottom) 100%);
+      background-attachment: fixed;
       min-height: 100dvh;
       padding: clamp(12px, 2.5vw, 24px) clamp(12px, 3vw, 22px) 80px;
       overflow-x: hidden;
-      transition: color 0.4s ease;
     }
 
     .app-container { max-width: 1260px; margin: 0 auto; position: relative; z-index: 2; }
     .boot-screen { min-height: 75vh; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; font-weight: 700; font-size: 1.08rem; color: var(--text-muted); }
 
-    /* Tactile Frosted Acrylic Glass */
+    /* Tactile Frosted Warm Oat Glass */
     .acrylic-panel {
       background: var(--surface-glass);
-      backdrop-filter: blur(20px);
-      -webkit-backdrop-filter: blur(20px);
-      border: 2px solid var(--border-soft);
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+      border: 1.5px solid var(--border-soft);
       border-radius: 26px;
-      box-shadow: var(--shadow-soft), inset 0 1px 0 rgba(255, 255, 255, 0.45);
-      transition: background 0.35s ease, border-color 0.35s ease;
+      box-shadow: var(--shadow-soft), inset 0 1px 0 rgba(255, 255, 255, 0.85);
     }
 
     /* 🧭 Magnetic Floating Header & Tabs */
@@ -121,17 +90,17 @@
     .brand-cluster { display: flex; align-items: center; gap: 12px; }
     .brand-logo-orb {
       width: 48px; height: 48px; border-radius: 16px;
-      background: linear-gradient(135deg, #FF758F, #B56576, #504027);
-      color: #fff; display: flex; align-items: center; justify-content: center;
-      box-shadow: 0 10px 22px rgba(181, 101, 118, 0.35);
+      background: linear-gradient(135deg, #D87C8F, #B56576, #6B4437);
+      color: #FFFDF9; display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 10px 22px rgba(181, 101, 118, 0.28);
       position: relative;
     }
-    .brand-title h1 { font-size: clamp(1.08rem, 2.2vw, 1.32rem); font-weight: 800; line-height: 1.2; }
+    .brand-title h1 { font-size: clamp(1.08rem, 2.2vw, 1.32rem); font-weight: 800; line-height: 1.2; color: var(--text-main); }
     .brand-title p { font-size: 0.78rem; color: var(--text-muted); }
 
     .nav-pills-wrap {
       display: flex; flex-wrap: wrap; align-items: center; gap: 6px;
-      background: rgba(181, 101, 118, 0.12); padding: 5px; border-radius: 999px;
+      background: rgba(181, 101, 118, 0.10); padding: 5px; border-radius: 999px;
       border: 1px solid var(--border-soft);
     }
     .nav-tab-btn {
@@ -143,16 +112,13 @@
       transition: color 0.2s ease, background 0.2s ease;
     }
     .nav-tab-btn.menu-link-btn:hover {
-      background: rgba(181, 101, 118, 0.18);
+      background: rgba(181, 101, 118, 0.16);
     }
-    .nav-tab-btn.active { color: #FFF; }
+    .nav-tab-btn.active { color: #FFFDF9; }
     .nav-tab-pill-bg {
       position: absolute; inset: 0; border-radius: 999px;
-      background: linear-gradient(135deg, #B56576, #504027);
-      box-shadow: 0 6px 16px rgba(80, 45, 55, 0.28); z-index: -1;
-    }
-    body[data-ambiance="night"] .nav-tab-pill-bg {
-      background: linear-gradient(135deg, #FF758F, #B56576);
+      background: linear-gradient(135deg, #B56576, #5E4335);
+      box-shadow: 0 6px 16px rgba(80, 45, 55, 0.24); z-index: -1;
     }
 
     .header-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
@@ -160,25 +126,28 @@
       width: 38px; height: 38px; border-radius: 50%; border: 1.5px solid var(--border-soft);
       background: var(--surface-card); color: var(--text-main);
       display: inline-flex; align-items: center; justify-content: center; cursor: pointer;
+      transition: background 0.18s ease;
     }
+    .icon-action-btn:hover { background: #FAF0E6; }
     .register-cta-btn {
       text-decoration: none;
-      background: linear-gradient(135deg, #504027 0%, #A19D70 100%);
-      color: #FBEED2; border: 1.5px solid #FCCEAB;
+      background: linear-gradient(135deg, #5A4132 0%, #9E8B63 100%);
+      color: #FFF8EB; border: 1.5px solid #E8C59B;
       padding: 7px 15px; border-radius: 999px; font-size: 0.8rem; font-weight: 700;
       display: inline-flex; align-items: center; gap: 7px;
-      box-shadow: 0 6px 16px rgba(80, 64, 39, 0.25);
+      box-shadow: 0 6px 16px rgba(80, 64, 39, 0.22);
     }
     .unreg-badge {
-      background: rgba(251, 238, 210, 0.25); padding: 1px 8px; border-radius: 999px;
+      background: rgba(255, 248, 235, 0.24); padding: 1px 8px; border-radius: 999px;
       font-size: 0.72rem; font-weight: 800;
     }
 
     /* 🎧 Live Voice Stage Strip */
     .voice-stage-strip {
       display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between;
-      gap: 12px; padding: 11px 18px; margin-bottom: 18px;
-      background: linear-gradient(90deg, rgba(181,101,118,0.14), rgba(252,206,171,0.22), rgba(161,157,112,0.15));
+      gap: 12px; padding: 12px 18px; margin-bottom: 18px;
+      background: linear-gradient(90deg, #FBF2EA 0%, #FFFDF9 50%, #EEF8F0 100%);
+      border-color: rgba(181, 101, 118, 0.24);
     }
     .voice-stage-left { display: flex; align-items: center; gap: 10px; }
     .live-dot {
@@ -188,28 +157,48 @@
     .voice-avatars-rail { display: flex; align-items: center; gap: 10px; overflow-x: auto; padding: 2px 4px; }
     .voice-speaker-chip {
       display: inline-flex; align-items: center; gap: 7px;
-      background: var(--surface-card); border: 1.5px solid #2ECC71;
+      background: #FFFDF9; border: 1.5px solid #6FC48C;
       padding: 4px 11px 4px 5px; border-radius: 999px; font-size: 0.78rem; font-weight: 700;
-      box-shadow: 0 4px 12px rgba(46, 204, 113, 0.16);
+      color: var(--text-main);
+      box-shadow: 0 4px 12px rgba(46, 204, 113, 0.14);
     }
     .voice-speaker-chip img { width: 26px; height: 26px; border-radius: 50%; object-fit: cover; }
     .steam-icon { display: inline-block; animation: steamRise 2.2s ease-in-out infinite; font-size: 0.85rem; }
 
-    /* 🍱 Bento Grid Stats */
+    /* 🍱 Bento Grid KPI Cards (Soft-Tint ประจำหน้าที่ทั้ง 4 กล่อง) */
     .bento-stats-grid {
       display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 20px;
     }
     .bento-stat-card {
-      padding: 16px 18px; position: relative; overflow: hidden;
-      display: flex; flex-direction: column; justify-content: space-between; gap: 6px;
+      padding: 18px 20px; position: relative; overflow: hidden;
+      border-radius: 24px;
+      display: flex; flex-direction: column; justify-content: space-between; gap: 7px;
+      box-shadow: 0 12px 26px -12px rgba(58, 35, 30, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.8);
     }
-    .bento-stat-label { font-size: 0.78rem; font-weight: 700; color: var(--text-muted); display: flex; align-items: center; gap: 6px; }
+    .kpi-gold {
+      background: linear-gradient(135deg, #FFF8E6 0%, #FBEBC5 100%);
+      border: 1.5px solid #E5C16C;
+    }
+    .kpi-latte {
+      background: linear-gradient(135deg, #FBF2EA 0%, #F1DFD0 100%);
+      border: 1.5px solid #D5B195;
+    }
+    .kpi-rose {
+      background: linear-gradient(135deg, #FDF0F3 0%, #F8DCE4 100%);
+      border: 1.5px solid #DDA2B2;
+    }
+    .kpi-matcha {
+      background: linear-gradient(135deg, #EEF8F0 0%, #D9F0DF 100%);
+      border: 1.5px solid #8EC99F;
+    }
+
+    .bento-stat-label { font-size: 0.79rem; font-weight: 700; color: var(--text-muted); display: flex; align-items: center; gap: 6px; }
     .bento-stat-value {
       font-family: 'Outfit', 'JetBrains Mono', sans-serif;
-      font-size: clamp(1.45rem, 2.4vw, 1.95rem); font-weight: 800; color: var(--text-main);
+      font-size: clamp(1.5rem, 2.5vw, 2rem); font-weight: 800; color: var(--text-main);
       display: flex; align-items: baseline; gap: 6px;
     }
-    .bento-stat-sub { font-size: 0.73rem; color: var(--accent-primary); font-weight: 600; }
+    .bento-stat-sub { font-size: 0.73rem; color: #7C584D; font-weight: 600; }
 
     /* 📅 Heatmap Date Filter Rail */
     .heatmap-bar {
@@ -228,13 +217,13 @@
       display: flex; flex-direction: column; align-items: flex-start; gap: 2px;
       transition: all 0.18s ease;
     }
-    .date-pill-btn.heat-high { border-color: #D48A27; background: linear-gradient(135deg, rgba(255,213,107,0.18), var(--surface-card)); }
+    .date-pill-btn.heat-high { border-color: #D48A27; background: linear-gradient(135deg, #FFF7DF, #FBEBC5); }
     .date-pill-btn.active {
-      background: linear-gradient(135deg, #B56576, #504027); color: #FFF; border-color: transparent;
-      box-shadow: 0 8px 18px rgba(80, 45, 55, 0.25); transform: translateY(-2px);
+      background: linear-gradient(135deg, #B56576, #5E4335); color: #FFFDF9; border-color: transparent;
+      box-shadow: 0 8px 18px rgba(80, 45, 55, 0.22); transform: translateY(-2px);
     }
 
-    /* 🎫 Perforated Specialty Ticket Receipt Cards */
+    /* 🎫 Perforated Specialty Ticket Receipt Cards (thecolor-powered) */
     .sessions-list { display: flex; flex-direction: column; gap: 20px; }
     .session-block { padding: 20px; position: relative; overflow: hidden; }
     .session-header {
@@ -248,70 +237,86 @@
       padding: 4px 12px; border-radius: 999px; font-size: 0.74rem; font-weight: 800;
       display: inline-flex; align-items: center; gap: 5px;
     }
-    .status-badge.open { background: rgba(46, 204, 113, 0.18); color: #27AE60; border: 1.5px solid #2ECC71; }
-    .status-badge.closed { background: rgba(140, 83, 97, 0.16); color: var(--text-muted); border: 1.5px solid var(--border-soft); }
+    .status-badge.open { background: #E4F6EA; color: #1E7E46; border: 1.5px solid #76C893; }
+    .status-badge.closed { background: #F4EAE4; color: var(--text-muted); border: 1.5px solid #DCC8BC; }
 
     .tickets-grid {
-      display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap: 14px;
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(295px, 1fr)); gap: 15px;
     }
     .specialty-ticket {
-      position: relative; background: var(--surface-card);
-      border: 1.5px solid var(--border-soft); border-radius: 20px;
+      position: relative;
+      border-radius: 20px;
       padding: 16px 18px; overflow: hidden;
-      box-shadow: 0 10px 24px rgba(80, 45, 55, 0.08);
+      box-shadow: 0 10px 24px -8px rgba(58, 35, 30, 0.14), inset 0 1px 0 rgba(255, 255, 255, 0.78);
       display: flex; flex-direction: column; justify-content: space-between; gap: 10px;
     }
     .specialty-ticket::before, .specialty-ticket::after {
       content: ''; position: absolute; top: 58%; width: 18px; height: 18px;
-      border-radius: 50%; background: var(--bg-grad-1);
-      border: 1.5px solid var(--border-soft); z-index: 2;
+      border-radius: 50%; background: #FAF6F0;
+      border: 1.5px solid rgba(58, 35, 30, 0.16); z-index: 2;
     }
     .specialty-ticket::before { left: -10px; }
     .specialty-ticket::after { right: -10px; }
 
     /* SSR Holographic Foil Overlay */
     .specialty-ticket.holo-ssr {
-      border: 2px solid #D48A27;
-      box-shadow: 0 12px 28px rgba(212, 138, 39, 0.22);
+      box-shadow: 0 12px 28px -6px rgba(212, 138, 39, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.85);
     }
     .ssr-foil-layer {
       position: absolute; inset: 0; pointer-events: none;
-      background: linear-gradient(125deg, transparent 15%, rgba(255,215,0,0.22) 35%, rgba(255,182,193,0.25) 50%, rgba(195,166,255,0.22) 65%, transparent 85%);
+      background: linear-gradient(125deg, transparent 15%, rgba(255,215,0,0.20) 35%, rgba(255,182,193,0.20) 50%, rgba(195,166,255,0.18) 65%, transparent 85%);
       background-size: 250% 250%; animation: holoSweep 5s ease infinite;
     }
 
     .ticket-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; position: relative; z-index: 1; }
     .ticket-guest { display: flex; align-items: center; gap: 9px; min-width: 0; }
-    .ticket-guest img { width: 38px; height: 38px; border-radius: 50%; object-fit: cover; border: 1.5px solid var(--accent-primary); }
+    .ticket-guest img { width: 38px; height: 38px; border-radius: 50%; object-fit: cover; border: 2px solid rgba(255, 255, 255, 0.9); box-shadow: 0 2px 6px rgba(0,0,0,0.1); }
     .ticket-queue-num {
-      font-family: 'JetBrains Mono', monospace; font-size: 0.73rem; font-weight: 700;
-      padding: 2px 8px; border-radius: 8px; background: rgba(181,101,118,0.12); color: var(--accent-primary);
+      font-family: 'JetBrains Mono', monospace; font-size: 0.72rem; font-weight: 700;
+      padding: 2px 8px; border-radius: 8px; background: rgba(255, 255, 255, 0.82); color: var(--text-main);
+      border: 1px solid rgba(58, 35, 30, 0.12);
     }
 
     .ticket-order-box {
-      background: rgba(181, 101, 118, 0.06); border: 1px dashed var(--border-soft);
+      background: rgba(255, 253, 249, 0.74);
+      border: 1px dashed rgba(58, 35, 30, 0.18);
       border-radius: 14px; padding: 10px 12px; position: relative; z-index: 1;
     }
-    .ticket-drink-title { font-size: 0.9rem; font-weight: 800; line-height: 1.35; display: flex; align-items: center; justify-content: space-between; gap: 6px; }
+    .ticket-drink-title { font-size: 0.9rem; font-weight: 800; line-height: 1.35; display: flex; align-items: center; justify-content: space-between; gap: 6px; color: var(--text-main); }
     .ticket-addons { font-size: 0.76rem; color: var(--text-muted); margin-top: 4px; display: flex; flex-direction: column; gap: 2px; }
 
     .ticket-bottom {
       display: flex; align-items: center; justify-content: space-between;
-      padding-top: 8px; border-top: 1.5px dashed var(--border-soft);
+      padding-top: 8px; border-top: 1.5px dashed rgba(58, 35, 30, 0.16);
       font-family: 'JetBrains Mono', 'Kanit', sans-serif; font-size: 0.8rem; position: relative; z-index: 1;
     }
-    .ticket-price-tag { font-size: 0.95rem; font-weight: 800; color: var(--accent-gold); }
+    .ticket-price-tag {
+      font-size: 0.92rem; font-weight: 800; color: #A96512;
+      background: rgba(255, 253, 249, 0.84); padding: 2px 10px; border-radius: 10px;
+      border: 1px solid rgba(212, 138, 39, 0.28);
+    }
     .barcode-strip {
-      height: 14px; width: 64px; opacity: 0.35;
+      height: 13px; width: 62px; opacity: 0.32;
       background: repeating-linear-gradient(90deg, var(--text-main) 0 2px, transparent 2px 4px, var(--text-main) 4px 5px, transparent 5px 8px);
     }
 
+    .swatch-dots-pill {
+      display: inline-flex; align-items: center;
+      padding: 2px 6px; border-radius: 999px;
+      background: rgba(255, 255, 255, 0.82); border: 1px solid rgba(58, 35, 30, 0.12);
+    }
+    .swatch-dot {
+      width: 9px; height: 9px; border-radius: 50%; border: 1px solid rgba(0, 0, 0, 0.16);
+      margin-left: -2px;
+    }
+    .swatch-dot:first-child { margin-left: 0; }
+
     .tier-badge { font-size: 0.66rem; font-weight: 800; padding: 2px 7px; border-radius: 999px; flex-shrink: 0; }
-    .tier-SSR { background: linear-gradient(135deg, #FFD700, #FF9AA2); color: #4A2530; }
-    .tier-SR { background: linear-gradient(135deg, #E2D1F9, #C3A6FF); color: #3B1E6D; }
-    .tier-R { background: linear-gradient(135deg, #C1E1C1, #8FD19E); color: #1B4D20; }
-    .tier-C { background: #FFE5EC; color: #7A4957; }
-    .tier-MYSTERY { background: linear-gradient(90deg, #FFB7B2, #FFDAC1, #B5EAD7, #C7CEEA); color: #4A2530; }
+    .tier-SSR { background: linear-gradient(135deg, #F5C35C, #F9DC87); color: #3A231E; }
+    .tier-SR { background: #FCE2EB; color: #8A2C4C; border: 1px solid #E5B0C2; }
+    .tier-R { background: #E2F2F8; color: #20637A; border: 1px solid #B0D6E5; }
+    .tier-C { background: #F6EDE5; color: #6F534B; border: 1px solid #DFC9B8; }
+    .tier-MYSTERY { background: linear-gradient(90deg, #F6A4C1, #F7D488, #8EE2EE, #C7B3F7); color: #3A231E; }
 
     /* 🪪 3D Tilt Collector Member Cards */
     .directory-toolbar {
@@ -333,7 +338,7 @@
     }
     .collector-card {
       position: relative; background: var(--surface-card);
-      border: 2px solid var(--border-soft); border-radius: 24px;
+      border: 1.5px solid var(--border-soft); border-radius: 24px;
       padding: 20px 18px; text-align: center; overflow: hidden;
       box-shadow: var(--shadow-soft);
       transform-style: preserve-3d; will-change: transform;
@@ -341,14 +346,14 @@
     }
     .card-glare {
       position: absolute; inset: 0; pointer-events: none; z-index: 3;
-      background: radial-gradient(circle at var(--gx, 50%) var(--gy, 50%), rgba(255,255,255,0.65) 0%, rgba(255,182,193,0.2) 35%, transparent 70%);
+      background: radial-gradient(circle at var(--gx, 50%) var(--gy, 50%), rgba(255,255,255,0.65) 0%, rgba(255,182,193,0.18) 35%, transparent 70%);
       opacity: var(--gop, 0); transition: opacity 0.2s ease;
     }
     .enamel-role-pin {
       display: inline-flex; align-items: center; gap: 5px;
       padding: 3px 11px; border-radius: 999px; font-size: 0.72rem; font-weight: 800;
-      background: var(--surface-glass); border: 1.5px solid var(--role-color, #F4978E);
-      box-shadow: inset 0 1px 2px rgba(255,255,255,0.6), 0 3px 8px rgba(0,0,0,0.08);
+      background: #FFFDF9; border: 1.5px solid var(--role-color, #D48A9E);
+      box-shadow: inset 0 1px 2px rgba(255,255,255,0.8), 0 3px 8px rgba(0,0,0,0.06);
     }
 
     .collector-avatar-wrap {
@@ -356,11 +361,11 @@
     }
     .collector-avatar-wrap img {
       width: 100%; height: 100%; border-radius: 50%; object-fit: cover;
-      border: 3px solid var(--role-color, #FFCAD4); background: #fff;
+      border: 3px solid var(--role-color, #E5B4C0); background: #fff;
     }
     .presence-dot {
       position: absolute; bottom: 4px; right: 4px; width: 16px; height: 16px;
-      border-radius: 50%; border: 2.5px solid var(--surface-card);
+      border-radius: 50%; border: 2.5px solid #FFFDF9;
     }
     .presence-online { background: #2ECC71; }
     .presence-idle { background: #F1C40F; }
@@ -368,40 +373,42 @@
     .presence-offline { background: #95A5A6; }
 
     .status-speech-bubble {
-      font-size: 0.75rem; color: var(--text-muted); background: rgba(181,101,118,0.08);
-      border: 1px solid var(--border-soft); border-radius: 12px; padding: 5px 10px;
+      font-size: 0.75rem; color: var(--text-muted); background: #FAF3EC;
+      border: 1px solid var(--border-soft); border-radius: 12px; padding: 6px 10px;
       line-height: 1.35;
     }
 
     .collector-info-box {
-      background: rgba(181,101,118,0.06); border-radius: 14px; padding: 9px 11px;
+      background: #FAF5EE; border: 1px solid rgba(181, 101, 118, 0.18);
+      border-radius: 14px; padding: 10px 12px;
       text-align: left; font-size: 0.78rem; display: flex; flex-direction: column; gap: 4px;
     }
 
     .edit-pin-btn {
       width: 100%; padding: 8px 12px; border-radius: 12px;
-      border: 1.5px solid var(--border-soft); background: var(--surface-glass);
+      border: 1.5px solid var(--border-soft); background: #FFFDF9;
       color: var(--text-main); font-family: inherit; font-size: 0.78rem; font-weight: 700;
       cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 6px;
       transition: all 0.18s ease;
     }
-    .edit-pin-btn:hover { background: var(--accent-primary); color: #FFF; border-color: transparent; }
+    .edit-pin-btn:hover { background: var(--accent-primary); color: #FFFDF9; border-color: transparent; }
 
     /* 🔐 Modal แก้ไขบัตรสมาชิกด้วยรหัส PIN 4 หลัก */
     .modal-backdrop {
-      position: fixed; inset: 0; z-index: 950; background: rgba(25, 14, 20, 0.76);
-      backdrop-filter: blur(10px); display: flex; align-items: center; justify-content: center; padding: 16px;
+      position: fixed; inset: 0; z-index: 950; background: rgba(42, 24, 20, 0.65);
+      backdrop-filter: blur(8px); display: flex; align-items: center; justify-content: center; padding: 16px;
     }
     .modal-card {
-      width: 100%; max-width: 480px; background: var(--surface-card);
-      border: 2.5px solid var(--accent-primary); border-radius: 26px; padding: 24px 22px;
-      box-shadow: 0 24px 60px rgba(0,0,0,0.45); display: flex; flex-direction: column; gap: 12px;
+      width: 100%; max-width: 480px; background: #FFFDF9;
+      border: 2px solid var(--accent-primary); border-radius: 26px; padding: 24px 22px;
+      box-shadow: 0 24px 60px rgba(42, 24, 20, 0.32); display: flex; flex-direction: column; gap: 12px;
     }
     .modal-input {
       width: 100%; padding: 10px 14px; border-radius: 12px;
-      border: 1.5px solid var(--border-soft); background: var(--surface-glass);
+      border: 1.5px solid #DECBB9; background: #FAF6F0;
       color: var(--text-main); font-family: inherit; font-size: 0.88rem; outline: none;
     }
+    .modal-input:focus { border-color: var(--accent-primary); background: #FFF; }
 
     @media (max-width: 900px) {
       .bento-stats-grid { grid-template-columns: repeat(2, 1fr); }
@@ -412,7 +419,7 @@
     }
   </style>
 </head>
-<body data-ambiance="day">
+<body>
   <div id="root">
     <div class="boot-screen">☕ กำลังเปิดสมุดบันทึกคาเฟ่และทำเนียบสมาชิก Horizontal...</div>
   </div>
@@ -423,7 +430,7 @@
     import { motion, AnimatePresence } from 'framer-motion';
     import {
       Coffee, Users, Receipt, Sparkles, Volume2, VolumeX, Headphones,
-      Sun, Sunset, Moon, Search, Calendar, RefreshCw, Lock, Edit3, X
+      Search, Calendar, RefreshCw, Lock, Edit3, X
     } from 'lucide-react';
     import confetti from 'canvas-confetti';
 
@@ -534,13 +541,13 @@
           onMouseMove={handleMove}
           onMouseLeave={handleLeave}
           className="collector-card"
-          style={{ ...tilt, '--role-color': member.roleColor || '#F4978E' }}
+          style={{ ...tilt, '--role-color': member.roleColor || '#D48A9E' }}
         >
           <div className="card-glare" />
 
           <div style={{ display: 'flex', justifyContent: 'flex-end', position: 'relative', zIndex: 2 }}>
             <span className="enamel-role-pin">
-              <span style={{ width: 8, height: 8, borderRadius: '50%', background: member.roleColor || '#F4978E' }} />
+              <span style={{ width: 8, height: 8, borderRadius: '50%', background: member.roleColor || '#D48A9E' }} />
               {member.roleName}
             </span>
           </div>
@@ -559,7 +566,7 @@
 
           {(member.activityText || member.customStatus || member.inCafeVoice) && (
             <div className="status-speech-bubble">
-              {member.inCafeVoice && <div style={{ color: '#27AE60', fontWeight: 700 }}>🎧 กำลังนั่งจิบกาแฟในห้องเสียงคาเฟ่</div>}
+              {member.inCafeVoice && <div style={{ color: '#1E8449', fontWeight: 700 }}>🎧 กำลังนั่งจิบกาแฟในห้องเสียงคาเฟ่</div>}
               {member.activityText && <div style={{ fontWeight: 600 }}>{member.activityText}</div>}
               {member.customStatus && <div>💬 "{member.customStatus}"</div>}
             </div>
@@ -594,7 +601,6 @@
         : 'receipts';
 
       const [activeTab, setActiveTab] = useState(initialTab);
-      const [ambiance, setAmbiance] = useState('day');
       const [soundOn, setSoundOn] = useState(true);
 
       const [overview, setOverview] = useState(null);
@@ -611,25 +617,11 @@
       });
       const [editStatus, setEditStatus] = useState(null);
 
-      // ตั้งโทนสีตามเวลาประเทศไทยอัตโนมัติเมื่อเปิดหน้าเว็บ
       useEffect(() => {
-        const hour = new Date().getHours();
-        const autoMode = (hour >= 19 || hour < 6) ? 'night' : (hour >= 16 ? 'sunset' : 'day');
-        setAmbiance(autoMode);
-        document.body.setAttribute('data-ambiance', autoMode);
-
         if (window.location.pathname === '/members') {
           confetti({ particleCount: 70, spread: 80, origin: { y: 0.6 } });
         }
       }, []);
-
-      const cycleAmbiance = () => {
-        const order = ['day', 'sunset', 'night'];
-        const next = order[(order.indexOf(ambiance) + 1) % order.length];
-        setAmbiance(next);
-        document.body.setAttribute('data-ambiance', next);
-        sfx.playPop(700);
-      };
 
       const toggleSound = () => {
         sfx.enabled = !soundOn;
@@ -653,9 +645,19 @@
 
       useEffect(() => {
         fetchDashboardData('');
-        fetch('/api/register/catalog').then(r => r.json()).then(d => {
-          if (d?.ok && Array.isArray(d.categories)) setCatalogCategories(d.categories);
-        }).catch(() => null);
+        // ดึงข้อมูลแคตตาล็อกพร้อม theColor จาก /api/menu/catalog (fallback ไป /api/register/catalog)
+        fetch('/api/menu/catalog', { cache: 'no-store' })
+          .then(r => r.json())
+          .then(d => {
+            if (d?.ok && Array.isArray(d.categories)) {
+              setCatalogCategories(d.categories);
+            } else {
+              return fetch('/api/register/catalog').then(r2 => r2.json()).then(d2 => {
+                if (d2?.ok && Array.isArray(d2.categories)) setCatalogCategories(d2.categories);
+              });
+            }
+          })
+          .catch(() => null);
 
         const interval = setInterval(() => fetchDashboardData(selectedDate), 25000);
         return () => clearInterval(interval);
@@ -667,6 +669,44 @@
           .forEach(c => (c.items || []).forEach(it => list.push(it.name)));
         return list;
       }, [catalogCategories]);
+
+      // 🎨 แผนที่สี thecolor สำหรับลงสีตั๋วใบเสร็จตามแก้วน้ำจริง
+      const drinkVisualIndex = useMemo(() => {
+        const exactMap = new Map();
+        const entries = [];
+        catalogCategories.forEach(c => {
+          (c.items || []).forEach(it => {
+            if (it.name && it.theColor) {
+              exactMap.set(it.name, it.theColor);
+              entries.push([it.name, it.theColor]);
+            }
+          });
+        });
+        entries.sort((a, b) => b[0].length - a[0].length);
+        return { exactMap, entries };
+      }, [catalogCategories]);
+
+      const resolveTicketColor = (drinkName, tierCode) => {
+        if (tierCode === '?') {
+          return {
+            colors: ['#FCE4F1', '#FFF3D6', '#DFF6FA', '#EAE4FC'],
+            gradient: 'linear-gradient(165deg, #FCE4F1 0%, #FFF3D6 35%, #DFF6FA 70%, #EAE4FC 100%)',
+            border: '#DDA4C6'
+          };
+        }
+        const clean = String(drinkName || '').trim();
+        if (clean && drinkVisualIndex.exactMap.has(clean)) {
+          return drinkVisualIndex.exactMap.get(clean);
+        }
+        for (const [name, colorObj] of drinkVisualIndex.entries) {
+          if (clean.includes(name)) return colorObj;
+        }
+        return {
+          colors: ['#FFFDF9', '#F4E7DA'],
+          gradient: 'linear-gradient(135deg, #FFFDF9 0%, #F4E7DA 100%)',
+          border: '#D5B59B'
+        };
+      };
 
       const filteredMembers = useMemo(() => {
         const list = overview?.members || [];
@@ -731,7 +771,7 @@
 
       return (
         <div className="app-container">
-          {/* 🧭 แถบเมนูหลักแบบ Magnetic Floating Bar */}
+          {/* 🧭 แถบเมนูหลัก — โทนหลัก Warm Oat (ถอดปุ่มเปลี่ยนโทนออกแล้ว) */}
           <motion.header initial={{ opacity: 0, y: -12 }} animate={{ opacity: 1, y: 0 }} className="top-header acrylic-panel">
             <div className="brand-cluster">
               <div className="brand-logo-orb">
@@ -771,9 +811,6 @@
             </nav>
 
             <div className="header-actions">
-              <button type="button" onClick={cycleAmbiance} className="icon-action-btn" title="สลับบรรยากาศ เช้า / เย็น / กลางคืน">
-                {ambiance === 'day' ? <Sun size={18} /> : ambiance === 'sunset' ? <Sunset size={18} /> : <Moon size={18} />}
-              </button>
               <button type="button" onClick={toggleSound} className="icon-action-btn" title="เปิด/ปิดเสียงเอฟเฟกต์คาเฟ่">
                 {soundOn ? <Volume2 size={18} /> : <VolumeX size={18} />}
               </button>
@@ -784,7 +821,7 @@
             </div>
           </motion.header>
 
-          {/* 🎧 Live Voice Stage Strip (แสดงคนที่กำลังอยู่ในห้องเสียงคาเฟ่พร้อมไอน้ำกาแฟ) */}
+          {/* 🎧 Live Voice Stage Strip */}
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="voice-stage-strip acrylic-panel">
             <div className="voice-stage-left">
               <span className="live-dot" />
@@ -813,42 +850,42 @@
             </div>
           </motion.div>
 
-          {/* 🍱 Bento Grid Summary Cards */}
+          {/* 🍱 Bento Grid KPI Summary Cards (ลงสี Soft-Tint ประจำหน้าที่ครบทั้ง 4 กล่อง) */}
           <div className="bento-stats-grid">
-            <motion.div whileHover={{ y: -3 }} className="bento-stat-card acrylic-panel">
-              <div className="bento-stat-label"><Sparkles size={15} /> ยอดขายรวมทั้งคาเฟ่</div>
-              <div className="bento-stat-value" style={{ color: 'var(--accent-gold)' }}>
+            <motion.div whileHover={{ y: -3 }} className="bento-stat-card kpi-gold">
+              <div className="bento-stat-label"><Sparkles size={15} color="#B87314" /> ยอดขายรวมทั้งคาเฟ่</div>
+              <div className="bento-stat-value" style={{ color: '#9C5E0C' }}>
                 🪙 <RollingNumber value={stats.grandTotalRevenue} />
               </div>
               <div className="bento-stat-sub">เหรียญทองหมุนเวียนในบอร์ดใบเสร็จ</div>
             </motion.div>
 
-            <motion.div whileHover={{ y: -3 }} className="bento-stat-card acrylic-panel">
-              <div className="bento-stat-label"><Coffee size={15} /> เครื่องดื่มและขนมที่เสิร์ฟแล้ว</div>
-              <div className="bento-stat-value">
+            <motion.div whileHover={{ y: -3 }} className="bento-stat-card kpi-latte">
+              <div className="bento-stat-label"><Coffee size={15} color="#7A4F38" /> เครื่องดื่มและขนมที่เสิร์ฟแล้ว</div>
+              <div className="bento-stat-value" style={{ color: '#4B2E22' }}>
                 🍹 <RollingNumber value={stats.grandTotalOrders} />
               </div>
               <div className="bento-stat-sub">ออเดอร์จากทั้งหมด {stats.totalSessions} รอบบริการ</div>
             </motion.div>
 
-            <motion.div whileHover={{ y: -3 }} className="bento-stat-card acrylic-panel">
-              <div className="bento-stat-label"><Users size={15} /> พลเมืองที่มีบัตรสมาชิก</div>
-              <div className="bento-stat-value">
+            <motion.div whileHover={{ y: -3 }} className="bento-stat-card kpi-rose">
+              <div className="bento-stat-label"><Users size={15} color="#A64D63" /> พลเมืองที่มีบัตรสมาชิก</div>
+              <div className="bento-stat-value" style={{ color: '#7D3044' }}>
                 🪪 <RollingNumber value={stats.registeredCount} />
               </div>
               <div className="bento-stat-sub">รอรับบัตรอีก {stats.unregisteredCount} ท่าน</div>
             </motion.div>
 
-            <motion.div whileHover={{ y: -3 }} className="bento-stat-card acrylic-panel">
-              <div className="bento-stat-label"><Headphones size={15} /> กำลังนั่งในห้องเสียงคาเฟ่</div>
-              <div className="bento-stat-value" style={{ color: '#27AE60' }}>
+            <motion.div whileHover={{ y: -3 }} className="bento-stat-card kpi-matcha">
+              <div className="bento-stat-label"><Headphones size={15} color="#287B49" /> กำลังนั่งในห้องเสียงคาเฟ่</div>
+              <div className="bento-stat-value" style={{ color: '#1D6B3C' }}>
                 🎧 <RollingNumber value={stats.liveVoiceCount} />
               </div>
               <div className="bento-stat-sub">อัปเดตสถานะสดอัตโนมัติทุก 25 วินาที</div>
             </motion.div>
           </div>
 
-          {/* ================= แท็บที่ 1: บอร์ดใบเสร็จคาเฟ่ (Specialty Tickets) ================= */}
+          {/* ================= แท็บที่ 1: บอร์ดใบเสร็จคาเฟ่ (Specialty Tickets + thecolor) ================= */}
           {activeTab === 'receipts' && (
             <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}>
               {/* ปฏิทิน Heatmap เลือกวัน */}
@@ -924,7 +961,7 @@
                           <span className={`status-badge ${session.isActive ? 'open' : 'closed'}`}>
                             {session.isActive ? '🟢 กำลังให้บริการในห้องเสียง' : '🟣 ปิดรอบบริการแล้ว'}
                           </span>
-                          <div style={{ fontWeight: 800, fontSize: '0.96rem', color: 'var(--accent-gold)' }}>
+                          <div style={{ fontWeight: 800, fontSize: '0.96rem', color: '#B06A12' }}>
                             ยอดรวม 🪙 {Number(session.totalRevenue || 0).toLocaleString()} เหรียญ
                           </div>
                         </div>
@@ -934,12 +971,19 @@
                         {(session.receipts || []).map((r, rIdx) => {
                           const isSSR = r.tierCode === 'SSR' || r.tierCode === '?';
                           const tierClass = r.tierCode === '?' ? 'MYSTERY' : (r.tierCode || 'C');
+                          const ticketVisual = resolveTicketColor(r.drinkName, r.tierCode);
+                          const ticketDots = Array.isArray(ticketVisual.colors) ? ticketVisual.colors : [];
+
                           return (
                             <motion.div
                               key={`${session._id}-r-${rIdx}`}
                               whileHover={{ y: -4, scale: 1.01 }}
                               onMouseEnter={() => sfx.playPop(780, 0.04)}
                               className={`specialty-ticket ${isSSR ? 'holo-ssr' : ''}`}
+                              style={{
+                                background: ticketVisual.gradient,
+                                border: isSSR ? '2px solid #D48A27' : `1.5px solid ${ticketVisual.border}`
+                              }}
                             >
                               {isSSR && <div className="ssr-foil-layer" />}
 
@@ -950,12 +994,22 @@
                                     <div style={{ fontSize: '0.88rem', fontWeight: 800, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                                       คุณ{r.userName}
                                     </div>
-                                    <div style={{ fontSize: '0.71rem', color: r.isPresent ? '#27AE60' : 'var(--text-muted)', fontWeight: 700 }}>
+                                    <div style={{ fontSize: '0.71rem', color: r.isPresent ? '#1E7E46' : 'var(--text-muted)', fontWeight: 700 }}>
                                       {r.isPresent ? '🟢 กำลังนั่งจิบในร้าน ♨️' : `เช็กบิลตอน ${r.exitTimeText || '-'} น.`}
                                     </div>
                                   </div>
                                 </div>
-                                <span className="ticket-queue-num">#{String(rIdx + 1).padStart(2, '0')}</span>
+
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                                  {ticketDots.length > 0 && (
+                                    <span className="swatch-dots-pill" title="เฉดสีแก้วน้ำที่สั่ง">
+                                      {ticketDots.map((hex, dIdx) => (
+                                        <span key={`tdot-${rIdx}-${dIdx}`} className="swatch-dot" style={{ backgroundColor: hex }} />
+                                      ))}
+                                    </span>
+                                  )}
+                                  <span className="ticket-queue-num">#{String(rIdx + 1).padStart(2, '0')}</span>
+                                </div>
                               </div>
 
                               <div className="ticket-order-box">
@@ -1095,7 +1149,7 @@
                   </div>
 
                   <div>
-                    <label style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--accent-gold)' }}>
+                    <label style={{ fontSize: '0.78rem', fontWeight: 700, color: '#B06A12' }}>
                       🔐 ยืนยันรหัสปลอดภัย PIN 4 หลักของคุณ
                     </label>
                     <input
@@ -1112,7 +1166,7 @@
                   </div>
 
                   {editStatus && (
-                    <div style={{ fontSize: '0.82rem', fontWeight: 700, color: editStatus.ok ? '#27AE60' : '#E74C3C', textAlign: 'center' }}>
+                    <div style={{ fontSize: '0.82rem', fontWeight: 700, color: editStatus.ok ? '#1E7E46' : '#C93B3B', textAlign: 'center' }}>
                       {editStatus.text}
                     </div>
                   )}
@@ -1121,7 +1175,7 @@
                     type="submit"
                     style={{
                       width: '100%', padding: '12px', borderRadius: 14, border: 'none',
-                      background: 'linear-gradient(135deg, #B56576, #504027)', color: '#FFF',
+                      background: 'linear-gradient(135deg, #B56576, #5E4335)', color: '#FFFDF9',
                       fontFamily: 'inherit', fontSize: '0.94rem', fontWeight: 800, cursor: 'pointer'
                     }}
                   >

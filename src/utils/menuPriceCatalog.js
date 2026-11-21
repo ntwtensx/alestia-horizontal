@@ -1,4 +1,5 @@
 const CafeEvent = require('../models/CafeEvent');
+const { DRINK_THE_COLOR, getTheColorMeta } = require('./drinkTheColor');
 
 // 🪙 อิโมจิเหรียญทองประจำระบบ (ใช้ในข้อความแชทและ Embed Description)
 const COIN_EMOJI = '<a:coin:1563947103032713268>';
@@ -229,6 +230,15 @@ const DRINK_PRICES = {
   ...OTHER_DRINK_PRICES
 };
 
+// 🎨 Self-Audit: ตรวจสอบความครบถ้วนของสีและคำอธิบายใน drinkTheColor.js อัตโนมัติตอนเปิดระบบ
+const officialDrinkKeys = Object.keys(DRINK_PRICES).filter((n) => n !== 'เอิร์ลเกรย์ลาเวเดอร์');
+const missingColorDrinks = officialDrinkKeys.filter((name) => !DRINK_THE_COLOR[name]);
+if (missingColorDrinks.length > 0) {
+  console.warn(`⚠️ [thecolor Audit] พบเครื่องดื่มที่ยังไม่มีชุดสี ${missingColorDrinks.length} รายการ:`, missingColorDrinks);
+} else {
+  console.log(`🎨 [thecolor Audit] ตรวจสอบสีและคำอธิบายครบสมบูรณ์ ${officialDrinkKeys.length}/${officialDrinkKeys.length} เมนู!`);
+}
+
 // ==========================================
 // 🍯 4. หมวดท็อปปิ้งเพิ่มเติม (Toppings: เฟส 1 [30 เมนู] + เฟส 2 [5 เมนู] = 35 เมนู)
 // ==========================================
@@ -378,6 +388,7 @@ const buildCategoryItems = (dict, typeKey, categoryId, categoryTitle, icon) => {
     .filter(([name]) => name !== 'เอิร์ลเกรย์ลาเวเดอร์')
     .map(([name, price]) => {
       const tier = getItemTier(price, typeKey, name);
+      const visual = getTheColorMeta(name, typeKey, false);
       return {
         name,
         price,
@@ -387,25 +398,42 @@ const buildCategoryItems = (dict, typeKey, categoryId, categoryTitle, icon) => {
         icon,
         tierCode: tier.code,
         tierLabel: tier.label,
-        tierRank: tier.rank
+        tierRank: tier.rank,
+        theColor: {
+          colors: visual.colors,
+          border: visual.border,
+          style: visual.style,
+          gradient: visual.gradient
+        },
+        description: visual.description
       };
     })
     .sort((a, b) => b.price - a.price);
 };
 
 const buildMysteryCategoryItems = () => {
-  return Array.from(MYSTERY_MENU_SET).map((name) => ({
-    name,
-    price: 999,
-    priceRangeText: '199 - 999',
-    isMystery: true,
-    categoryId: 'create_one',
-    categoryTitle: 'Create one (?)',
-    icon: '🌈',
-    tierCode: '?',
-    tierLabel: '? • Create one',
-    tierRank: 5
-  }));
+  return Array.from(MYSTERY_MENU_SET).map((name) => {
+    const visual = getTheColorMeta(name, 'drink', true);
+    return {
+      name,
+      price: 999,
+      priceRangeText: '199 - 999',
+      isMystery: true,
+      categoryId: 'create_one',
+      categoryTitle: 'Create one (?)',
+      icon: '🌈',
+      tierCode: '?',
+      tierLabel: '? • Create one',
+      tierRank: 5,
+      theColor: {
+        colors: visual.colors,
+        border: visual.border,
+        style: visual.style,
+        gradient: visual.gradient
+      },
+      description: visual.description
+    };
+  });
 };
 
 const getStructuredMenuCatalog = () => {
@@ -515,6 +543,7 @@ module.exports = {
   rollMysteryPrice,
   isMysteryMenu,
   getItemTier,
+  getTheColorMeta,
   getStructuredMenuCatalog,
 
   // 🎯 ตรวจออเดอร์แบบเข้มงวด: ต้องสะกดชื่อเมนูเครื่องดื่มตรงทุกตัวอักษรและวรรณยุกต์
@@ -529,7 +558,7 @@ module.exports = {
     }
 
     const allDrinkNames = [
-      ...Object.keys(DRINK_PRICES).filter(n => n !== 'เอิร์ลเกรย์ลาเวเดอร์'),
+      ...Object.keys(DRINK_PRICES).filter((n) => n !== 'เอิร์ลเกรย์ลาเวเดอร์'),
       ...Array.from(MYSTERY_MENU_SET)
     ];
     const allToppingNames = Object.keys(TOPPING_PRICES);
@@ -674,7 +703,7 @@ module.exports = {
     try {
       const docs = await CafeEvent.find({ category: 'drink', price: -1 }).select('text').lean();
       if (Array.isArray(docs)) {
-        docs.forEach(d => {
+        docs.forEach((d) => {
           if (d.text && d.text.trim() && !MASTER_PRICE_MAP.has(d.text.trim())) {
             MYSTERY_MENU_SET.add(d.text.trim());
           }
