@@ -7,9 +7,21 @@ const theme = require('../../config/theme');
 
 const CAFE_CHANNEL_ID = theme.discordConfig?.cafeVoiceChannelId || '995629374722297946';
 const FOOTER_ICON_URL = 'https://i.ibb.co/nMzNwcw0/119111-softbunnyinlove.png';
+const COOKIE_EMOJI_ID = '1562622101427323002';
+const COOKIE_EMOJI_TAG = '<a:59632cookie:1562622101427323002>';
+
+const REROLL_ANGRY_CHANCES = [0.20, 0.35, 0.50]; // โอกาสไม่พอใจ: ครั้งที่ 1 (20%), ครั้งที่ 2 (35%), ครั้งที่ 3 (50%)
+const MAX_REROLLS = REROLL_ANGRY_CHANCES.length; // ขอเปลี่ยนเมนูได้สูงสุด 3 ครั้ง
 const CONFIRM_DELETE_MS = 7000; // ลบข้อความยืนยันออเดอร์หลัง 7 วินาที
+const KICK_NOTICE_DELETE_MS = 10000; // ลบข้อความแจ้งเตือนอเลสเทียไม่พอใจหลัง 10 วินาที
 const MIN_VALID_STAY_MS = 60 * 1000; // อยู่ต่ำกว่า 1 นาทีถือเป็นข้อมูลขยะ -> ลบประวัติทิ้ง
 const MAX_EMBED_FIELDS = 25; // ขีดจำกัดสูงสุดของ Discord Embed Fields
+
+const ANGRY_KICK_LINES = [
+  'อเลสเทียเริ่มไม่พอใจที่เรื่องมากเปลี่ยนเมนูไปมาแล้วนะคะ! เชิญออกไปสงบสติอารมณ์ด้านนอกก่อนค่ะ💢',
+  'อเลสเทียหงุดหงิดแล้วนะคะ สุ่มเมนูใหม่ยังไม่ถูกใจอีกเหรอคะ เชิญออกจากคาเฟ่ก่อนเลยค่ะ💢',
+  'อเลสเทียหมดความอดทนกับการขอเปลี่ยนเมนูแล้วค่ะ! ขอเชิญออกไปพักใจด้านนอกก่อนนะคะ💢'
+];
 
 const { COIN_EMOJI, COIN_TEXT, DEFAULT_SWEETNESS } = priceCatalog;
 
@@ -100,14 +112,53 @@ async function getCafeChannel(client, guildFallback = null) {
   return ch;
 }
 
+function cleanupPendingEntry(pending) {
+  if (!pending) return;
+  if (pending.collector && !pending.collector.ended) {
+    pending.collector.stop('cleanup');
+  }
+}
+
+// ข้อความแจ้งเตือนขอความหวาน + คำแนะนำกดคุกกี้สุ่มเมนูน้ำใหม่
+function buildSweetnessPromptText(userId, userName, drinkName, rerollCount = 0) {
+  if (rerollCount === 0) {
+    return [
+      `-# <@${userId}>`,
+      `<a:mloader:1570077645624971356> คุณ${userName} กรุณาระบุความหวานให้กับ${drinkName}ด้วยนะคะ~✦`,
+      `-# พิมพ์ข้อความส่งมาในแชทได้เลยค่ะ`,
+      `-# สามารถกด ${COOKIE_EMOJI_TAG} เพื่อขอให้อเลสเทียสุ่มเมนูน้ำใหม่ได้ค่ะ`
+    ].join('\n');
+  }
+
+  if (rerollCount < MAX_REROLLS) {
+    const remaining = MAX_REROLLS - rerollCount;
+    return [
+      `-# <@${userId}>`,
+      `<a:mloader:1570077645624971356> คุณ${userName} อเลสเทียสุ่มเมนูใหม่ให้แล้วค่ะ! กรุณาระบุความหวานให้กับ${drinkName}ด้วยนะคะ~✦`,
+      `-# พิมพ์ข้อความส่งมาในแชทได้เลยค่ะ`,
+      `-# สามารถกด ${COOKIE_EMOJI_TAG} เพื่อขอให้อเลสเทียสุ่มเมนูน้ำใหม่ได้อีก ${remaining} ครั้งค่ะ`
+    ].join('\n');
+  }
+
+  return [
+    `-# <@${userId}>`,
+    `<a:mloader:1570077645624971356> คุณ${userName} อเลสเทียเปลี่ยนเมนูให้ครบ ${MAX_REROLLS} ครั้งแล้วค่ะ! กรุณาระบุความหวานให้กับ${drinkName}ด้วยนะคะ~✦`,
+    `-# พิมพ์ข้อความส่งมาในแชทได้เลยค่ะ (ไม่สามารถขอเปลี่ยนเมนูเพิ่มได้แล้วนะคะ)`
+  ].join('\n');
+}
+
 // ==========================================
 // 🎲 1. ระบบสุ่มเมนูอัตโนมัติ (เครื่องดื่ม + ท็อปปิ้ง + ของทานเล่น)
 // ==========================================
-function rollRandomCafeMenu(userDataDB = null) {
-  const allDrinkNames = [
+function getAllDrinkNames() {
+  return [
     ...Object.keys(priceCatalog.DRINK_PRICES || {}).filter((n) => n !== 'เอิร์ลเกรย์ลาเวเดอร์'),
     ...Array.from(priceCatalog.MYSTERY_MENU_SET || [])
   ];
+}
+
+function rollRandomCafeMenu(userDataDB = null) {
+  const allDrinkNames = getAllDrinkNames();
   const allToppingNames = Object.keys(priceCatalog.TOPPING_PRICES || {});
   const allDessertNames = Object.keys(priceCatalog.DESSERT_PRICES || {});
 
@@ -142,13 +193,30 @@ function rollRandomCafeMenu(userDataDB = null) {
   };
 }
 
+// สุ่มเปลี่ยนเฉพาะเมนูน้ำใหม่ (ไม่ให้ซ้ำแก้วเดิม) พร้อมคำนวณราคารวมใหม่
+function rerollDrinkOnly(currentMenu) {
+  const allDrinkNames = getAllDrinkNames();
+  const candidates = allDrinkNames.filter((n) => n !== currentMenu.drinkName);
+  const pool = candidates.length > 0 ? candidates : allDrinkNames;
+
+  const newDrinkName = pool[Math.floor(Math.random() * pool.length)] || currentMenu.drinkName;
+  const newDrinkPrice = priceCatalog.getItemPrice(newDrinkName, 'drink', 0) || 120;
+  const newTotalPrice = newDrinkPrice + (currentMenu.toppingPrice || 0) + (currentMenu.dessertPrice || 0);
+
+  return {
+    ...currentMenu,
+    drinkName: newDrinkName,
+    drinkPrice: newDrinkPrice,
+    totalPrice: newTotalPrice
+  };
+}
+
 // ==========================================
 // 🍯 2. ระบบจัดรูปแบบระดับความหวานแบบมือโปร
 // ==========================================
 function formatProfessionalSweetness(rawInput) {
   if (!rawInput || typeof rawInput !== 'string') return DEFAULT_SWEETNESS;
 
-  // ลบช่องว่างเกิน ลบบรรทัดใหม่ และตัดความยาวกัน Embed แตก
   const cleaned = rawInput
     .replace(/[\r\n]+/g, ' ')
     .replace(/\s+/g, ' ')
@@ -158,17 +226,14 @@ function formatProfessionalSweetness(rawInput) {
 
   if (!cleaned) return DEFAULT_SWEETNESS;
 
-  // 1. หากมีคำว่า "หวาน" อยู่แล้ว (เช่น หวานมากก, หวานตัดขา, ไม่หวานเลย, หวานน้อยนิดจิดเดียว) -> ใช้ตามจริงเลย
   if (cleaned.includes('หวาน')) {
     return cleaned;
   }
 
-  // 2. หากเป็นประโยคระบุปริมาณน้ำตาลหรือแบบจืดชัดเจน (เช่น น้ำตาลเม็ดเดียว, น้ำตาลนิดเดียว, ไม่ใส่น้ำตาล, จืดๆ) -> ต่อท้ายได้ทันทีอย่างเป็นธรรมชาติ
   if (/^(น้ำตาล|ไม่ใส่|ไม่เอา|งด|จืด|ไร้)/.test(cleaned)) {
     return cleaned;
   }
 
-  // 3. หากเป็นคำขยายระดับหรือเปอร์เซ็นต์ (เช่น มากกก, น้อย, ปกติ, ตัดขา, 50%, นิดเดียว) -> เติมคำว่า "หวาน" นำหน้าให้
   if (/^\d+\s*%?$/.test(cleaned)) {
     return `หวาน ${cleaned}`;
   }
@@ -217,7 +282,6 @@ function buildSessionEmbed(cafeChannel, session, isClosing = false) {
   const dateDisplay = formatDateKeyToDDMMYYYY(session.dateKey);
   const startTimeDisplay = session.startTimeText || getThaiDateTime().timeText;
 
-  // รองรับสูงสุด 25 Fields ตามข้อจำกัดของ Discord โดยยังคงเลขลำดับ R# เดิมของแต่ละคนไว้ครบ
   const startIndex = Math.max(0, receipts.length - MAX_EMBED_FIELDS);
   const visibleReceipts = receipts.slice(startIndex);
 
@@ -294,12 +358,64 @@ async function renderAndSaveSessionEmbed(cafeChannel, session, isClosing = false
 }
 
 // ==========================================
-// ✅ 5. ยืนยันระดับความหวาน -> ปลด Mute -> ลบข้อความเดิม -> แจ้งยืนยัน (ลบใน 7 วิ) -> อัปเดต Embed
+// 💢 5. กรณีอเลสเทียไม่พอใจจากการขอเปลี่ยนเมนู -> เตะออกพร้อมข้อความแจ้ง
+// ==========================================
+async function handleAletheaDispleasedKick(pending, attemptNum, angryChance, cafeChannel, client) {
+  const { userId, userName, promptMsg } = pending;
+
+  cleanupPendingEntry(pending);
+  memory.pendingOrders.delete(userId);
+
+  if (promptMsg) {
+    await promptMsg.delete().catch(() => null);
+  }
+
+  const angryLine = ANGRY_KICK_LINES[Math.floor(Math.random() * ANGRY_KICK_LINES.length)];
+  const chancePercent = Math.round(angryChance * 100);
+
+  const noticeText = [
+    `-# <@${userId}>`,
+    `💢 **คุณ${userName}** ขอเปลี่ยนเมนูครั้งที่ ${attemptNum} (โอกาสไม่พอใจ ${chancePercent}%) — ${angryLine}`
+  ].join('\n');
+
+  const noticeMsg = await sendWithRetry(cafeChannel, noticeText).catch(() => null);
+  if (noticeMsg) {
+    setTimeout(() => {
+      noticeMsg.delete().catch(() => null);
+    }, KICK_NOTICE_DELETE_MS);
+  }
+
+  // จำคิวปลด Mute ไว้เพื่อให้ปลดไมค์อัตโนมัติในครั้งถัดไปที่เข้าห้องเสียง
+  memory.pendingUnmuteUsers.add(userId);
+
+  try {
+    const guild = cafeChannel.guild || client?.guilds?.cache?.first();
+    const member =
+      guild?.members?.cache?.get(userId) ||
+      (guild ? await guild.members.fetch(userId).catch(() => null) : null);
+
+    if (member?.voice?.channelId === CAFE_CHANNEL_ID) {
+      await member.voice.disconnect(`อเลสเทียไม่พอใจจากการขอเปลี่ยนเมนูครั้งที่ ${attemptNum}`);
+    }
+  } catch (kickErr) {
+    // กรณีเตะไม่ได้ (เช่น ยศสูงกว่าบอทหรือเจ้าของเซิร์ฟเวอร์) ให้ปลดไมค์คืนเพื่อไม่ให้ค้าง
+    const guild = cafeChannel.guild || client?.guilds?.cache?.first();
+    const member = guild?.members?.cache?.get(userId);
+    if (member?.voice?.channelId) {
+      await member.voice.setMute(false, 'ปลดไมค์คืนเมื่อไม่สามารถตัดการเชื่อมต่อได้').catch(() => null);
+      memory.pendingUnmuteUsers.delete(userId);
+    }
+  }
+}
+
+// ==========================================
+// ✅ 6. ยืนยันระดับความหวาน -> ปลด Mute -> ลบข้อความเดิม -> แจ้งยืนยัน (ลบใน 7 วิ) -> อัปเดต Embed
 // ==========================================
 async function confirmMemberSweetness(userId, rawSweetnessText, client, memberMessage = null) {
   const pending = memory.pendingOrders.get(userId);
   if (!pending) return false;
 
+  cleanupPendingEntry(pending);
   memory.pendingOrders.delete(userId);
 
   return (trackerQueue = trackerQueue.then(async () => {
@@ -392,7 +508,6 @@ async function confirmMemberSweetness(userId, rawSweetnessText, client, memberMe
 
       let session = await CafeSession.findOne({ channelId: CAFE_CHANNEL_ID, isActive: { $ne: false } }).sort({ createdAt: -1 });
 
-      // หากมีเซสชันเก่าค้างอยู่แต่ไม่มีใครนั่งอยู่ในเซสชันนั้นแล้ว ให้ปิดรอบเก่าก่อนเริ่มรอบใหม่
       if (session) {
         const hasOtherPresentInVoice = (session.receipts || []).some(
           (r) => r.isPresent && r.userId !== userId && cafeChannel.members.has(r.userId)
@@ -463,7 +578,6 @@ async function confirmMemberSweetness(userId, rawSweetnessText, client, memberMe
         await renderAndSaveSessionEmbed(cafeChannel, session, false);
       }
 
-      // จำยอดที่หักจริงไว้ใน memory เผื่อออกก่อน 1 นาทีจะได้คืนเงินได้ถูกต้อง
       if (!memory.activeDeductions) memory.activeDeductions = new Map();
       memory.activeDeductions.set(userId, walletDeducted);
 
@@ -476,7 +590,7 @@ async function confirmMemberSweetness(userId, rawSweetnessText, client, memberMe
 }
 
 // ==========================================
-// 🚪 6. จัดการเหตุการณ์เข้า-ออกห้องเสียงคาเฟ่
+// 🚪 7. จัดการเหตุการณ์เข้า-ออกห้องเสียงคาเฟ่
 // ==========================================
 const processCafeEvent = async (oldState, newState, userName, userDataDB, client) => {
   const isChannelChange = oldState.channelId !== newState.channelId;
@@ -501,11 +615,12 @@ const processCafeEvent = async (oldState, newState, userName, userDataDB, client
   };
 
   // ==========================================
-  // 🌸 ขาเข้า: สุ่มเมนู -> Mute ไมค์ -> ส่งข้อความขอระดับความหวาน
+  // 🌸 ขาเข้า: สุ่มเมนู -> Mute ไมค์ -> ส่งข้อความขอระดับความหวาน + รีแอ็กชันคุกกี้รีโรล
   // ==========================================
   if (joinedCafe) {
     if (memory.pendingOrders.has(userId)) {
       const oldPending = memory.pendingOrders.get(userId);
+      cleanupPendingEntry(oldPending);
       if (oldPending.promptMsg) await oldPending.promptMsg.delete().catch(() => null);
       memory.pendingOrders.delete(userId);
     }
@@ -520,12 +635,7 @@ const processCafeEvent = async (oldState, newState, userName, userDataDB, client
     const rolledMenu = rollRandomCafeMenu(userDataDB);
 
     // 3. ส่งข้อความแจ้งเตือนถามระดับความหวานเฉพาะชื่อเครื่องดื่ม
-    const promptText = [
-      `-# <@${userId}>`,
-      `<a:mloader:1570077645624971356> คุณ${userName} กรุณาระบุความหวานให้กับ${rolledMenu.drinkName}ด้วยนะคะ~✦`,
-      `-# พิมพ์ข้อความส่งมาในแชทได้เลยค่ะ`
-    ].join('\n');
-
+    const promptText = buildSweetnessPromptText(userId, userName, rolledMenu.drinkName, 0);
     const promptMsg = await sendWithRetry(cafeChannel, promptText).catch(() => null);
 
     // เช็กซ้ำเผื่อหลุดออกระหว่างส่งข้อความ -> ลบข้อความแจ้งเตือนทันทีเหมือนไม่มีอะไรเกิดขึ้น
@@ -536,15 +646,83 @@ const processCafeEvent = async (oldState, newState, userName, userDataDB, client
       return;
     }
 
-    memory.pendingOrders.set(userId, {
+    const pendingRecord = {
       userId,
       userName,
       userDataDB,
       actorUser,
       rolledMenu,
       promptMsg,
+      collector: null,
+      rerollCount: 0,
+      isProcessingReroll: false,
       joinedAt: Date.now()
-    });
+    };
+
+    memory.pendingOrders.set(userId, pendingRecord);
+
+    // 🍪 4. แนบอิโมจิคุกกี้และเปิด Reaction Collector สำหรับขอสุ่มเมนูน้ำใหม่ (สูงสุด 3 ครั้ง: 20% / 35% / 50%)
+    if (promptMsg) {
+      await promptMsg.react(COOKIE_EMOJI_ID).catch(() => null);
+
+      const collector = promptMsg.createReactionCollector({
+        filter: (reaction, user) =>
+          !user.bot && (reaction.emoji.id === COOKIE_EMOJI_ID || reaction.emoji.name === '59632cookie'),
+        time: 10 * 60 * 1000
+      });
+
+      pendingRecord.collector = collector;
+
+      collector.on('collect', async (reaction, user) => {
+        // ลบรีแอ็กชันที่กดออกเสมอ (กันคนอื่นกด และให้เจ้าของกดรอบถัดไปได้สะดวก)
+        await reaction.users.remove(user.id).catch(() => null);
+
+        if (user.id !== userId) return;
+
+        const activePending = memory.pendingOrders.get(userId);
+        if (!activePending || activePending !== pendingRecord) {
+          collector.stop('stale');
+          return;
+        }
+        if (activePending.isProcessingReroll || activePending.rerollCount >= MAX_REROLLS) {
+          return;
+        }
+
+        activePending.isProcessingReroll = true;
+
+        try {
+          const attemptIdx = activePending.rerollCount; // 0, 1, 2
+          const attemptNum = attemptIdx + 1; // 1, 2, 3
+          const angryChance = REROLL_ANGRY_CHANCES[attemptIdx] ?? 0.50;
+
+          // 🎲 ทอยลูกเต๋าเช็กความพอใจของอเลสเทีย (20% -> 35% -> 50%)
+          if (Math.random() < angryChance) {
+            await handleAletheaDispleasedKick(activePending, attemptNum, angryChance, cafeChannel, client);
+            return;
+          }
+
+          // ✅ อเลสเทียยอมสุ่มเมนูน้ำใหม่ให้
+          activePending.rerollCount += 1;
+          activePending.rolledMenu = rerollDrinkOnly(activePending.rolledMenu);
+
+          const updatedText = buildSweetnessPromptText(
+            userId,
+            userName,
+            activePending.rolledMenu.drinkName,
+            activePending.rerollCount
+          );
+          await promptMsg.edit(updatedText).catch(() => null);
+
+          // หากขอเปลี่ยนครบ 3 ครั้งแล้ว ให้ปิดสิทธิ์และลบอิโมจิคุกกี้ออกทันที
+          if (activePending.rerollCount >= MAX_REROLLS) {
+            collector.stop('max_rerolls');
+            await promptMsg.reactions.removeAll().catch(() => null);
+          }
+        } finally {
+          activePending.isProcessingReroll = false;
+        }
+      });
+    }
     return;
   }
 
@@ -552,9 +730,9 @@ const processCafeEvent = async (oldState, newState, userName, userDataDB, client
   // 🚪 ขาออก: เคลียร์คิวรอความหวาน / กรองประวัติขยะ (< 1 นาที) / อัปเดตหรือปิดรอบ Embed
   // ==========================================
   if (leftCafe) {
-    // 1. หากยังไม่ได้ระบุความหวานก็ออกไปแล้ว -> ลบข้อความถามและจัดการปลด Mute
     if (memory.pendingOrders.has(userId)) {
       const pending = memory.pendingOrders.get(userId);
+      cleanupPendingEntry(pending);
       if (pending.promptMsg) await pending.promptMsg.delete().catch(() => null);
       memory.pendingOrders.delete(userId);
 
@@ -575,7 +753,6 @@ const processCafeEvent = async (oldState, newState, userName, userDataDB, client
     const isSleeping = memory.sleepingUsers?.has(userId);
     if (isSleeping) memory.sleepingUsers.delete(userId);
 
-    // 2. ค้นหาใบเสร็จล่าสุดของสมาชิกคนนี้ที่ยังอยู่ในสถานะกำลังนั่งในร้าน
     if (!Array.isArray(session.receipts)) session.receipts = [];
     let targetIdx = -1;
     for (let i = session.receipts.length - 1; i >= 0; i--) {
@@ -591,7 +768,6 @@ const processCafeEvent = async (oldState, newState, userName, userDataDB, client
       const stayDurationMs = Math.max(0, Date.now() - enteredMs);
 
       if (stayDurationMs < MIN_VALID_STAY_MS) {
-        // 🧹 อยู่ห้องเสียงต่ำกว่า 1 นาที -> ถือเป็นข้อมูลขยะ ลบประวัตินี้ทิ้งและคืนเหรียญทอง
         session.receipts.splice(targetIdx, 1);
         session.totalRevenue = Math.max(0, Number(session.totalRevenue || 0) - Number(receipt.totalPrice || 0));
 
@@ -605,7 +781,6 @@ const processCafeEvent = async (oldState, newState, userName, userDataDB, client
           `[Cafe Garbage Filter] 🧹 ลบประวัติของ ${userName} เนื่องจากอยู่ในห้องเสียงเพียง ${Math.round(stayDurationMs / 1000)} วินาที (< 1 นาที)`
         );
       } else {
-        // ✅ อยู่ครบ 1 นาทีขึ้นไป -> บันทึกเวลาออกและเปลี่ยนสถานะเป็น "ออกไปแล้ว"
         if (memory.activeDeductions) memory.activeDeductions.delete(userId);
         receipt.isPresent = false;
         receipt.exitTimeText = timeText;
@@ -614,13 +789,11 @@ const processCafeEvent = async (oldState, newState, userName, userDataDB, client
       }
     }
 
-    // 3. หากไม่มีประวัติที่ผ่านเกณฑ์เหลืออยู่เลยในรอบนี้ -> ลบทั้ง Embed และเอกสารเซสชันทิ้งทันที
     if (session.receipts.length === 0) {
       await purgeSessionNow(cafeChannel, session._id, session.messageId);
       return;
     }
 
-    // 4. หากเป็นคนสุดท้ายที่ออกจากห้องเสียง ให้ปิดรอบบริการ
     if (isLastMember) {
       session.isActive = false;
       session.endTimeText = timeText;
