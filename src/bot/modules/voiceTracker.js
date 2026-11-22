@@ -10,6 +10,9 @@ const FOOTER_ICON_URL = 'https://i.ibb.co/nMzNwcw0/119111-softbunnyinlove.png';
 const COOKIE_EMOJI_ID = '1562622101427323002';
 const COOKIE_EMOJI_TAG = '<a:59632cookie:1562622101427323002>';
 
+const TOPPING_CHANCE = 0.55; // โอกาสสุ่มมีท็อปปิ้งติดมากับเครื่องดื่ม (55%)
+const DESSERT_CHANCE = 0.50; // โอกาสสุ่มมีขนม/ของทานเล่นติดมาด้วย (50%)
+
 const REROLL_ANGRY_CHANCES = [0.20, 0.35, 0.50]; // โอกาสไม่พอใจ: ครั้งที่ 1 (20%), ครั้งที่ 2 (35%), ครั้งที่ 3 (50%)
 const MAX_REROLLS = REROLL_ANGRY_CHANCES.length; // ขอเปลี่ยนเมนูได้สูงสุด 3 ครั้ง
 const CONFIRM_DELETE_MS = 7000; // ลบข้อความยืนยันออเดอร์หลัง 7 วินาที
@@ -168,7 +171,7 @@ function buildSweetnessPromptText(userId, userName, drinkName, rerollCount = 0) 
 }
 
 // ==========================================
-// 🎲 1. ระบบสุ่มเมนูอัตโนมัติ (เครื่องดื่ม + ท็อปปิ้ง + ของทานเล่น)
+// 🎲 1. ระบบสุ่มเมนูอัตโนมัติ (เครื่องดื่ม + สุ่มท็อปปิ้ง + สุ่มขนมและของทานเล่น)
 // ==========================================
 function getAllDrinkNames() {
   return [
@@ -177,11 +180,30 @@ function getAllDrinkNames() {
   ];
 }
 
+// สุ่มท็อปปิ้ง (มีโอกาสติดมาด้วยหรือไม่มี ตาม TOPPING_CHANCE)
+function rollOptionalTopping() {
+  const allToppingNames = Object.keys(priceCatalog.TOPPING_PRICES || {});
+  if (allToppingNames.length === 0 || Math.random() >= TOPPING_CHANCE) {
+    return { toppingName: '', toppingPrice: 0 };
+  }
+  const toppingName = allToppingNames[Math.floor(Math.random() * allToppingNames.length)];
+  const toppingPrice = priceCatalog.getItemPrice(toppingName, 'topping', 0) || 25;
+  return { toppingName, toppingPrice };
+}
+
+// สุ่มขนมและของทานเล่น (สุ่มว่าจะมีติดมาด้วยหรือไม่มี หากมีติดมาด้วยจึงสุ่มรายการขนม)
+function rollOptionalDessert() {
+  const allDessertNames = Object.keys(priceCatalog.DESSERT_PRICES || {});
+  if (allDessertNames.length === 0 || Math.random() >= DESSERT_CHANCE) {
+    return { dessertName: '', dessertPrice: 0 };
+  }
+  const dessertName = allDessertNames[Math.floor(Math.random() * allDessertNames.length)];
+  const dessertPrice = priceCatalog.getItemPrice(dessertName, 'dessert', 0) || 95;
+  return { dessertName, dessertPrice };
+}
+
 function rollRandomCafeMenu(userDataDB = null) {
   const allDrinkNames = getAllDrinkNames();
-  const allToppingNames = Object.keys(priceCatalog.TOPPING_PRICES || {});
-  const allDessertNames = Object.keys(priceCatalog.DESSERT_PRICES || {});
-
   const pickRandom = (arr) => (arr.length > 0 ? arr[Math.floor(Math.random() * arr.length)] : '');
 
   // โอกาส 20% สุ่มติดเมนูโปรดของสมาชิก (ถ้าลงทะเบียนไว้และมีชื่ออยู่ในคลัง)
@@ -193,13 +215,9 @@ function rollRandomCafeMenu(userDataDB = null) {
     drinkName = pickRandom(allDrinkNames) || 'ลาเต้อาร์ตมาสเตอร์พีซ';
   }
 
-  // สุ่มท็อปปิ้ง (โอกาส 55%) และของทานเล่น (โอกาส 50%)
-  const toppingName = allToppingNames.length > 0 && Math.random() < 0.55 ? pickRandom(allToppingNames) : '';
-  const dessertName = allDessertNames.length > 0 && Math.random() < 0.50 ? pickRandom(allDessertNames) : '';
-
   const drinkPrice = priceCatalog.getItemPrice(drinkName, 'drink', 0) || 120;
-  const toppingPrice = toppingName ? priceCatalog.getItemPrice(toppingName, 'topping', 0) || 25 : 0;
-  const dessertPrice = dessertName ? priceCatalog.getItemPrice(dessertName, 'dessert', 0) || 95 : 0;
+  const { toppingName, toppingPrice } = rollOptionalTopping();
+  const { dessertName, dessertPrice } = rollOptionalDessert();
   const totalPrice = drinkPrice + toppingPrice + dessertPrice;
 
   return {
@@ -288,7 +306,7 @@ async function purgeSessionNow(cafeChannel, sessionId, messageId) {
 }
 
 // ==========================================
-// 🎨 4. สร้าง Embed รูปแบบใหม่ (รองรับทั้ง Embed เปล่า และ Inline Fields รายบุคคล)
+// 🎨 4. สร้าง Embed รูปแบบใหม่ (บรรทัดแรกเครื่องดื่ม+ความหวาน+ท็อปปิ้ง / บรรทัดสองขนมทานเล่นถ้าสุ่มติด)
 // ==========================================
 function buildSessionEmbed(cafeChannel, session, isClosing = false) {
   const activeColor = '#C89670';
@@ -315,12 +333,14 @@ function buildSessionEmbed(cafeChannel, session, isClosing = false) {
       ? `<a:9887greentick:1562617728005705799>[<t:${enterUnix}:t>] กำลังอยู่ในคาเฟ่`
       : `<a:1162greytick:1562617731583311872>[<t:${enterUnix}:t>-<t:${exitUnix}:t>] ออกไปแล้ว`;
 
+    // บรรทัดแรก: เครื่องดื่ม + ความหวาน (+ ท็อปปิ้งถ้าสุ่มติดมาด้วย)
     const drinkLine = `${r.drinkName || 'เมนูซิกเนเจอร์'}${r.sweetness || DEFAULT_SWEETNESS}${r.toppingName ? ` ${r.toppingName}` : ''}`;
     const valueLines = [
       `**"${r.userName || 'ลูกค้าคาเฟ่'}"**`,
       `> ~✦${drinkLine}`
     ];
 
+    // บรรทัดสอง: ขนมทานเล่น (แสดงเฉพาะกรณีสุ่มมีขนมติดมาด้วย)
     if (r.dessertName) {
       valueLines.push(`> ~✦${r.dessertName}`);
     }
@@ -438,7 +458,6 @@ async function handleAletheaDispleasedKick(pending, attemptNum, cafeChannel, cli
     }, KICK_NOTICE_DELETE_MS);
   }
 
-  // จำคิวปลด Mute ไว้เพื่อให้ปลดไมค์อัตโนมัติในครั้งถัดไปที่เข้าห้องเสียง
   memory.pendingUnmuteUsers.add(userId);
 
   try {
@@ -453,7 +472,6 @@ async function handleAletheaDispleasedKick(pending, attemptNum, cafeChannel, cli
       await cleanupDraftEmbed(cafeChannel);
     }
   } catch (kickErr) {
-    // กรณีเตะไม่ได้ (เช่น ยศสูงกว่าบอทหรือเจ้าของเซิร์ฟเวอร์) ให้ปลดไมค์คืนและไม่บันทึกประวัติ
     const guild = cafeChannel.guild || client?.guilds?.cache?.first();
     const member = guild?.members?.cache?.get(userId);
     if (member?.voice?.channelId) {
@@ -461,7 +479,6 @@ async function handleAletheaDispleasedKick(pending, attemptNum, cafeChannel, cli
       memory.pendingUnmuteUsers.delete(userId);
     }
 
-    // หากไม่มีใครรอสั่งต่อและยังไม่มีการยืนยันในรอบนี้ ให้ลบ Embed เปล่าทิ้งด้วย
     if (memory.pendingOrders.size === 0 && memory.draftSessionEmbeds.has(CAFE_CHANNEL_ID)) {
       await cleanupDraftEmbed(cafeChannel);
     }
@@ -469,7 +486,7 @@ async function handleAletheaDispleasedKick(pending, attemptNum, cafeChannel, cli
 }
 
 // ==========================================
-// ✅ 6. ยืนยันระดับความหวาน -> ปลด Mute -> ลบข้อความเดิม -> แจ้งยืนยัน (ลบใน 7 วิ) -> บันทึก DB & อัปเดต Embed
+// ✅ 6. ยืนยันระดับความหวาน -> ปลด Mute -> ลบข้อความเดิม -> แจ้งยืนยัน 2 บรรทัด (ลบใน 7 วิ) -> บันทึก DB & อัปเดต Embed
 // ==========================================
 async function confirmMemberSweetness(userId, rawSweetnessText, client, memberMessage = null) {
   const pending = memory.pendingOrders.get(userId);
@@ -486,6 +503,9 @@ async function confirmMemberSweetness(userId, rawSweetnessText, client, memberMe
       const sweetness = formatProfessionalSweetness(rawSweetnessText);
       const { rolledMenu, userName, actorUser, joinedAt } = pending;
       const drinkWithSweetness = `${rolledMenu.drinkName}${sweetness}`;
+      const drinkWithTopping = rolledMenu.toppingName
+        ? `${drinkWithSweetness} ${rolledMenu.toppingName}`
+        : drinkWithSweetness;
 
       // 1. ปลด Server Mute ให้สมาชิกทันที
       const guild = cafeChannel.guild || client?.guilds?.cache?.first();
@@ -516,13 +536,16 @@ async function confirmMemberSweetness(userId, rawSweetnessText, client, memberMe
         return false;
       }
 
-      // 3. ส่งข้อความยืนยันรับออเดอร์ขึ้นใหม่ และลบออกใน 7 วินาที
-      const confirmText = [
+      // 3. ส่งข้อความยืนยันรับออเดอร์ขึ้นใหม่ (บรรทัดแรกเครื่องดื่ม+ความหวาน+ท็อปปิ้ง / บรรทัดสองขนมทานเล่นถ้าสุ่มติด) และลบออกใน 7 วินาที
+      const confirmLines = [
         `-# <@${userId}>`,
-        `☕ ได้ทำการส่งเมนูให้คุณ${userName} เป็น ${drinkWithSweetness} เรียบร้อยแล้วค่ะ~✦`
-      ].join('\n');
+        `☕ ได้ทำการส่งเมนูให้คุณ${userName} เป็น ${drinkWithTopping} เรียบร้อยแล้วค่ะ~✦`
+      ];
+      if (rolledMenu.dessertName) {
+        confirmLines.push(`🥐 พร้อมของทานเล่นเป็น ${rolledMenu.dessertName} ค่ะ~✦`);
+      }
 
-      const confirmMsg = await sendWithRetry(cafeChannel, confirmText).catch(() => null);
+      const confirmMsg = await sendWithRetry(cafeChannel, confirmLines.join('\n')).catch(() => null);
       if (confirmMsg) {
         setTimeout(() => {
           confirmMsg.delete().catch(() => null);
@@ -570,12 +593,11 @@ async function confirmMemberSweetness(userId, rawSweetnessText, client, memberMe
         totalPrice: rolledMenu.totalPrice
       };
 
-      const logSummaryLine = `• ${userName}: ${drinkWithSweetness}${rolledMenu.toppingName ? ` + ${rolledMenu.toppingName}` : ''}${rolledMenu.dessertName ? ` + ${rolledMenu.dessertName}` : ''} (${rolledMenu.totalPrice} ${COIN_TEXT})`;
+      const logSummaryLine = `• ${userName}: ${drinkWithTopping}${rolledMenu.dessertName ? ` | ขนม: ${rolledMenu.dessertName}` : ''} (${rolledMenu.totalPrice} ${COIN_TEXT})`;
 
       const session = await getOrCloseStaleActiveSession(cafeChannel, userId);
 
       if (!session) {
-        // ดึง Embed เปล่าที่สร้างรอไว้มาอัปเดต และเริ่มบันทึก CafeSession ลง MongoDB เป็นครั้งแรกของรอบนี้
         const draft = memory.draftSessionEmbeds.get(CAFE_CHANNEL_ID);
         memory.draftSessionEmbeds.delete(CAFE_CHANNEL_ID);
 
@@ -674,7 +696,7 @@ const processCafeEvent = async (oldState, newState, userName, userDataDB, client
   };
 
   // ==========================================
-  // 🌸 ขาเข้า: สร้าง Embed เปล่า (ยังไม่ลง DB) -> Mute ไมค์ -> สุ่มเมนู -> ถามความหวาน + คุกกี้รีโรล
+  // 🌸 ขาเข้า: สร้าง Embed เปล่า (ยังไม่ลง DB) -> Mute ไมค์ -> สุ่มเครื่องดื่ม+ท็อปปิ้ง+ขนม -> ถามความหวาน + คุกกี้รีโรล
   // ==========================================
   if (joinedCafe) {
     if (memory.pendingOrders.has(userId)) {
@@ -718,7 +740,7 @@ const processCafeEvent = async (oldState, newState, userName, userDataDB, client
       }
     }
 
-    // 3. สุ่มเมนูเครื่องดื่ม (พร้อมท็อปปิ้ง/ขนม)
+    // 3. สุ่มเมนูเครื่องดื่ม + สุ่มท็อปปิ้ง + สุ่มขนมและของทานเล่น
     const rolledMenu = rollRandomCafeMenu(userDataDB);
 
     // 4. ส่งข้อความแจ้งเตือนถามระดับความหวานเฉพาะชื่อเครื่องดื่ม
@@ -766,7 +788,6 @@ const processCafeEvent = async (oldState, newState, userName, userDataDB, client
       pendingRecord.collector = collector;
 
       collector.on('collect', async (reaction, user) => {
-        // ลบรีแอ็กชันที่กดออกเสมอ (กันคนอื่นกด และให้เจ้าของกดรอบถัดไปได้สะดวก)
         await reaction.users.remove(user.id).catch(() => null);
 
         if (user.id !== userId) return;
@@ -787,13 +808,11 @@ const processCafeEvent = async (oldState, newState, userName, userDataDB, client
           const attemptNum = attemptIdx + 1; // 1, 2, 3
           const angryChance = REROLL_ANGRY_CHANCES[attemptIdx] ?? 0.50;
 
-          // 🎲 ทอยลูกเต๋าเช็กความพอใจของอเลสเทีย (20% -> 35% -> 50%)
           if (Math.random() < angryChance) {
             await handleAletheaDispleasedKick(activePending, attemptNum, cafeChannel, client);
             return;
           }
 
-          // ✅ อเลสเทียยอมสุ่มเมนูน้ำใหม่ให้
           activePending.rerollCount += 1;
           activePending.rolledMenu = rerollDrinkOnly(activePending.rolledMenu);
 
@@ -805,7 +824,6 @@ const processCafeEvent = async (oldState, newState, userName, userDataDB, client
           );
           await promptMsg.edit(updatedText).catch(() => null);
 
-          // หากขอเปลี่ยนครบ 3 ครั้งแล้ว ให้ปิดสิทธิ์และลบอิโมจิคุกกี้ออกทันที
           if (activePending.rerollCount >= MAX_REROLLS) {
             collector.stop('max_rerolls');
             await promptMsg.reactions.removeAll().catch(() => null);
@@ -822,7 +840,6 @@ const processCafeEvent = async (oldState, newState, userName, userDataDB, client
   // 🚪 ขาออก: ลบคิวรอความหวาน / ลบ Embed เปล่าถ้าห้องว่าง / กรองประวัติขยะ (< 1 นาที) / อัปเดต Embed
   // ==========================================
   if (leftCafe) {
-    // 1. หากยังไม่ได้ระบุความหวานก็ออกไปแล้ว -> ลบข้อความถาม ปลดคิว Mute และไม่บันทึกประวัติใดๆ
     if (memory.pendingOrders.has(userId)) {
       const pending = memory.pendingOrders.get(userId);
       cleanupPendingEntry(pending);
@@ -840,12 +857,10 @@ const processCafeEvent = async (oldState, newState, userName, userDataDB, client
     const hMembers = cafeChannel.members.filter((m) => !m.user.bot);
     const isLastMember = hMembers.size === 0;
 
-    // 2. หากห้องเสียงว่างแล้วและยังค้างเป็น Embed เปล่า (ยังไม่มีใครยืนยันออเดอร์เลย) -> ลบ Embed เปล่าทิ้งทันที
     if (isLastMember && memory.draftSessionEmbeds.has(CAFE_CHANNEL_ID)) {
       await cleanupDraftEmbed(cafeChannel);
     }
 
-    // 3. ตรวจสอบเซสชันที่บันทึกไว้ใน DB (เฉพาะคนที่ยืนยันออเดอร์สำเร็จแล้วเท่านั้นจึงจะมีชื่ออยู่ใน receipts)
     const session = await CafeSession.findOne({ channelId: CAFE_CHANNEL_ID, isActive: { $ne: false } }).sort({ createdAt: -1 });
     if (!session) return;
 
@@ -868,7 +883,6 @@ const processCafeEvent = async (oldState, newState, userName, userDataDB, client
       const stayDurationMs = Math.max(0, Date.now() - enteredMs);
 
       if (stayDurationMs < MIN_VALID_STAY_MS) {
-        // 🧹 อยู่ห้องเสียงต่ำกว่า 1 นาที -> ลบประวัตินี้ทิ้งและคืนเหรียญทอง
         session.receipts.splice(targetIdx, 1);
         session.totalRevenue = Math.max(0, Number(session.totalRevenue || 0) - Number(receipt.totalPrice || 0));
 
@@ -890,13 +904,11 @@ const processCafeEvent = async (oldState, newState, userName, userDataDB, client
       }
     }
 
-    // 4. หากไม่มีประวัติที่ผ่านเกณฑ์เหลืออยู่เลยในรอบนี้ -> ลบทั้ง Embed และเอกสารเซสชันทิ้งทันที
     if (session.receipts.length === 0) {
       await purgeSessionNow(cafeChannel, session._id, session.messageId);
       return;
     }
 
-    // 5. หากเป็นคนสุดท้ายที่ออกจากห้องเสียง ให้ปิดรอบบริการ
     if (isLastMember) {
       session.isActive = false;
       session.endTimeText = timeText;
